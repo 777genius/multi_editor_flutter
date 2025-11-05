@@ -1,6 +1,11 @@
 import 'package:editor_core/editor_core.dart';
 import 'package:editor_mock/editor_mock.dart';
 import 'package:editor_ui/editor_ui.dart';
+import 'package:editor_plugins/editor_plugins.dart';
+import 'package:plugin_auto_save/plugin_auto_save.dart';
+import 'package:plugin_recent_files/plugin_recent_files.dart';
+import 'package:plugin_file_stats/plugin_file_stats.dart';
+import '../plugins/app_plugin_context.dart';
 
 /// Simple service locator for dependency injection
 class ServiceLocator {
@@ -15,6 +20,7 @@ class ServiceLocator {
 
   late final FileTreeController fileTreeController;
   late final EditorController editorController;
+  late final PluginManager pluginManager;
 
   /// Initialize all dependencies
   Future<void> init() async {
@@ -39,6 +45,28 @@ class ServiceLocator {
       fileRepository: fileRepository,
       eventBus: eventBus,
     );
+
+    // Initialize plugin system
+    await _initializePlugins();
+  }
+
+  /// Initialize plugin system and register plugins
+  Future<void> _initializePlugins() async {
+    // Create plugin context
+    final pluginContext = AppPluginContext(
+      fileRepository: fileRepository,
+      folderRepository: folderRepository,
+      eventBus: eventBus,
+    );
+
+    // Create plugin manager
+    pluginManager = PluginManager(pluginContext);
+
+    // Register plugins
+    await pluginManager.registerPlugin(AutoSavePlugin());
+    await pluginManager.registerPlugin(RecentFilesPlugin());
+    await pluginManager.registerPlugin(FileStatsPlugin());
+    await pluginManager.registerPlugin(DartLanguagePlugin());
   }
 
   /// Seed mock data for testing
@@ -216,7 +244,8 @@ Enjoy coding!
   }
 
   /// Dispose all resources
-  void dispose() {
+  Future<void> dispose() async {
+    await pluginManager.disposeAll();
     fileTreeController.dispose();
     editorController.dispose();
   }

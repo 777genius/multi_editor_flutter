@@ -2,6 +2,8 @@
 
 A production-ready, extensible, multi-file code editor package for Flutter.
 
+![Multi-File Code Editor](image.png)
+
 ## Features
 
 - 🌳 **Unlimited folder nesting** with hierarchical file tree

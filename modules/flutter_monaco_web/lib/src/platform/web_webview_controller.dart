@@ -318,6 +318,27 @@ class WebWebViewController implements PlatformWebViewController {
               editor.executeEdits('flutter', edits);
               return matches.length;
             },
+
+            registerSnippets: function(languageId, snippets) {
+              console.log('[Monaco] Registering ' + snippets.length + ' snippets for ' + languageId);
+              monaco.languages.registerCompletionItemProvider(languageId, {
+                provideCompletionItems: function(model, position) {
+                  return {
+                    suggestions: snippets.map(function(snippet) {
+                      return {
+                        label: snippet.label,
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        insertText: snippet.body,
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        documentation: snippet.description,
+                        detail: snippet.prefix
+                      };
+                    })
+                  };
+                }
+              });
+              console.log('[Monaco] Snippets registered successfully');
+            },
           };
 
           console.log('[Monaco] flutterMonaco API created');

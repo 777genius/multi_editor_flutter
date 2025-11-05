@@ -41,6 +41,16 @@ dependencies:
   editor_ui:
     path: ../modules/editor_ui
 
+  # Plugins
+  plugin_base:
+    path: ../modules/plugins/plugin_base
+  plugin_auto_save:
+    path: ../modules/plugins/plugin_auto_save
+  plugin_recent_files:
+    path: ../modules/plugins/plugin_recent_files
+  plugin_file_stats:
+    path: ../modules/plugins/plugin_file_stats
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

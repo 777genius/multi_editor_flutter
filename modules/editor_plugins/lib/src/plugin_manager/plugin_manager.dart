@@ -128,6 +128,9 @@ class PluginManager {
   List<PluginManifest> get allPlugins =>
       _plugins.values.map((p) => p.manifest).toList();
 
+  /// Get all registered plugins
+  List<EditorPlugin> get plugins => _plugins.values.toList();
+
   List<EditorPlugin> getPluginsForLanguage(String language) {
     return _plugins.values
         .where((p) => p.supportsLanguage(language))

@@ -1,0 +1,27 @@
+name: plugin_recent_files
+description: Recent files plugin - tracks and displays recently opened files
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  editor_core:
+    path: ../../editor_core
+  editor_plugins:
+    path: ../../editor_plugins
+  plugin_base:
+    path: ../plugin_base
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  freezed: ^3.1.0
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.12
+  flutter_lints: ^5.0.0

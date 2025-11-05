@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_monaco/flutter_monaco.dart';
+import 'widgets/editor_header.dart';
 
 class MultiEditorExample extends StatefulWidget {
   const MultiEditorExample({super.key});
@@ -171,10 +172,10 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
                 Expanded(
                   child: Column(
                     children: [
-                      _buildEditorHeader(
-                        'Dart Code',
-                        _leftController!,
-                        Colors.blue,
+                      EditorHeader(
+                        title: 'Dart Code',
+                        controller: _leftController!,
+                        color: Colors.blue,
                       ),
                       Expanded(
                         child: _leftController!.webViewWidget,
@@ -187,10 +188,10 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
                 Expanded(
                   child: Column(
                     children: [
-                      _buildEditorHeader(
-                        'JavaScript Code',
-                        _rightController!,
-                        Colors.orange,
+                      EditorHeader(
+                        title: 'JavaScript Code',
+                        controller: _rightController!,
+                        color: Colors.orange,
                       ),
                       Expanded(
                         child: _rightController!.webViewWidget,
@@ -207,10 +208,10 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
             flex: 1,
             child: Column(
               children: [
-                _buildEditorHeader(
-                  'Markdown Notes',
-                  _bottomController!,
-                  Colors.green,
+                EditorHeader(
+                  title: 'Markdown Notes',
+                  controller: _bottomController!,
+                  color: Colors.green,
                 ),
                 Expanded(
                   child: _bottomController!.webViewWidget,
@@ -257,69 +258,6 @@ class _MultiEditorExampleState extends State<MultiEditorExample> {
         },
         label: const Text('Get All Content'),
         icon: const Icon(Icons.download),
-      ),
-    );
-  }
-
-  Widget _buildEditorHeader(
-    String title,
-    MonacoController controller,
-    Color color,
-  ) {
-    return Container(
-      height: 32,
-      color: color.withValues(alpha: 0.1),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Icon(Icons.code, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const Spacer(),
-          // Live stats
-          ValueListenableBuilder<LiveStats>(
-            valueListenable: controller.liveStats,
-            builder: (context, stats, _) {
-              return Row(
-                children: [
-                  if (stats.language != null) ...[
-                    Chip(
-                      label: Text(
-                        stats.language!,
-                        style: const TextStyle(fontSize: 10),
-                      ),
-                      padding: EdgeInsets.zero,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    'L:${stats.lineCount.value} C:${stats.charCount.value}',
-                    style: TextStyle(fontSize: 11, color: color),
-                  ),
-                  if (stats.hasSelection) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      'Sel:${stats.selectedCharacters.value}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            },
-          ),
-        ],
       ),
     );
   }

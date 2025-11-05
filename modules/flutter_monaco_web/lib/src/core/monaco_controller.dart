@@ -725,6 +725,33 @@ class MonacoController {
     ]);
   }
 
+  // --- LANGUAGE SUPPORT ---
+
+  /// Register code snippets for a specific language.
+  ///
+  /// Snippets appear in Monaco's autocomplete dropdown when typing.
+  ///
+  /// ## Example:
+  /// ```dart
+  /// await controller.registerSnippets('dart', [
+  ///   SnippetData(
+  ///     prefix: 'if',
+  ///     label: 'if statement',
+  ///     body: 'if (\${1:condition}) {\\n  \${2:// code}\\n}',
+  ///     description: 'If statement',
+  ///   ),
+  /// ]);
+  /// ```
+  Future<void> registerSnippets(
+    String languageId,
+    List<dynamic> snippets,
+  ) async {
+    await _ensureReady();
+    await _webViewController.runJavaScript(
+      'flutterMonaco.registerSnippets(${jsonEncode(languageId)}, ${jsonEncode(snippets.map((s) => s.toJson()).toList())})',
+    );
+  }
+
   // --- FIND AND REPLACE ---
 
   /// Find matches in the document with enhanced parsing

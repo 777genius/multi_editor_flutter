@@ -409,26 +409,19 @@ class _MonacoEditorState extends State<MonacoEditor> {
             ? const Color(0xFF1E1E1E)
             : Colors.white);
 
-    return Container(
-      color: bg,
-      constraints: widget.constraints,
-      padding: widget.padding,
-      child: _buildChild(context),
-    );
-  }
-
-  /// Builds the main content based on the current connection state.
-  Widget _buildChild(BuildContext context) {
+    Widget child;
     switch (_connectionState) {
       case _ConnectionState.connecting:
-        return widget.loadingBuilder?.call(context) ?? const _DefaultLoading();
+        child = widget.loadingBuilder?.call(context) ?? const _DefaultLoading();
+        break;
 
       case _ConnectionState.error:
-        return widget.errorBuilder?.call(context, _error!, _stack) ??
+        child = widget.errorBuilder?.call(context, _error!, _stack) ??
             _DefaultError(
               error: _error!,
               onRetry: _ownsController ? _bootstrap : null,
             );
+        break;
 
       case _ConnectionState.ready:
         final webView = SizedBox.expand(
@@ -462,25 +455,33 @@ class _MonacoEditorState extends State<MonacoEditor> {
         final showBar = widget.showStatusBar || widget.statusBarBuilder != null;
 
         if (!showBar) {
-          return webView;
+          child = webView;
+        } else {
+          // The status bar is built here, listening to the controller's stats.
+          child = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: webView),
+              if (widget.statusBarBuilder != null)
+                ValueListenableBuilder<LiveStats>(
+                  valueListenable: _controller!.liveStats,
+                  builder: (context, stats, _) =>
+                      widget.statusBarBuilder!(context, stats),
+                )
+              else
+                _MonacoStatusBar(controller: _controller!),
+            ],
+          );
         }
-
-        // The status bar is built here, listening to the controller's stats.
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: webView),
-            if (widget.statusBarBuilder != null)
-              ValueListenableBuilder<LiveStats>(
-                valueListenable: _controller!.liveStats,
-                builder: (context, stats, _) =>
-                    widget.statusBarBuilder!(context, stats),
-              )
-            else
-              _MonacoStatusBar(controller: _controller!),
-          ],
-        );
+        break;
     }
+
+    return Container(
+      color: bg,
+      constraints: widget.constraints,
+      padding: widget.padding,
+      child: child,
+    );
   }
 
   @override

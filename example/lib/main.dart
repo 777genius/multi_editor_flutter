@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:editor_ui/editor_ui.dart';
 import 'di/service_locator.dart';
+import 'widgets/app_header.dart';
+import 'widgets/setting_row.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +63,7 @@ class EditorPage extends StatefulWidget {
 class _EditorPageState extends State<EditorPage> {
   final _fileTreeController = ServiceLocator.instance.fileTreeController;
   final _editorController = ServiceLocator.instance.editorController;
+  final _pluginManager = ServiceLocator.instance.pluginManager;
   final _editorConfig = const EditorConfig(
     fontSize: 14.0,
     fontFamily: 'Consolas, Monaco, monospace',
@@ -79,70 +82,14 @@ class _EditorPageState extends State<EditorPage> {
     return EditorScaffold(
       fileTreeController: _fileTreeController,
       editorController: _editorController,
+      pluginManager: _pluginManager,
       editorConfig: _editorConfig,
-      customHeader: _buildHeader(context),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 1),
-        ),
+      customHeader: AppHeader(
+        themeMode: widget.themeMode,
+        onToggleTheme: widget.onToggleTheme,
+        onShowSettings: () => _showSettingsDialog(context),
+        onShowAbout: () => _showAboutDialog(context),
       ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.code,
-            color: Theme.of(context).colorScheme.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Multi-File Code Editor',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          _buildHeaderActions(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderActions(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(
-            widget.themeMode == ThemeMode.dark
-                ? Icons.light_mode
-                : Icons.dark_mode,
-          ),
-          tooltip: 'Toggle theme',
-          onPressed: widget.onToggleTheme,
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.settings),
-          tooltip: 'Settings',
-          onPressed: () {
-            _showSettingsDialog(context);
-          },
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          icon: const Icon(Icons.info_outline),
-          tooltip: 'About',
-          onPressed: () {
-            _showAboutDialog(context);
-          },
-        ),
-      ],
     );
   }
 
@@ -162,33 +109,38 @@ class _EditorPageState extends State<EditorPage> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 16),
-                  _buildSettingRow('Font Size', '${_editorConfig.fontSize}px'),
-                  _buildSettingRow('Font Family', _editorConfig.fontFamily),
-                  _buildSettingRow(
-                    'Tab Size',
-                    '${_editorConfig.tabSize} spaces',
+                  SettingRow(
+                      label: 'Font Size',
+                      value: '${_editorConfig.fontSize}px'),
+                  SettingRow(
+                      label: 'Font Family',
+                      value: _editorConfig.fontFamily),
+                  SettingRow(
+                    label: 'Tab Size',
+                    value: '${_editorConfig.tabSize} spaces',
                   ),
-                  _buildSettingRow(
-                    'Line Numbers',
-                    _editorConfig.showLineNumbers ? 'Enabled' : 'Disabled',
+                  SettingRow(
+                    label: 'Line Numbers',
+                    value:
+                        _editorConfig.showLineNumbers ? 'Enabled' : 'Disabled',
                   ),
-                  _buildSettingRow(
-                    'Minimap',
-                    _editorConfig.showMinimap ? 'Enabled' : 'Disabled',
+                  SettingRow(
+                    label: 'Minimap',
+                    value: _editorConfig.showMinimap ? 'Enabled' : 'Disabled',
                   ),
-                  _buildSettingRow(
-                    'Word Wrap',
-                    _editorConfig.wordWrap ? 'Enabled' : 'Disabled',
+                  SettingRow(
+                    label: 'Word Wrap',
+                    value: _editorConfig.wordWrap ? 'Enabled' : 'Disabled',
                   ),
-                  _buildSettingRow(
-                    'Bracket Colorization',
-                    _editorConfig.bracketPairColorization
+                  SettingRow(
+                    label: 'Bracket Colorization',
+                    value: _editorConfig.bracketPairColorization
                         ? 'Enabled'
                         : 'Disabled',
                   ),
-                  _buildSettingRow(
-                    'Auto Save',
-                    _editorConfig.autoSave
+                  SettingRow(
+                    label: 'Auto Save',
+                    value: _editorConfig.autoSave
                         ? 'Enabled (${_editorConfig.autoSaveDelay}s delay)'
                         : 'Disabled',
                   ),
@@ -202,28 +154,6 @@ class _EditorPageState extends State<EditorPage> {
               ),
             ],
           ),
-    );
-  }
-
-  Widget _buildSettingRow(String label, String value) {
-    return Builder(
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-              Text(
-                value,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
