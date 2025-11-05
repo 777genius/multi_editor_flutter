@@ -29,6 +29,7 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
   bool _isInitialized = false;
   String? _lastCode;
   String? _lastLanguage;
+  Brightness? _lastBrightness;
   bool _isUpdating = false;
 
   @override
@@ -55,6 +56,7 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
       debugPrint('[MonacoEditor] Initializing editor with code length: ${widget.code.length}, language: ${widget.language}');
 
       final brightness = Theme.of(context).brightness;
+      _lastBrightness = brightness;
       final theme =
           widget.theme ??
           (brightness == Brightness.dark ? MonacoTheme.vsDark : MonacoTheme.vs);
@@ -108,6 +110,11 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
     if (_controller == null || !_isInitialized) return;
     if (_isUpdating) return;
 
+    final currentBrightness = Theme.of(context).brightness;
+    if (widget.theme == null && currentBrightness != _lastBrightness) {
+      _updateTheme(currentBrightness);
+    }
+
     if (widget.language != oldWidget.language) {
       _updateLanguage();
     }
@@ -149,6 +156,28 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
       debugPrint('[MonacoEditor] Content updated successfully');
     } catch (e) {
       debugPrint('[MonacoEditor] Failed to update content: $e');
+    } finally {
+      _isUpdating = false;
+    }
+  }
+
+  Future<void> _updateTheme(Brightness brightness) async {
+    if (_controller == null || _isUpdating) return;
+
+    _isUpdating = true;
+    try {
+      final newTheme = brightness == Brightness.dark
+          ? MonacoTheme.vsDark
+          : MonacoTheme.vs;
+
+      debugPrint('[MonacoEditor] Updating theme to: ${newTheme.id} (brightness: $brightness)');
+
+      await _controller!.setTheme(newTheme);
+      _lastBrightness = brightness;
+
+      debugPrint('[MonacoEditor] Theme updated successfully');
+    } catch (e) {
+      debugPrint('[MonacoEditor] Failed to update theme: $e');
     } finally {
       _isUpdating = false;
     }
