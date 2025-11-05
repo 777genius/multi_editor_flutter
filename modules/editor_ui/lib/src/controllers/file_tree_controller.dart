@@ -230,6 +230,35 @@ class FileTreeController extends ValueNotifier<FileTreeState> {
     }
   }
 
+  Future<void> moveFolder(String folderId, String targetFolderId) async {
+    try {
+      final result = await _folderRepository.move(
+        folderId: folderId,
+        targetParentId: targetFolderId,
+      );
+
+      result.fold(
+        (failure) {
+          value = FileTreeState.error(
+            message: 'Failed to move folder: ${failure.displayMessage}',
+          );
+        },
+        (folder) {
+          _eventBus.publish(
+            EditorEvent.folderMoved(
+              folderId: folderId,
+              oldParentId: folder.parentId,
+              newParentId: targetFolderId,
+            ),
+          );
+          refresh();
+        },
+      );
+    } catch (e) {
+      value = FileTreeState.error(message: 'Failed to move folder: $e');
+    }
+  }
+
   Future<void> renameFile(String fileId, String newName) async {
     try {
       final result = await _fileRepository.rename(

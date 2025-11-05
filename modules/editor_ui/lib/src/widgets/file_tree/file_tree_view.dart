@@ -227,18 +227,73 @@ class FileTreeView extends StatelessWidget {
     }
 
     return DragTarget<String>(
+      onWillAcceptWithDetails: (details) {
+        final dragData = details.data;
+
+        final parts = dragData.split(':');
+        if (parts.length != 2) return false;
+
+        final type = parts[0];
+        final draggedId = parts[1];
+
+        if (draggedId == data.id) return false;
+
+        if (type == 'folder') {
+          final rootNode = controller.value.maybeMap(
+            loaded: (state) => state.rootNode,
+            orElse: () => null,
+          );
+
+          if (rootNode == null) return false;
+
+          final draggedNode = rootNode.findNode(draggedId);
+          if (draggedNode == null) return false;
+
+          if (draggedNode.findNode(data.id) != null) return false;
+        }
+
+        return true;
+      },
       onAcceptWithDetails: (details) {
-        final fileId = details.data;
-        controller.moveFile(fileId, data.id);
+        final parts = details.data.split(':');
+        final type = parts[0];
+        final draggedId = parts[1];
+
+        if (type == 'file') {
+          controller.moveFile(draggedId, data.id);
+        } else if (type == 'folder') {
+          controller.moveFolder(draggedId, data.id);
+        }
       },
       builder: (context, candidateData, rejectedData) {
         final isHovered = candidateData.isNotEmpty;
-        return Container(
-          color:
-              isHovered
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                  : null,
-          child: _buildFolderTile(context, data, isSelected),
+
+        return Draggable<String>(
+          data: 'folder:${data.id}',
+          feedback: Material(
+            elevation: 4,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              color: Theme.of(context).colorScheme.surface,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.folder, size: 18),
+                  const SizedBox(width: 8),
+                  Text(data.name),
+                ],
+              ),
+            ),
+          ),
+          child: Container(
+            color:
+                isHovered
+                    ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.2)
+                    : null,
+            child: _buildFolderTile(context, data, isSelected),
+          ),
         );
       },
     );
@@ -387,19 +442,29 @@ class FileTreeView extends StatelessWidget {
 
     return DragTarget<String>(
       onAcceptWithDetails: (details) {
-        final draggedFileId = details.data;
+        final dragData = details.data;
 
-        if (draggedFileId == data.id) return;
+        final parts = dragData.split(':');
+        if (parts.length != 2) return;
+
+        final type = parts[0];
+        final draggedId = parts[1];
+
+        if (draggedId == data.id) return;
 
         if (data.parentId == null) return;
 
-        controller.moveFile(draggedFileId, data.parentId!);
+        if (type == 'file') {
+          controller.moveFile(draggedId, data.parentId!);
+        } else if (type == 'folder') {
+          controller.moveFolder(draggedId, data.parentId!);
+        }
       },
       builder: (context, candidateData, rejectedData) {
         final isHovered = candidateData.isNotEmpty;
 
         return Draggable<String>(
-          data: data.id,
+          data: 'file:${data.id}',
           feedback: Material(
             elevation: 4,
             child: Container(
