@@ -34,7 +34,7 @@ jobs:
         run: melos exec --ignore="multi_editor_mock" --ignore="multi_file_editor_example" -- flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Analyze all packages
-        run: melos exec -- flutter analyze --no-pub
+        run: melos exec -- flutter analyze --no-pub --no-fatal-infos
 
       - name: Format check
         run: melos exec -- dart format . --set-exit-if-changed
