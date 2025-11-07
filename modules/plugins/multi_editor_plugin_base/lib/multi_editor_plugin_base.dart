@@ -1,4 +1,3 @@
-library plugin_base;
 
 export 'src/domain/ports/plugin_storage_port.dart';
 export 'src/domain/ports/plugin_preferences_port.dart';

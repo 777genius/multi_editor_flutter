@@ -1,4 +1,3 @@
-library plugin_recent_files;
 
 export 'src/domain/value_objects/recent_file_entry.dart';
 export 'src/domain/entities/recent_files_list.dart';

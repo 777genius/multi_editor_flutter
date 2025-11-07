@@ -1,4 +1,3 @@
-library plugin_auto_save;
 
 export 'src/domain/value_objects/save_interval.dart';
 export 'src/domain/value_objects/auto_save_config.dart';
