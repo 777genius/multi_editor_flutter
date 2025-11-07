@@ -1,4 +1,4 @@
-import 'package:flutter_monaco_crossplatform/flutter_monaco.dart';
+import 'package:flutter_monaco_crossplatform/flutter_monaco_crossplatform.dart';
 import 'package:multi_editor_plugins/multi_editor_plugins.dart';
 
 /// Service that provides access to MonacoController
