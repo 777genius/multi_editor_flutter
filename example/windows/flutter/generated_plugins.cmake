@@ -4,7 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
-  webview_windows
+  webview_cef
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

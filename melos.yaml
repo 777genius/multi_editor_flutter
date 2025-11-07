@@ -1,5 +1,5 @@
 name: multi_file_code_editor
-repository: https://github.com/yourorg/multi_file_code_editor
+repository: https://github.com/777genius/multi_editor_flutter
 
 packages:
   - modules/**
@@ -10,10 +10,14 @@ command:
     runPubGetOffline: false
 
   version:
-    branch: main
+    branch: master
     message: "chore(release): publish packages"
+    # Use Conventional Commits for automated versioning
+    updateGitTagRefs: true
+    linkToCommits: true
 
   publish:
+    # Set to false when ready to publish for real
     dry-run: true
 
 scripts:

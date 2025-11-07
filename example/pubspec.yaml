@@ -19,7 +19,9 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.2
+  sdk: ^3.8.0
+
+resolution: workspace
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,25 +33,22 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Our packages
-  editor_core:
-    path: ../modules/editor_core
-  editor_plugins:
-    path: ../modules/editor_plugins
-  editor_mock:
-    path: ../modules/editor_mock
-  editor_ui:
-    path: ../modules/editor_ui
+  # Our packages - workspace автоматически использует локальные версии
+  multi_editor_core: ^0.1.0
+  multi_editor_plugins: ^0.1.0
+  multi_editor_mock: ^0.1.0
+  multi_editor_ui: ^0.1.0
 
-  # Plugins
-  plugin_base:
-    path: ../modules/plugins/plugin_base
-  plugin_auto_save:
-    path: ../modules/plugins/plugin_auto_save
-  plugin_recent_files:
-    path: ../modules/plugins/plugin_recent_files
-  plugin_file_stats:
-    path: ../modules/plugins/plugin_file_stats
+  # flutter_monaco_crossplatform - cross-platform Monaco Editor support
+  flutter_monaco_crossplatform: ^1.0.0
+
+  # Plugins - workspace автоматически использует локальные версии
+  multi_editor_plugin_base: ^0.1.0
+  multi_editor_plugin_auto_save: ^0.1.0
+  multi_editor_plugin_file_icons: ^0.1.0
+  multi_editor_plugin_recent_files: ^0.1.0
+  multi_editor_plugin_file_stats: ^0.1.0
+  multi_editor_plugin_dart: ^0.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

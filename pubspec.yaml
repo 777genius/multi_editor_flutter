@@ -1,0 +1,24 @@
+name: multi_editor_workspace
+description: Monorepo workspace for MultiEditor packages
+publish_to: none
+
+environment:
+  sdk: ^3.8.0
+
+# Pub Workspaces - автоматически использует локальные версии в dev
+# При публикации автоматически переключается на hosted версии
+workspace:
+  - modules/multi_editor_core
+  - modules/multi_editor_plugins
+  - modules/multi_editor_ui
+  - modules/multi_editor_mock
+  - modules/plugins/multi_editor_plugin_base
+  - modules/plugins/multi_editor_plugin_auto_save
+  - modules/plugins/multi_editor_plugin_file_icons
+  - modules/plugins/multi_editor_plugin_file_stats
+  - modules/plugins/multi_editor_plugin_recent_files
+  - modules/plugins/multi_editor_plugin_dart
+  - example
+
+dev_dependencies:
+  melos: ^7.0.0

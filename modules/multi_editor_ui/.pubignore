@@ -1,0 +1,7 @@
+# Build artifacts
+build/
+.dart_tool/
+
+# Test artifacts
+coverage/
+test/.test_cache/

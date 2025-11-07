@@ -1,11 +1,16 @@
-import 'package:editor_core/editor_core.dart';
-import 'package:editor_mock/editor_mock.dart';
-import 'package:editor_ui/editor_ui.dart';
-import 'package:editor_plugins/editor_plugins.dart';
-import 'package:plugin_auto_save/plugin_auto_save.dart';
-import 'package:plugin_recent_files/plugin_recent_files.dart';
-import 'package:plugin_file_stats/plugin_file_stats.dart';
+import 'package:multi_editor_core/multi_editor_core.dart';
+import 'package:multi_editor_mock/multi_editor_mock.dart';
+import 'package:multi_editor_ui/multi_editor_ui.dart';
+import 'package:multi_editor_plugins/multi_editor_plugins.dart';
+import 'package:multi_editor_plugin_auto_save/multi_editor_plugin_auto_save.dart';
+import 'package:multi_editor_plugin_recent_files/multi_editor_plugin_recent_files.dart';
+import 'package:multi_editor_plugin_file_stats/multi_editor_plugin_file_stats.dart';
+import 'package:multi_editor_plugin_file_icons/multi_editor_plugin_file_icons.dart';
+import 'package:multi_editor_plugin_dart/multi_editor_plugin_dart.dart';
 import '../plugins/app_plugin_context.dart';
+import '../services/monaco_service.dart' as monaco;
+import '../services/app_file_navigation_service.dart';
+import 'package:multi_editor_ui/src/plugins/plugin_ui_registry.dart';
 
 /// Simple service locator for dependency injection
 class ServiceLocator {
@@ -16,20 +21,32 @@ class ServiceLocator {
 
   late final FileRepository fileRepository;
   late final FolderRepository folderRepository;
+  late final ProjectRepository projectRepository;
   late final EventBus eventBus;
+  late final ValidationService validationService;
+  late final LanguageDetector languageDetector;
 
   late final FileTreeController fileTreeController;
   late final EditorController editorController;
   late final PluginManager pluginManager;
+  late final monaco.MonacoService monacoService;
+  late final ErrorTracker errorTracker;
+  late final PluginUIRegistry pluginUIRegistry;
 
   /// Initialize all dependencies
   Future<void> init() async {
+    // Create Monaco service
+    monacoService = monaco.MonacoService();
+
     // Create event bus
     eventBus = MockEventBus();
 
-    // Create mock repositories
+    // Create mock repositories and services
     fileRepository = MockFileRepository();
     folderRepository = MockFolderRepository();
+    projectRepository = MockProjectRepository();
+    validationService = MockValidationService();
+    languageDetector = MockLanguageDetector();
 
     // Initialize mock repositories with sample data
     await _seedMockData();
@@ -52,17 +69,38 @@ class ServiceLocator {
 
   /// Initialize plugin system and register plugins
   Future<void> _initializePlugins() async {
+    // Create error tracker
+    errorTracker = ErrorTracker(maxErrors: 100);
+
     // Create plugin context
     final pluginContext = AppPluginContext(
       fileRepository: fileRepository,
       folderRepository: folderRepository,
+      projectRepository: projectRepository,
+      validationService: validationService,
+      languageDetector: languageDetector,
       eventBus: eventBus,
     );
 
-    // Create plugin manager
-    pluginManager = PluginManager(pluginContext);
+    // Register Monaco service as EditorService for type-safe plugin access
+    pluginContext.registerService<EditorService>(monacoService);
+
+    // Register FileNavigationService for plugin file opening
+    final navigationService = AppFileNavigationService(editorController);
+    pluginContext.registerService<FileNavigationService>(navigationService);
+
+    // Create and register PluginUIRegistry
+    pluginUIRegistry = PluginUIRegistry();
+    pluginContext.registerService<PluginUIService>(pluginUIRegistry);
+
+    // Create plugin manager with error tracker
+    pluginManager = PluginManager(
+      pluginContext,
+      errorTracker: errorTracker,
+    );
 
     // Register plugins
+    await pluginManager.registerPlugin(FileIconsPlugin());
     await pluginManager.registerPlugin(AutoSavePlugin());
     await pluginManager.registerPlugin(RecentFilesPlugin());
     await pluginManager.registerPlugin(FileStatsPlugin());
@@ -248,5 +286,6 @@ Enjoy coding!
     await pluginManager.disposeAll();
     fileTreeController.dispose();
     editorController.dispose();
+    errorTracker.dispose();
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:editor_ui/editor_ui.dart';
+import 'package:multi_editor_ui/multi_editor_ui.dart';
 import 'di/service_locator.dart';
 import 'widgets/app_header.dart';
 import 'widgets/setting_row.dart';
@@ -64,6 +64,7 @@ class _EditorPageState extends State<EditorPage> {
   final _fileTreeController = ServiceLocator.instance.fileTreeController;
   final _editorController = ServiceLocator.instance.editorController;
   final _pluginManager = ServiceLocator.instance.pluginManager;
+  final _pluginUIRegistry = ServiceLocator.instance.pluginUIRegistry;
   final _editorConfig = const EditorConfig(
     fontSize: 14.0,
     fontFamily: 'Consolas, Monaco, monospace',
@@ -83,7 +84,12 @@ class _EditorPageState extends State<EditorPage> {
       fileTreeController: _fileTreeController,
       editorController: _editorController,
       pluginManager: _pluginManager,
+      pluginUIService: _pluginUIRegistry,
       editorConfig: _editorConfig,
+      onControllerReady: (controller) {
+        // Register MonacoController with plugins
+        ServiceLocator.instance.monacoService.setController(controller);
+      },
       customHeader: AppHeader(
         themeMode: widget.themeMode,
         onToggleTheme: widget.onToggleTheme,

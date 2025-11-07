@@ -1,0 +1,51 @@
+name: multi_editor_ui
+description: UI layer for MultiEditor - Flutter widgets, controllers, and state management for file tree, code editor, and editor scaffold. Includes Monaco editor integration and drag-and-drop support.
+version: 0.1.0
+homepage: https://github.com/777genius/multi_editor_flutter
+repository: https://github.com/777genius/multi_editor_flutter
+issue_tracker: https://github.com/777genius/multi_editor_flutter/issues
+
+environment:
+  sdk: ^3.8.0
+
+resolution: workspace
+
+topics:
+  - editor
+  - ui
+  - widgets
+  - flutter
+  - monaco-editor
+
+dependencies:
+  flutter:
+    sdk: flutter
+  multi_editor_core: ^0.1.0
+  multi_editor_plugins: ^0.1.0
+
+  # Code editor with cross-platform support (Web, Linux, macOS, Windows)
+  flutter_monaco_crossplatform: ^1.0.0
+
+  # File tree
+  animated_tree_view: ^2.3.0
+
+  # SVG rendering for file icons
+  flutter_svg: ^2.0.0
+
+  # Drag & drop
+  desktop_drop: ^0.7.0
+  flutter_dropzone: ^4.2.1
+
+  # Utilities
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+  web: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  freezed: ^3.1.0
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.12
+  flutter_lints: ^5.0.0
+  mockito: ^5.4.6

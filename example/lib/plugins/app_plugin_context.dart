@@ -1,9 +1,12 @@
-import 'package:editor_core/editor_core.dart';
-import 'package:editor_plugins/editor_plugins.dart';
+import 'package:multi_editor_core/multi_editor_core.dart';
+import 'package:multi_editor_plugins/multi_editor_plugins.dart';
 
 class AppPluginContext implements PluginContext {
   final FileRepository _fileRepository;
   final FolderRepository _folderRepository;
+  final ProjectRepository _projectRepository;
+  final ValidationService _validationService;
+  final LanguageDetector _languageDetector;
   final EventBus _eventBus;
   final CommandBus _commandBus;
   final HookRegistry _hookRegistry;
@@ -13,11 +16,17 @@ class AppPluginContext implements PluginContext {
   AppPluginContext({
     required FileRepository fileRepository,
     required FolderRepository folderRepository,
+    required ProjectRepository projectRepository,
+    required ValidationService validationService,
+    required LanguageDetector languageDetector,
     required EventBus eventBus,
     CommandBus? commandBus,
     HookRegistry? hookRegistry,
   })  : _fileRepository = fileRepository,
         _folderRepository = folderRepository,
+        _projectRepository = projectRepository,
+        _validationService = validationService,
+        _languageDetector = languageDetector,
         _eventBus = eventBus,
         _commandBus = commandBus ?? CommandBus(),
         _hookRegistry = hookRegistry ?? HookRegistry();
@@ -38,16 +47,13 @@ class AppPluginContext implements PluginContext {
   FolderRepository get folderRepository => _folderRepository;
 
   @override
-  ProjectRepository get projectRepository =>
-      throw UnimplementedError('ProjectRepository not yet implemented');
+  ProjectRepository get projectRepository => _projectRepository;
 
   @override
-  ValidationService get validationService =>
-      throw UnimplementedError('ValidationService not yet implemented');
+  ValidationService get validationService => _validationService;
 
   @override
-  LanguageDetector get languageDetector =>
-      throw UnimplementedError('LanguageDetector not yet implemented');
+  LanguageDetector get languageDetector => _languageDetector;
 
   @override
   Map<String, dynamic> getConfiguration(String key) {
