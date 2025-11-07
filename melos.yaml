@@ -10,7 +10,7 @@ command:
     runPubGetOffline: false
 
   version:
-    branch: master
+    branch: main
     message: "chore(release): publish packages"
     # Use Conventional Commits for automated versioning
     updateGitTagRefs: true
