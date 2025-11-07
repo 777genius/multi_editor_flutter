@@ -1,5 +1,6 @@
 import 'package:multi_editor_core/multi_editor_core.dart';
-import 'package:multi_editor_plugin_base/src/domain/ports/plugin_storage_port.dart' as storage_port;
+import 'package:multi_editor_plugin_base/src/domain/ports/plugin_storage_port.dart'
+    as storage_port;
 
 /// Mock in-memory storage for testing
 class MockPluginStorage implements storage_port.PluginStoragePort {
@@ -12,16 +13,22 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
   }
 
   @override
-  Future<storage_port.Either<DomainFailure, Map<String, dynamic>>> load(String key) async {
+  Future<storage_port.Either<DomainFailure, Map<String, dynamic>>> load(
+    String key,
+  ) async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage load failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage load failed'),
+      );
     }
 
     if (_storage.containsKey(key)) {
       return storage_port.Right(Map<String, dynamic>.from(_storage[key]!));
     }
 
-    return storage_port.Left(DomainFailure.notFound(entityType: 'Config', entityId: key));
+    return storage_port.Left(
+      DomainFailure.notFound(entityType: 'Config', entityId: key),
+    );
   }
 
   @override
@@ -30,7 +37,9 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
     Map<String, dynamic> data,
   ) async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage save failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage save failed'),
+      );
     }
 
     _storage[key] = Map<String, dynamic>.from(data);
@@ -40,7 +49,9 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
   @override
   Future<storage_port.Either<DomainFailure, void>> delete(String key) async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage delete failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage delete failed'),
+      );
     }
 
     _storage.remove(key);
@@ -50,7 +61,9 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
   @override
   Future<storage_port.Either<DomainFailure, bool>> exists(String key) async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage exists check failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage exists check failed'),
+      );
     }
 
     return storage_port.Right(_storage.containsKey(key));
@@ -59,7 +72,9 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
   @override
   Future<storage_port.Either<DomainFailure, List<String>>> getAllKeys() async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage getAllKeys failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage getAllKeys failed'),
+      );
     }
 
     return storage_port.Right(List<String>.from(_storage.keys));
@@ -68,7 +83,9 @@ class MockPluginStorage implements storage_port.PluginStoragePort {
   @override
   Future<storage_port.Either<DomainFailure, void>> clear() async {
     if (_shouldFail) {
-      return storage_port.Left(DomainFailure.unexpected(message: 'Storage clear failed'));
+      return storage_port.Left(
+        DomainFailure.unexpected(message: 'Storage clear failed'),
+      );
     }
 
     _storage.clear();

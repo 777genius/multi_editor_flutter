@@ -8,30 +8,22 @@ part 'editor_event.freezed.dart';
 sealed class EditorEvent with _$EditorEvent {
   const EditorEvent._();
 
-  const factory EditorEvent.fileOpened({
-    required FileDocument file,
-  }) = FileOpened;
+  const factory EditorEvent.fileOpened({required FileDocument file}) =
+      FileOpened;
 
-  const factory EditorEvent.fileClosed({
-    required String fileId,
-  }) = FileClosed;
+  const factory EditorEvent.fileClosed({required String fileId}) = FileClosed;
 
   const factory EditorEvent.fileContentChanged({
     required String fileId,
     required String content,
   }) = FileContentChanged;
 
-  const factory EditorEvent.fileSaved({
-    required FileDocument file,
-  }) = FileSaved;
+  const factory EditorEvent.fileSaved({required FileDocument file}) = FileSaved;
 
-  const factory EditorEvent.fileCreated({
-    required FileDocument file,
-  }) = FileCreated;
+  const factory EditorEvent.fileCreated({required FileDocument file}) =
+      FileCreated;
 
-  const factory EditorEvent.fileDeleted({
-    required String fileId,
-  }) = FileDeleted;
+  const factory EditorEvent.fileDeleted({required String fileId}) = FileDeleted;
 
   const factory EditorEvent.fileRenamed({
     required String fileId,
@@ -45,13 +37,11 @@ sealed class EditorEvent with _$EditorEvent {
     required String newFolderId,
   }) = FileMoved;
 
-  const factory EditorEvent.folderCreated({
-    required Folder folder,
-  }) = FolderCreated;
+  const factory EditorEvent.folderCreated({required Folder folder}) =
+      FolderCreated;
 
-  const factory EditorEvent.folderDeleted({
-    required String folderId,
-  }) = FolderDeleted;
+  const factory EditorEvent.folderDeleted({required String folderId}) =
+      FolderDeleted;
 
   const factory EditorEvent.folderRenamed({
     required String folderId,
@@ -65,7 +55,6 @@ sealed class EditorEvent with _$EditorEvent {
     String? newParentId,
   }) = FolderMoved;
 
-  const factory EditorEvent.projectChanged({
-    required String projectId,
-  }) = ProjectChanged;
+  const factory EditorEvent.projectChanged({required String projectId}) =
+      ProjectChanged;
 }

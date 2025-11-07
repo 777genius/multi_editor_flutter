@@ -7,28 +7,35 @@ class MockPluginContext implements PluginContext {
   final Map<Type, Object> _services = {};
 
   @override
-  CommandBus get commands => throw UnimplementedError('CommandBus mock not implemented');
+  CommandBus get commands =>
+      throw UnimplementedError('CommandBus mock not implemented');
 
   @override
   EventBus get events => MockEventBus();
 
   @override
-  HookRegistry get hooks => throw UnimplementedError('HookRegistry mock not implemented');
+  HookRegistry get hooks =>
+      throw UnimplementedError('HookRegistry mock not implemented');
 
   @override
-  FileRepository get fileRepository => throw UnimplementedError('FileRepository mock not implemented');
+  FileRepository get fileRepository =>
+      throw UnimplementedError('FileRepository mock not implemented');
 
   @override
-  FolderRepository get folderRepository => throw UnimplementedError('FolderRepository mock not implemented');
+  FolderRepository get folderRepository =>
+      throw UnimplementedError('FolderRepository mock not implemented');
 
   @override
-  ProjectRepository get projectRepository => throw UnimplementedError('ProjectRepository mock not implemented');
+  ProjectRepository get projectRepository =>
+      throw UnimplementedError('ProjectRepository mock not implemented');
 
   @override
-  ValidationService get validationService => throw UnimplementedError('ValidationService mock not implemented');
+  ValidationService get validationService =>
+      throw UnimplementedError('ValidationService mock not implemented');
 
   @override
-  LanguageDetector get languageDetector => throw UnimplementedError('LanguageDetector mock not implemented');
+  LanguageDetector get languageDetector =>
+      throw UnimplementedError('LanguageDetector mock not implemented');
 
   @override
   Map<String, dynamic> getConfiguration(String key) {

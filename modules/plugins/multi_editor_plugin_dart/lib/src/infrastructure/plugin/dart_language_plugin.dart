@@ -70,9 +70,7 @@ class DartLanguagePlugin extends LanguagePlugin {
     // Check if editor is currently available
     if (!_editorService!.isAvailable) {
       print('[DartPlugin] Editor not available yet');
-      print(
-        '[DartPlugin] Snippets will be registered when a file is opened',
-      );
+      print('[DartPlugin] Snippets will be registered when a file is opened');
       return;
     }
 

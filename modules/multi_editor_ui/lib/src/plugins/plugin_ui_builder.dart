@@ -61,10 +61,7 @@ class PluginUIBuilder {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text(
-            'No items',
-            style: TextStyle(color: Colors.grey),
-          ),
+          child: Text('No items', style: TextStyle(color: Colors.grey)),
         ),
       );
     }
@@ -124,10 +121,7 @@ class PluginUIBuilder {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Text(
-          message,
-          style: const TextStyle(color: Colors.red),
-        ),
+        child: Text(message, style: const TextStyle(color: Colors.red)),
       ),
     );
   }
@@ -140,12 +134,7 @@ class _HoverListTile extends StatefulWidget {
   final Widget? subtitle;
   final VoidCallback? onTap;
 
-  const _HoverListTile({
-    this.leading,
-    this.title,
-    this.subtitle,
-    this.onTap,
-  });
+  const _HoverListTile({this.leading, this.title, this.subtitle, this.onTap});
 
   @override
   State<_HoverListTile> createState() => _HoverListTileState();

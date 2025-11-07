@@ -25,9 +25,7 @@ abstract class FolderRepository {
 
   Stream<Either<DomainFailure, Folder>> watch(String id);
 
-  Future<Either<DomainFailure, List<Folder>>> listInFolder(
-    String? parentId,
-  );
+  Future<Either<DomainFailure, List<Folder>>> listInFolder(String? parentId);
 
   Future<Either<DomainFailure, List<Folder>>> listAll();
 

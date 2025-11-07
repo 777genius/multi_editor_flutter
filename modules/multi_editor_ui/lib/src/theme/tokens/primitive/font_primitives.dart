@@ -9,8 +9,10 @@ class FontPrimitives {
 
   // Font families
   // Note: Using system fonts for now. Can be customized to use custom fonts.
-  static const String fontFamilySans = 'SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
-  static const String fontFamilyMono = 'SF Mono, Monaco, Consolas, Courier New, monospace';
+  static const String fontFamilySans =
+      'SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif';
+  static const String fontFamilyMono =
+      'SF Mono, Monaco, Consolas, Courier New, monospace';
   static const String fontFamilySerif = 'SF Pro Display, Georgia, serif';
 
   // Font sizes (following Material 3 + code editor needs)
@@ -42,12 +44,12 @@ class FontPrimitives {
   static const fontWeightBlack = FontWeight.w900;
 
   // Line heights (relative to font size)
-  static const lineHeight100 = 1.0;   // Tight (for headings)
+  static const lineHeight100 = 1.0; // Tight (for headings)
   static const lineHeight110 = 1.1;
   static const lineHeight120 = 1.2;
-  static const lineHeight125 = 1.25;  // Normal (for body text)
+  static const lineHeight125 = 1.25; // Normal (for body text)
   static const lineHeight140 = 1.4;
-  static const lineHeight150 = 1.5;   // Relaxed (for readability)
+  static const lineHeight150 = 1.5; // Relaxed (for readability)
   static const lineHeight160 = 1.6;
   static const lineHeight180 = 1.8;
   static const lineHeight200 = 2.0;

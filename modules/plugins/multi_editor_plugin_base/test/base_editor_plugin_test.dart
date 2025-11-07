@@ -55,10 +55,7 @@ void main() {
       test('should throw on initialization failure', () async {
         final plugin = FailingPlugin(errorMessage: 'Test error');
 
-        expect(
-          () => plugin.initialize(mockContext),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => plugin.initialize(mockContext), throwsA(isA<Exception>()));
       });
 
       test('should dispose successfully', () async {
@@ -76,10 +73,7 @@ void main() {
 
         await plugin.initialize(mockContext);
 
-        expect(
-          () => plugin.dispose(),
-          throwsA(isA<Exception>()),
-        );
+        expect(() => plugin.dispose(), throwsA(isA<Exception>()));
       });
 
       test('should dispose uninitialized plugin without error', () async {
@@ -136,8 +130,7 @@ void main() {
         expect(executed, true);
       });
 
-      test('should catch and handle exceptions in safeExecuteAsync',
-          () async {
+      test('should catch and handle exceptions in safeExecuteAsync', () async {
         final plugin = TestPlugin();
         await plugin.initialize(mockContext);
 

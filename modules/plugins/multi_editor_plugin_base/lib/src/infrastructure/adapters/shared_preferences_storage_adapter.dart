@@ -1,5 +1,6 @@
 import 'dart:convert';
-import 'package:multi_editor_core/multi_editor_core.dart' hide Either, Left, Right;
+import 'package:multi_editor_core/multi_editor_core.dart'
+    hide Either, Left, Right;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/ports/plugin_storage_port.dart';
 
@@ -18,11 +19,13 @@ class SharedPreferencesStorageAdapter implements PluginStoragePort {
     try {
       final jsonString = _prefs.getString(_prefixKey(key));
       if (jsonString == null) {
-        return Left(DomainFailure.notFound(
-          entityType: 'PluginConfig',
-          entityId: key,
-          message: 'Key not found: $key',
-        ));
+        return Left(
+          DomainFailure.notFound(
+            entityType: 'PluginConfig',
+            entityId: key,
+            message: 'Key not found: $key',
+          ),
+        );
       }
 
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -33,7 +36,10 @@ class SharedPreferencesStorageAdapter implements PluginStoragePort {
   }
 
   @override
-  Future<Either<DomainFailure, void>> save(String key, Map<String, dynamic> data) async {
+  Future<Either<DomainFailure, void>> save(
+    String key,
+    Map<String, dynamic> data,
+  ) async {
     try {
       final jsonString = jsonEncode(data);
       final success = await _prefs.setString(_prefixKey(key), jsonString);
@@ -65,14 +71,17 @@ class SharedPreferencesStorageAdapter implements PluginStoragePort {
       final exists = _prefs.containsKey(_prefixKey(key));
       return Right(exists);
     } catch (e) {
-      return Left(DomainFailure.unexpected(message: 'Failed to check existence: $e'));
+      return Left(
+        DomainFailure.unexpected(message: 'Failed to check existence: $e'),
+      );
     }
   }
 
   @override
   Future<Either<DomainFailure, List<String>>> getAllKeys() async {
     try {
-      final keys = _prefs.getKeys()
+      final keys = _prefs
+          .getKeys()
           .where((key) => key.startsWith('plugin.storage.'))
           .map((key) => key.replaceFirst('plugin.storage.', ''))
           .toList();
@@ -85,7 +94,8 @@ class SharedPreferencesStorageAdapter implements PluginStoragePort {
   @override
   Future<Either<DomainFailure, void>> clear() async {
     try {
-      final keysToRemove = _prefs.getKeys()
+      final keysToRemove = _prefs
+          .getKeys()
           .where((key) => key.startsWith('plugin.storage.'))
           .toList();
 

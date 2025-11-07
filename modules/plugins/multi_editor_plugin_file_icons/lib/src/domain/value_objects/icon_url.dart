@@ -10,9 +10,7 @@ part 'icon_url.freezed.dart';
 sealed class IconUrl with _$IconUrl {
   const IconUrl._();
 
-  const factory IconUrl({
-    required String value,
-  }) = _IconUrl;
+  const factory IconUrl({required String value}) = _IconUrl;
 
   /// Factory constructor with validation
   factory IconUrl.parse(String url) {
@@ -26,7 +24,8 @@ sealed class IconUrl with _$IconUrl {
     }
 
     // Check for common CDN patterns
-    final isValidCdn = url.contains('jsdelivr.net') ||
+    final isValidCdn =
+        url.contains('jsdelivr.net') ||
         url.contains('unpkg.com') ||
         url.contains('cdnjs.cloudflare.com') ||
         url.contains('cdn.') ||

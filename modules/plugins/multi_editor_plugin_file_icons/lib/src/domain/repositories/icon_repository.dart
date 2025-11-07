@@ -16,9 +16,7 @@ abstract class IconRepository {
   /// Get icons for multiple extensions at once (batch operation).
   ///
   /// More efficient than calling getIcon multiple times.
-  Future<Map<FileExtension, FileIcon>> getIcons(
-    List<FileExtension> extensions,
-  );
+  Future<Map<FileExtension, FileIcon>> getIcons(List<FileExtension> extensions);
 
   /// Check if an icon exists for the given extension.
   Future<bool> hasIcon(FileExtension extension);

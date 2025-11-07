@@ -180,7 +180,8 @@ class FileStatsPlugin extends BaseEditorPlugin with StatefulPlugin {
           {
             'id': _currentFileId,
             'title': 'Lines: ${currentStats.lines}',
-            'subtitle': 'Chars: ${currentStats.characters} • Words: ${currentStats.words}',
+            'subtitle':
+                'Chars: ${currentStats.characters} • Words: ${currentStats.words}',
             'iconCode': 0xe873, // Icons.insert_chart
             'onTap': 'showStats',
           },

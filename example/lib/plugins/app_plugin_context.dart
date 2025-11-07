@@ -22,14 +22,14 @@ class AppPluginContext implements PluginContext {
     required EventBus eventBus,
     CommandBus? commandBus,
     HookRegistry? hookRegistry,
-  })  : _fileRepository = fileRepository,
-        _folderRepository = folderRepository,
-        _projectRepository = projectRepository,
-        _validationService = validationService,
-        _languageDetector = languageDetector,
-        _eventBus = eventBus,
-        _commandBus = commandBus ?? CommandBus(),
-        _hookRegistry = hookRegistry ?? HookRegistry();
+  }) : _fileRepository = fileRepository,
+       _folderRepository = folderRepository,
+       _projectRepository = projectRepository,
+       _validationService = validationService,
+       _languageDetector = languageDetector,
+       _eventBus = eventBus,
+       _commandBus = commandBus ?? CommandBus(),
+       _hookRegistry = hookRegistry ?? HookRegistry();
 
   @override
   CommandBus get commands => _commandBus;

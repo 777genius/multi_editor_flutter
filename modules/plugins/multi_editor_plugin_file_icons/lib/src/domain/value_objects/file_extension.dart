@@ -10,9 +10,7 @@ part 'file_extension.freezed.dart';
 sealed class FileExtension with _$FileExtension {
   const FileExtension._();
 
-  const factory FileExtension({
-    required String value,
-  }) = _FileExtension;
+  const factory FileExtension({required String value}) = _FileExtension;
 
   /// Factory constructor with validation and normalization
   factory FileExtension.parse(String filename) {

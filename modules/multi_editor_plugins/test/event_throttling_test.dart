@@ -315,17 +315,20 @@ void main() {
   });
 
   group('Validation', () {
-    test('should throw assertion error when using both throttle and debounce', () {
-      expect(
-        () => dispatcher.registerHandler<FileOpened>(
-          pluginId: 'test-plugin',
-          handler: (context) {},
-          throttle: const Duration(milliseconds: 100),
-          debounce: const Duration(milliseconds: 100),
-        ),
-        throwsA(isA<AssertionError>()),
-      );
-    });
+    test(
+      'should throw assertion error when using both throttle and debounce',
+      () {
+        expect(
+          () => dispatcher.registerHandler<FileOpened>(
+            pluginId: 'test-plugin',
+            handler: (context) {},
+            throttle: const Duration(milliseconds: 100),
+            debounce: const Duration(milliseconds: 100),
+          ),
+          throwsA(isA<AssertionError>()),
+        );
+      },
+    );
   });
 
   group('Cleanup', () {

@@ -16,21 +16,14 @@ sealed class Folder with _$Folder {
     @Default({}) Map<String, dynamic> metadata,
   }) = _Folder;
 
-  factory Folder.fromJson(Map<String, dynamic> json) =>
-      _$FolderFromJson(json);
+  factory Folder.fromJson(Map<String, dynamic> json) => _$FolderFromJson(json);
 
   Folder rename(String newName) {
-    return copyWith(
-      name: newName,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(name: newName, updatedAt: DateTime.now());
   }
 
   Folder move(String? targetParentId) {
-    return copyWith(
-      parentId: targetParentId,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(parentId: targetParentId, updatedAt: DateTime.now());
   }
 
   bool get isRoot => parentId == null;

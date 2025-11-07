@@ -79,14 +79,15 @@ sealed class FileTreeNode with _$FileTreeNode {
 
   FileTreeNode addChild(FileTreeNode child) {
     return copyWith(
-      children: [...children, child.copyWith(parentId: id)],
+      children: [
+        ...children,
+        child.copyWith(parentId: id),
+      ],
     );
   }
 
   FileTreeNode removeChild(String childId) {
-    return copyWith(
-      children: children.where((c) => c.id != childId).toList(),
-    );
+    return copyWith(children: children.where((c) => c.id != childId).toList());
   }
 
   FileTreeNode updateChild(FileTreeNode updatedChild) {

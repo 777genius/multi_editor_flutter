@@ -28,7 +28,10 @@ class _Right<L, R> extends _Either<L, R> {
 abstract class PluginStoragePort {
   Future<Either<DomainFailure, Map<String, dynamic>>> load(String key);
 
-  Future<Either<DomainFailure, void>> save(String key, Map<String, dynamic> data);
+  Future<Either<DomainFailure, void>> save(
+    String key,
+    Map<String, dynamic> data,
+  );
 
   Future<Either<DomainFailure, void>> delete(String key);
 

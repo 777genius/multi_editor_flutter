@@ -1,15 +1,13 @@
 import 'dart:async';
 
-typedef CommandHandler<TInput, TOutput> = Future<TOutput> Function(TInput input);
+typedef CommandHandler<TInput, TOutput> =
+    Future<TOutput> Function(TInput input);
 
 class Command<TInput, TOutput> {
   final String id;
   final CommandHandler<TInput, TOutput> handler;
 
-  const Command({
-    required this.id,
-    required this.handler,
-  });
+  const Command({required this.id, required this.handler});
 
   Future<TOutput> execute(TInput input) => handler(input);
 }
@@ -41,10 +39,7 @@ class CommandBus {
       final result = await command.execute(input);
       return result as TOutput;
     } catch (e) {
-      throw CommandExecutionException(
-        commandId: commandId,
-        cause: e,
-      );
+      throw CommandExecutionException(commandId: commandId, cause: e);
     }
   }
 
@@ -61,10 +56,7 @@ class CommandExecutionException implements Exception {
   final String commandId;
   final Object cause;
 
-  CommandExecutionException({
-    required this.commandId,
-    required this.cause,
-  });
+  CommandExecutionException({required this.commandId, required this.cause});
 
   @override
   String toString() =>

@@ -13,7 +13,7 @@ class FileTreeFileItem extends StatelessWidget {
   final FileTreeController controller;
   final PluginManager? pluginManager;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowContextMenu;
+  onShowContextMenu;
 
   const FileTreeFileItem({
     super.key,
@@ -29,11 +29,8 @@ class FileTreeFileItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final widget = FileTreeItemWithHover(
       isSelected: isSelected,
-      onSecondaryTap: (details) => onShowContextMenu(
-        context,
-        details.globalPosition,
-        data,
-      ),
+      onSecondaryTap: (details) =>
+          onShowContextMenu(context, details.globalPosition, data),
       child: ListTile(
         dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -94,10 +91,9 @@ class FileTreeFileItem extends StatelessWidget {
             ),
           ),
           child: Container(
-            color:
-                isHovered
-                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                    : null,
+            color: isHovered
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                : null,
             child: widget,
           ),
         );

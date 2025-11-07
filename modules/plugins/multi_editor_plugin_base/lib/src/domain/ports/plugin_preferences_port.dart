@@ -1,4 +1,5 @@
-import 'package:multi_editor_core/multi_editor_core.dart' hide Either, Left, Right;
+import 'package:multi_editor_core/multi_editor_core.dart'
+    hide Either, Left, Right;
 import 'plugin_storage_port.dart';
 
 abstract class PluginPreferencesPort {
@@ -20,7 +21,10 @@ abstract class PluginPreferencesPort {
 
   Future<Either<DomainFailure, void>> setDouble(String key, double value);
 
-  Future<Either<DomainFailure, void>> setStringList(String key, List<String> value);
+  Future<Either<DomainFailure, void>> setStringList(
+    String key,
+    List<String> value,
+  );
 
   Future<Either<DomainFailure, void>> remove(String key);
 

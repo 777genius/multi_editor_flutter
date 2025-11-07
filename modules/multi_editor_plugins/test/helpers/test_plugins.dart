@@ -9,12 +9,12 @@ class SimplePlugin extends EditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.simple',
-        name: 'Simple Test Plugin',
-        version: '1.0.0',
-        description: 'Simple plugin for testing',
-        author: 'Test',
-      );
+    id: 'test.simple',
+    name: 'Simple Test Plugin',
+    version: '1.0.0',
+    description: 'Simple plugin for testing',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {
@@ -35,12 +35,12 @@ class FailingPlugin extends EditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.failing',
-        name: 'Failing Test Plugin',
-        version: '1.0.0',
-        description: 'Plugin that fails on init',
-        author: 'Test',
-      );
+    id: 'test.failing',
+    name: 'Failing Test Plugin',
+    version: '1.0.0',
+    description: 'Plugin that fails on init',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {
@@ -57,13 +57,13 @@ class PluginWithDependencies extends EditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.with-deps',
-        name: 'Plugin With Dependencies',
-        version: '1.0.0',
-        description: 'Plugin with dependencies',
-        author: 'Test',
-        dependencies: ['test.simple'],
-      );
+    id: 'test.with-deps',
+    name: 'Plugin With Dependencies',
+    version: '1.0.0',
+    description: 'Plugin with dependencies',
+    author: 'Test',
+    dependencies: ['test.simple'],
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {
@@ -82,12 +82,12 @@ class FileTrackingPlugin extends EditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.file-tracker',
-        name: 'File Tracking Plugin',
-        version: '1.0.0',
-        description: 'Tracks file events',
-        author: 'Test',
-      );
+    id: 'test.file-tracker',
+    name: 'File Tracking Plugin',
+    version: '1.0.0',
+    description: 'Tracks file events',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {}
@@ -115,12 +115,12 @@ class FileTrackingPlugin extends EditorPlugin {
 class ErrorThrowingPlugin extends EditorPlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.error-throwing',
-        name: 'Error Throwing Plugin',
-        version: '1.0.0',
-        description: 'Throws errors in handlers',
-        author: 'Test',
-      );
+    id: 'test.error-throwing',
+    name: 'Error Throwing Plugin',
+    version: '1.0.0',
+    description: 'Throws errors in handlers',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {}
@@ -148,13 +148,13 @@ class VersionedPlugin extends EditorPlugin {
 
   @override
   PluginManifest get manifest => PluginManifest(
-        id: pluginId,
-        name: 'Versioned Plugin $pluginId',
-        version: version,
-        description: 'Plugin with version $version',
-        author: 'Test',
-        dependencies: dependencies,
-      );
+    id: pluginId,
+    name: 'Versioned Plugin $pluginId',
+    version: version,
+    description: 'Plugin with version $version',
+    author: 'Test',
+    dependencies: dependencies,
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {}
@@ -171,12 +171,12 @@ class TestLanguagePlugin extends EditorPlugin {
 
   @override
   PluginManifest get manifest => PluginManifest(
-        id: 'test.language-$languageId',
-        name: '$languageId Language Plugin',
-        version: '1.0.0',
-        description: 'Language support for $languageId',
-        author: 'Test',
-      );
+    id: 'test.language-$languageId',
+    name: '$languageId Language Plugin',
+    version: '1.0.0',
+    description: 'Language support for $languageId',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {}
@@ -194,35 +194,35 @@ class TestLanguagePlugin extends EditorPlugin {
 class ConfigurableTestPlugin extends EditorPlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.configurable',
-        name: 'Configurable Test Plugin',
-        version: '1.0.0',
-        description: 'Plugin with config schema',
-        author: 'Test',
-      );
+    id: 'test.configurable',
+    name: 'Configurable Test Plugin',
+    version: '1.0.0',
+    description: 'Plugin with config schema',
+    author: 'Test',
+  );
 
   @override
   PluginConfigSchema? get configSchema => const PluginConfigSchema({
-        'enabled': ConfigFieldSchema(
-          key: 'enabled',
-          type: ConfigFieldType.boolean,
-          defaultValue: true,
-          description: 'Enable/disable plugin',
-          required: true,
-        ),
-        'timeout': ConfigFieldSchema(
-          key: 'timeout',
-          type: ConfigFieldType.number,
-          defaultValue: 5000,
-          description: 'Timeout in ms',
-        ),
-        'name': ConfigFieldSchema(
-          key: 'name',
-          type: ConfigFieldType.string,
-          defaultValue: 'default',
-          description: 'Plugin name',
-        ),
-      });
+    'enabled': ConfigFieldSchema(
+      key: 'enabled',
+      type: ConfigFieldType.boolean,
+      defaultValue: true,
+      description: 'Enable/disable plugin',
+      required: true,
+    ),
+    'timeout': ConfigFieldSchema(
+      key: 'timeout',
+      type: ConfigFieldType.number,
+      defaultValue: 5000,
+      description: 'Timeout in ms',
+    ),
+    'name': ConfigFieldSchema(
+      key: 'name',
+      type: ConfigFieldType.string,
+      defaultValue: 'default',
+      description: 'Plugin name',
+    ),
+  });
 
   @override
   Future<void> initialize(PluginContext context) async {}
@@ -235,12 +235,12 @@ class ConfigurableTestPlugin extends EditorPlugin {
 class ToolbarPlugin extends EditorPlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test.toolbar',
-        name: 'Toolbar Plugin',
-        version: '1.0.0',
-        description: 'Plugin with toolbar action',
-        author: 'Test',
-      );
+    id: 'test.toolbar',
+    name: 'Toolbar Plugin',
+    version: '1.0.0',
+    description: 'Plugin with toolbar action',
+    author: 'Test',
+  );
 
   @override
   Future<void> initialize(PluginContext context) async {}

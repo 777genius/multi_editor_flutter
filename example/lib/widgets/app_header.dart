@@ -35,10 +35,9 @@ class AppHeader extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             'Multi-File Code Editor',
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           HeaderActions(

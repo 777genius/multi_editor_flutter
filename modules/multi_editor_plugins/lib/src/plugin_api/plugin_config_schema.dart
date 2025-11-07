@@ -1,12 +1,5 @@
 /// Type of configuration field
-enum ConfigFieldType {
-  string,
-  number,
-  boolean,
-  select,
-  multiSelect,
-  object,
-}
+enum ConfigFieldType { string, number, boolean, select, multiSelect, object }
 
 /// Validation rules for a configuration field
 class ConfigFieldSchema {
@@ -117,10 +110,7 @@ class ConfigFieldSchema {
         break;
     }
 
-    return ConfigValidationResult(
-      isValid: errors.isEmpty,
-      errors: errors,
-    );
+    return ConfigValidationResult(isValid: errors.isEmpty, errors: errors);
   }
 
   /// Get default value for this field
@@ -155,15 +145,10 @@ class ConfigValidationResult {
   final bool isValid;
   final List<String> errors;
 
-  const ConfigValidationResult({
-    required this.isValid,
-    this.errors = const [],
-  });
+  const ConfigValidationResult({required this.isValid, this.errors = const []});
 
   @override
-  String toString() => isValid
-      ? 'Valid'
-      : 'Invalid: ${errors.join(", ")}';
+  String toString() => isValid ? 'Valid' : 'Invalid: ${errors.join(", ")}';
 }
 
 /// Schema for plugin configuration

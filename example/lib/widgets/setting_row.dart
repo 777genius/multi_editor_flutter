@@ -4,11 +4,7 @@ class SettingRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const SettingRow({
-    super.key,
-    required this.label,
-    required this.value,
-  });
+  const SettingRow({super.key, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

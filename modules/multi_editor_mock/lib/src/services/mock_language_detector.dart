@@ -103,7 +103,8 @@ class MockLanguageDetector implements LanguageDetector {
       if (firstLine.contains('python')) return 'python';
       if (firstLine.contains('ruby')) return 'ruby';
       if (firstLine.contains('node')) return 'javascript';
-      if (firstLine.contains('bash') || firstLine.contains('sh')) return 'shell';
+      if (firstLine.contains('bash') || firstLine.contains('sh'))
+        return 'shell';
     }
 
     // Check for common language patterns
@@ -116,8 +117,7 @@ class MockLanguageDetector implements LanguageDetector {
       return 'php';
     }
 
-    if (content.contains('<!DOCTYPE html>') ||
-        content.contains('<html')) {
+    if (content.contains('<!DOCTYPE html>') || content.contains('<html')) {
       return 'html';
     }
 
@@ -144,7 +144,8 @@ class MockLanguageDetector implements LanguageDetector {
       return 'javascript';
     }
 
-    if (content.contains('public class ') || content.contains('private class ')) {
+    if (content.contains('public class ') ||
+        content.contains('private class ')) {
       return 'java';
     }
 

@@ -15,11 +15,8 @@ import 'plugin_state.dart';
 import 'plugin_registry.dart';
 import 'dependency_validator.dart';
 
-typedef PluginErrorCallback = void Function(
-  String pluginId,
-  Object error,
-  StackTrace stackTrace,
-);
+typedef PluginErrorCallback =
+    void Function(String pluginId, Object error, StackTrace stackTrace);
 
 class PluginManager {
   final PluginContext _context;
@@ -39,8 +36,8 @@ class PluginManager {
     PluginRegistry? registry,
     PluginMessageBus? messageBus,
     ErrorTracker? errorTracker,
-  })  : _onPluginError = onPluginError,
-        _errorTracker = errorTracker {
+  }) : _onPluginError = onPluginError,
+       _errorTracker = errorTracker {
     _registry = registry ?? PluginRegistry();
     _messageBus = messageBus ?? PluginMessageBus();
     _eventDispatcher = PluginEventDispatcher(_context.events);
@@ -63,9 +60,7 @@ class PluginManager {
     final manifest = plugin.manifest;
 
     if (_plugins.containsKey(manifest.id)) {
-      throw PluginException(
-        'Plugin "${manifest.id}" is already registered',
-      );
+      throw PluginException('Plugin "${manifest.id}" is already registered');
     }
 
     _validateDependencies(plugin);
@@ -179,10 +174,8 @@ class PluginManager {
     // Register handlers using the event dispatcher with safe execution
     _eventDispatcher.registerHandler<FileOpened>(
       pluginId: pluginId,
-      handler: (context) => _safeExecute(
-        pluginId,
-        () => plugin.onFileOpen(context.event.file),
-      ),
+      handler: (context) =>
+          _safeExecute(pluginId, () => plugin.onFileOpen(context.event.file)),
     );
 
     _eventDispatcher.registerHandler<FileClosed>(
@@ -195,10 +188,8 @@ class PluginManager {
 
     _eventDispatcher.registerHandler<FileSaved>(
       pluginId: pluginId,
-      handler: (context) => _safeExecute(
-        pluginId,
-        () => plugin.onFileSave(context.event.file),
-      ),
+      handler: (context) =>
+          _safeExecute(pluginId, () => plugin.onFileSave(context.event.file)),
     );
 
     _eventDispatcher.registerHandler<FileContentChanged>(
@@ -214,10 +205,8 @@ class PluginManager {
 
     _eventDispatcher.registerHandler<FileCreated>(
       pluginId: pluginId,
-      handler: (context) => _safeExecute(
-        pluginId,
-        () => plugin.onFileCreate(context.event.file),
-      ),
+      handler: (context) =>
+          _safeExecute(pluginId, () => plugin.onFileCreate(context.event.file)),
     );
 
     _eventDispatcher.registerHandler<FileDeleted>(
@@ -420,9 +409,7 @@ class PluginManager {
   List<EditorPlugin> get plugins => _plugins.values.toList();
 
   List<EditorPlugin> getPluginsForLanguage(String language) {
-    return _plugins.values
-        .where((p) => p.supportsLanguage(language))
-        .toList();
+    return _plugins.values.where((p) => p.supportsLanguage(language)).toList();
   }
 
   /// Validate all plugin dependencies
@@ -436,7 +423,9 @@ class PluginManager {
     final errors = validator.validateAll();
 
     if (errors.isNotEmpty) {
-      debugPrint('[PluginManager] Dependency validation found ${errors.length} errors:');
+      debugPrint(
+        '[PluginManager] Dependency validation found ${errors.length} errors:',
+      );
       for (final error in errors) {
         debugPrint('[PluginManager]   $error');
       }
@@ -603,7 +592,9 @@ class PluginManager {
     final result = schema.validate(config);
 
     if (!result.isValid) {
-      debugPrint('[PluginManager] Configuration validation failed for "$pluginId":');
+      debugPrint(
+        '[PluginManager] Configuration validation failed for "$pluginId":',
+      );
       for (final error in result.errors) {
         debugPrint('[PluginManager]   $error');
       }
@@ -625,7 +616,9 @@ class PluginManager {
   ErrorTracker? get errorTracker => _errorTracker;
 
   /// Dispatch a custom event to plugins
-  Future<PluginEventContext<T>> dispatchEvent<T extends EditorEvent>(T event) async {
+  Future<PluginEventContext<T>> dispatchEvent<T extends EditorEvent>(
+    T event,
+  ) async {
     return await _eventDispatcher.dispatch<T>(event);
   }
 
@@ -675,7 +668,9 @@ class PluginManager {
         await loadPlugin(entry.id);
         debugPrint('[PluginManager] Auto-loaded plugin "${entry.id}"');
       } catch (e, stackTrace) {
-        debugPrint('[PluginManager] Failed to auto-load plugin "${entry.id}": $e');
+        debugPrint(
+          '[PluginManager] Failed to auto-load plugin "${entry.id}": $e',
+        );
         debugPrintStack(stackTrace: stackTrace);
       }
     }
@@ -710,10 +705,10 @@ class PluginManager {
   }
 
   /// Send a request and wait for response
-  Future<PluginResponse<TRes>> sendRequest<TReq extends PluginRequest<TRes>, TRes>(
-    TReq request, {
-    Duration timeout = const Duration(seconds: 5),
-  }) async {
+  Future<PluginResponse<TRes>> sendRequest<
+    TReq extends PluginRequest<TRes>,
+    TRes
+  >(TReq request, {Duration timeout = const Duration(seconds: 5)}) async {
     return await _messageBus.request<TReq, TRes>(request, timeout: timeout);
   }
 
@@ -726,7 +721,9 @@ class PluginManager {
   Future<bool> activatePlugin(String pluginId) async {
     final plugin = _plugins[pluginId];
     if (plugin == null) {
-      debugPrint('[PluginManager] Cannot activate: Plugin "$pluginId" not registered');
+      debugPrint(
+        '[PluginManager] Cannot activate: Plugin "$pluginId" not registered',
+      );
       return false;
     }
 
@@ -756,7 +753,9 @@ class PluginManager {
   Future<bool> deactivatePlugin(String pluginId) async {
     final plugin = _plugins[pluginId];
     if (plugin == null) {
-      debugPrint('[PluginManager] Cannot deactivate: Plugin "$pluginId" not registered');
+      debugPrint(
+        '[PluginManager] Cannot deactivate: Plugin "$pluginId" not registered',
+      );
       return false;
     }
 
@@ -767,7 +766,9 @@ class PluginManager {
 
     // Check if other plugins depend on this one
     final dependents = getDependents(pluginId);
-    final activeDependents = dependents.where((id) => _activatedPlugins[id] == true).toList();
+    final activeDependents = dependents
+        .where((id) => _activatedPlugins[id] == true)
+        .toList();
 
     if (activeDependents.isNotEmpty) {
       debugPrint(
@@ -794,7 +795,9 @@ class PluginManager {
   Future<bool> reloadPlugin(String pluginId) async {
     final plugin = _plugins[pluginId];
     if (plugin == null) {
-      debugPrint('[PluginManager] Cannot reload: Plugin "$pluginId" not registered');
+      debugPrint(
+        '[PluginManager] Cannot reload: Plugin "$pluginId" not registered',
+      );
       return false;
     }
 

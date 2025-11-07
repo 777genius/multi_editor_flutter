@@ -58,31 +58,30 @@ class FileTreeView extends StatelessWidget {
               builder: (context, state, _) {
                 return state.map(
                   initial: (_) => const Center(child: Text('Ready')),
-                  loading:
-                      (_) => const Center(child: CircularProgressIndicator()),
+                  loading: (_) =>
+                      const Center(child: CircularProgressIndicator()),
                   loaded: (loadedState) => FileTreeContent(
-                        state: loadedState,
-                        containerWidth: width,
-                        controller: controller,
-                        pluginManager: pluginManager,
-                        onFileSelected: onFileSelected,
-                        enableDragDrop: enableDragDrop,
-                        onShowFolderContextMenu: _showFolderContextMenu,
-                        onShowFileContextMenu: _showFileContextMenu,
-                      ),
-                  error:
-                      (errorState) => Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            'Error: ${errorState.message}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                    state: loadedState,
+                    containerWidth: width,
+                    controller: controller,
+                    pluginManager: pluginManager,
+                    onFileSelected: onFileSelected,
+                    enableDragDrop: enableDragDrop,
+                    onShowFolderContextMenu: _showFolderContextMenu,
+                    onShowFileContextMenu: _showFileContextMenu,
+                  ),
+                  error: (errorState) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Error: ${errorState.message}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
                         ),
+                        textAlign: TextAlign.center,
                       ),
+                    ),
+                  ),
                 );
               },
             ),
@@ -230,8 +229,8 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) => CreateFileDialog(initialParentFolderId: parentFolderId),
+      builder: (context) =>
+          CreateFileDialog(initialParentFolderId: parentFolderId),
     );
 
     if (result != null && context.mounted) {
@@ -248,9 +247,8 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder:
-          (context) =>
-              CreateFolderDialog(initialParentFolderId: parentFolderId),
+      builder: (context) =>
+          CreateFolderDialog(initialParentFolderId: parentFolderId),
     );
 
     if (result != null && context.mounted) {
@@ -268,8 +266,8 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final newName = await showDialog<String>(
       context: context,
-      builder:
-          (context) => RenameDialog(currentName: currentName, itemType: 'file'),
+      builder: (context) =>
+          RenameDialog(currentName: currentName, itemType: 'file'),
     );
 
     if (newName != null && context.mounted) {
@@ -284,9 +282,8 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final newName = await showDialog<String>(
       context: context,
-      builder:
-          (context) =>
-              RenameDialog(currentName: currentName, itemType: 'folder'),
+      builder: (context) =>
+          RenameDialog(currentName: currentName, itemType: 'folder'),
     );
 
     if (newName != null && context.mounted) {
@@ -301,9 +298,8 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (context) =>
-              ConfirmDeleteDialog(itemName: fileName, itemType: 'file'),
+      builder: (context) =>
+          ConfirmDeleteDialog(itemName: fileName, itemType: 'file'),
     );
 
     if (confirmed == true && context.mounted) {
@@ -318,13 +314,12 @@ class FileTreeView extends StatelessWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => ConfirmDeleteDialog(
-            itemName: folderName,
-            itemType: 'folder',
-            warningMessage:
-                'All files and subfolders inside this folder will be deleted.',
-          ),
+      builder: (context) => ConfirmDeleteDialog(
+        itemName: folderName,
+        itemType: 'folder',
+        warningMessage:
+            'All files and subfolders inside this folder will be deleted.',
+      ),
     );
 
     if (confirmed == true && context.mounted) {

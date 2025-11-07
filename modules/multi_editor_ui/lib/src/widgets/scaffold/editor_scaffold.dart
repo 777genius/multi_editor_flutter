@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_monaco_crossplatform/flutter_monaco_crossplatform.dart' hide EditorState;
+import 'package:flutter_monaco_crossplatform/flutter_monaco_crossplatform.dart'
+    hide EditorState;
 import 'package:multi_editor_plugins/multi_editor_plugins.dart';
 import '../../controllers/editor_controller.dart';
 import '../../controllers/file_tree_controller.dart';

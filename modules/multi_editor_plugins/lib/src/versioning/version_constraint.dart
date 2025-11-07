@@ -60,16 +60,18 @@ class VersionCompatibility {
 
       // Handle caret constraint: ^1.2.3 allows >=1.2.3 <2.0.0
       if (dependencyConstraint.startsWith('^')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(1));
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(1),
+        );
         return version >= constraintVersion &&
             version.major == constraintVersion.major;
       }
 
       // Handle tilde constraint: ~1.2.3 allows >=1.2.3 <1.3.0
       if (dependencyConstraint.startsWith('~')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(1));
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(1),
+        );
         return version >= constraintVersion &&
             version.major == constraintVersion.major &&
             version.minor == constraintVersion.minor;
@@ -77,32 +79,37 @@ class VersionCompatibility {
 
       // Handle comparison operators
       if (dependencyConstraint.startsWith('>=')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(2).trim());
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(2).trim(),
+        );
         return version >= constraintVersion;
       }
 
       if (dependencyConstraint.startsWith('<=')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(2).trim());
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(2).trim(),
+        );
         return version <= constraintVersion;
       }
 
       if (dependencyConstraint.startsWith('>')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(1).trim());
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(1).trim(),
+        );
         return version > constraintVersion;
       }
 
       if (dependencyConstraint.startsWith('<')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(1).trim());
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(1).trim(),
+        );
         return version < constraintVersion;
       }
 
       if (dependencyConstraint.startsWith('=')) {
-        final constraintVersion =
-            _SemVersion.parse(dependencyConstraint.substring(1).trim());
+        final constraintVersion = _SemVersion.parse(
+          dependencyConstraint.substring(1).trim(),
+        );
         return version == constraintVersion;
       }
 

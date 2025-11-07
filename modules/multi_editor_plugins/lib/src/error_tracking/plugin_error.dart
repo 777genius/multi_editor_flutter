@@ -25,7 +25,8 @@ sealed class PluginError with _$PluginError {
     required PluginErrorType type,
     required String message,
     required DateTime timestamp,
-    @JsonKey(includeFromJson: false, includeToJson: false) StackTrace? stackTrace,
+    @JsonKey(includeFromJson: false, includeToJson: false)
+    StackTrace? stackTrace,
     @Default({}) Map<String, dynamic> context,
   }) = _PluginError;
 
@@ -39,16 +40,15 @@ sealed class PluginError with _$PluginError {
     required Object error,
     StackTrace? stackTrace,
     Map<String, dynamic>? context,
-  }) =>
-      PluginError(
-        pluginId: pluginId,
-        pluginName: pluginName,
-        type: PluginErrorType.initialization,
-        message: error.toString(),
-        timestamp: DateTime.now(),
-        stackTrace: stackTrace,
-        context: context ?? {},
-      );
+  }) => PluginError(
+    pluginId: pluginId,
+    pluginName: pluginName,
+    type: PluginErrorType.initialization,
+    message: error.toString(),
+    timestamp: DateTime.now(),
+    stackTrace: stackTrace,
+    context: context ?? {},
+  );
 
   /// Create a disposal error
   factory PluginError.disposal({
@@ -56,15 +56,14 @@ sealed class PluginError with _$PluginError {
     required String pluginName,
     required Object error,
     StackTrace? stackTrace,
-  }) =>
-      PluginError(
-        pluginId: pluginId,
-        pluginName: pluginName,
-        type: PluginErrorType.disposal,
-        message: error.toString(),
-        timestamp: DateTime.now(),
-        stackTrace: stackTrace,
-      );
+  }) => PluginError(
+    pluginId: pluginId,
+    pluginName: pluginName,
+    type: PluginErrorType.disposal,
+    message: error.toString(),
+    timestamp: DateTime.now(),
+    stackTrace: stackTrace,
+  );
 
   /// Create an event handler error
   factory PluginError.eventHandler({
@@ -73,16 +72,15 @@ sealed class PluginError with _$PluginError {
     required String eventType,
     required Object error,
     StackTrace? stackTrace,
-  }) =>
-      PluginError(
-        pluginId: pluginId,
-        pluginName: pluginName,
-        type: PluginErrorType.eventHandler,
-        message: error.toString(),
-        timestamp: DateTime.now(),
-        stackTrace: stackTrace,
-        context: {'eventType': eventType},
-      );
+  }) => PluginError(
+    pluginId: pluginId,
+    pluginName: pluginName,
+    type: PluginErrorType.eventHandler,
+    message: error.toString(),
+    timestamp: DateTime.now(),
+    stackTrace: stackTrace,
+    context: {'eventType': eventType},
+  );
 
   /// Create a runtime error
   factory PluginError.runtime({
@@ -92,19 +90,15 @@ sealed class PluginError with _$PluginError {
     required Object error,
     StackTrace? stackTrace,
     Map<String, dynamic>? additionalContext,
-  }) =>
-      PluginError(
-        pluginId: pluginId,
-        pluginName: pluginName,
-        type: PluginErrorType.runtime,
-        message: error.toString(),
-        timestamp: DateTime.now(),
-        stackTrace: stackTrace,
-        context: {
-          'operation': operation,
-          ...?additionalContext,
-        },
-      );
+  }) => PluginError(
+    pluginId: pluginId,
+    pluginName: pluginName,
+    type: PluginErrorType.runtime,
+    message: error.toString(),
+    timestamp: DateTime.now(),
+    stackTrace: stackTrace,
+    context: {'operation': operation, ...?additionalContext},
+  );
 
   /// Get a user-friendly error message
   String get displayMessage {

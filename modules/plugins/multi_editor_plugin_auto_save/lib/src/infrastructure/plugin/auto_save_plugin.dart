@@ -45,9 +45,11 @@ class AutoSavePlugin extends BaseEditorPlugin
     );
 
     if (!hasConfiguration) {
-      await updateConfiguration((_) => PluginConfiguration.create(
-            PluginId(value: manifest.id),
-          ).updateSetting('config', AutoSaveConfig.defaultConfig().toJson()));
+      await updateConfiguration(
+        (_) => PluginConfiguration.create(
+          PluginId(value: manifest.id),
+        ).updateSetting('config', AutoSaveConfig.defaultConfig().toJson()),
+      );
     }
 
     _triggerSaveUseCase = TriggerSaveUseCase(context.fileRepository);
@@ -109,10 +111,7 @@ class AutoSavePlugin extends BaseEditorPlugin
 
     await safeExecuteAsync('Auto-save all files', () async {
       for (final entry in _unsavedContent.entries) {
-        final task = SaveTask.create(
-          fileId: entry.key,
-          content: entry.value,
-        );
+        final task = SaveTask.create(fileId: entry.key, content: entry.value);
 
         try {
           await _triggerSaveUseCase!.execute(task);

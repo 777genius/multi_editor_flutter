@@ -4,7 +4,7 @@ import 'package:multi_editor_core/multi_editor_core.dart';
 class MockProjectRepository implements ProjectRepository {
   final Map<String, Project> _projects = {};
   final Map<String, StreamController<Either<DomainFailure, Project>>>
-      _watchers = {};
+  _watchers = {};
   String? _currentProjectId;
 
   int _idCounter = 0;
@@ -54,7 +54,7 @@ class MockProjectRepository implements ProjectRepository {
         DomainFailure.notFound(
           entityType: 'Project',
           entityId: id,
-          message:'Project with id "$id" not found',
+          message: 'Project with id "$id" not found',
         ),
       );
     }
@@ -92,7 +92,7 @@ class MockProjectRepository implements ProjectRepository {
         DomainFailure.notFound(
           entityType: 'Project',
           entityId: id,
-          message:'Project with id "$id" not found',
+          message: 'Project with id "$id" not found',
         ),
       );
     }
@@ -101,7 +101,9 @@ class MockProjectRepository implements ProjectRepository {
 
     // Clear current if deleting current project
     if (_currentProjectId == id) {
-      _currentProjectId = _projects.keys.isNotEmpty ? _projects.keys.first : null;
+      _currentProjectId = _projects.keys.isNotEmpty
+          ? _projects.keys.first
+          : null;
     }
 
     _closeWatcher(id);
@@ -111,7 +113,8 @@ class MockProjectRepository implements ProjectRepository {
 
   @override
   Stream<Either<DomainFailure, Project>> watch(String id) {
-    final controller = _watchers[id] ??
+    final controller =
+        _watchers[id] ??
         StreamController<Either<DomainFailure, Project>>.broadcast();
     _watchers[id] = controller;
 
@@ -133,7 +136,8 @@ class MockProjectRepository implements ProjectRepository {
   Future<Either<DomainFailure, Project>> getCurrent() async {
     await Future.delayed(const Duration(milliseconds: 50));
 
-    if (_currentProjectId == null || !_projects.containsKey(_currentProjectId)) {
+    if (_currentProjectId == null ||
+        !_projects.containsKey(_currentProjectId)) {
       return Left(
         DomainFailure.notFound(
           entityType: 'Project',

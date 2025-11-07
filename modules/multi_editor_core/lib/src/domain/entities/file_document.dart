@@ -22,24 +22,15 @@ sealed class FileDocument with _$FileDocument {
       _$FileDocumentFromJson(json);
 
   FileDocument updateContent(String newContent) {
-    return copyWith(
-      content: newContent,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(content: newContent, updatedAt: DateTime.now());
   }
 
   FileDocument rename(String newName) {
-    return copyWith(
-      name: newName,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(name: newName, updatedAt: DateTime.now());
   }
 
   FileDocument move(String targetFolderId) {
-    return copyWith(
-      folderId: targetFolderId,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(folderId: targetFolderId, updatedAt: DateTime.now());
   }
 
   bool get isEmpty => content.trim().isEmpty;

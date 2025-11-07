@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 typedef HookCallback<T> = FutureOr<void> Function(T data);
-typedef HookErrorCallback = void Function(String hookName, Object error, StackTrace stackTrace);
+typedef HookErrorCallback =
+    void Function(String hookName, Object error, StackTrace stackTrace);
 
 class HookExecutionMetrics {
   int successCount = 0;
@@ -17,12 +18,14 @@ class HookExecutionMetrics {
 
   void recordError(String hookName, Object error, StackTrace stackTrace) {
     errorCount++;
-    recentErrors.add(HookExecutionError(
-      hookName: hookName,
-      error: error,
-      stackTrace: stackTrace,
-      timestamp: DateTime.now(),
-    ));
+    recentErrors.add(
+      HookExecutionError(
+        hookName: hookName,
+        error: error,
+        stackTrace: stackTrace,
+        timestamp: DateTime.now(),
+      ),
+    );
     if (recentErrors.length > 10) {
       recentErrors.removeAt(0);
     }

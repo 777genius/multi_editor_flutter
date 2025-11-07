@@ -50,9 +50,7 @@ class PluginHeaderButton extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
           width: 400,
           constraints: const BoxConstraints(maxHeight: 600),
@@ -77,9 +75,8 @@ class PluginHeaderButton extends StatelessWidget {
                     Expanded(
                       child: Text(
                         descriptor.tooltip,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     IconButton(

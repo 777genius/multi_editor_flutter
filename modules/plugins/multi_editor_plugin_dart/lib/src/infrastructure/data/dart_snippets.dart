@@ -34,8 +34,7 @@ class DartSnippets {
   static const abstractClass = SnippetData(
     prefix: 'absclass',
     label: 'abstract class',
-    body:
-        'abstract class \${1:ClassName} {\n  \${2:// abstract methods}\n}',
+    body: 'abstract class \${1:ClassName} {\n  \${2:// abstract methods}\n}',
     description: 'Abstract class declaration',
   );
 
@@ -64,7 +63,8 @@ class DartSnippets {
   static const forLoop = SnippetData(
     prefix: 'for',
     label: 'for loop',
-    body: 'for (var \${1:i} = 0; \${1:i} < \${2:length}; \${1:i}++) {\n  \${3:// code}\n}',
+    body:
+        'for (var \${1:i} = 0; \${1:i} < \${2:length}; \${1:i}++) {\n  \${3:// code}\n}',
     description: 'For loop',
   );
 
@@ -101,8 +101,7 @@ class DartSnippets {
   static const asyncFunction = SnippetData(
     prefix: 'funa',
     label: 'async function',
-    body:
-        'Future<\${1:void}> \${2:functionName}() async {\n  \${3:// code}\n}',
+    body: 'Future<\${1:void}> \${2:functionName}() async {\n  \${3:// code}\n}',
     description: 'Async function',
   );
 

@@ -15,8 +15,9 @@ void preventNativeContextMenu(PointerDownEvent event) {
     web.window.addEventListener(
       'contextmenu',
       ((web.Event e) {
-        e.preventDefault();
-      }.toJS) as web.EventListener,
+            e.preventDefault();
+          }.toJS)
+          as web.EventListener,
     );
 
     _listenerAttached = true;

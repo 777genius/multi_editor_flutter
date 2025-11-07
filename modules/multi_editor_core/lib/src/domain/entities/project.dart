@@ -22,23 +22,14 @@ sealed class Project with _$Project {
       _$ProjectFromJson(json);
 
   Project updateName(String newName) {
-    return copyWith(
-      name: newName,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(name: newName, updatedAt: DateTime.now());
   }
 
   Project updateDescription(String? newDescription) {
-    return copyWith(
-      description: newDescription,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(description: newDescription, updatedAt: DateTime.now());
   }
 
   Project updateSettings(Map<String, dynamic> newSettings) {
-    return copyWith(
-      settings: newSettings,
-      updatedAt: DateTime.now(),
-    );
+    return copyWith(settings: newSettings, updatedAt: DateTime.now());
   }
 }

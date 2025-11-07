@@ -15,7 +15,8 @@ class FileContent {
       return Left(
         DomainFailure.validationError(
           field: 'fileContent',
-          reason: 'File content exceeds maximum size of ${maxSizeInBytes ~/ 1024 ~/ 1024}MB',
+          reason:
+              'File content exceeds maximum size of ${maxSizeInBytes ~/ 1024 ~/ 1024}MB',
           value: '${sizeInBytes ~/ 1024}KB',
         ),
       );

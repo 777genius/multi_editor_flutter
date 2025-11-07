@@ -55,7 +55,9 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
     });
 
     try {
-      debugPrint('[MonacoEditor] Initializing editor with code length: ${widget.code.length}, language: ${widget.language}');
+      debugPrint(
+        '[MonacoEditor] Initializing editor with code length: ${widget.code.length}, language: ${widget.language}',
+      );
 
       final brightness = Theme.of(context).brightness;
       _lastBrightness = brightness;
@@ -81,7 +83,9 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
       debugPrint('[MonacoEditor] Controller created, waiting for onReady...');
       await _controller!.onReady;
 
-      debugPrint('[MonacoEditor] Ready! Setting value with length: ${widget.code.length}');
+      debugPrint(
+        '[MonacoEditor] Ready! Setting value with length: ${widget.code.length}',
+      );
       await _controller!.setValue(widget.code);
       _lastCode = widget.code;
       debugPrint('[MonacoEditor] Initialization complete!');
@@ -153,7 +157,9 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
 
     _isUpdating = true;
     try {
-      debugPrint('[MonacoEditor] Updating content, length: ${widget.code.length}');
+      debugPrint(
+        '[MonacoEditor] Updating content, length: ${widget.code.length}',
+      );
 
       await _controller!.setValue(widget.code);
       _lastCode = widget.code;
@@ -175,7 +181,9 @@ class _MonacoCodeEditorState extends State<MonacoCodeEditor> {
           ? MonacoTheme.vsDark
           : MonacoTheme.vs;
 
-      debugPrint('[MonacoEditor] Updating theme to: ${newTheme.id} (brightness: $brightness)');
+      debugPrint(
+        '[MonacoEditor] Updating theme to: ${newTheme.id} (brightness: $brightness)',
+      );
 
       await _controller!.setTheme(newTheme);
       _lastBrightness = brightness;

@@ -1,4 +1,5 @@
-import 'package:multi_editor_core/multi_editor_core.dart' hide Either, Left, Right;
+import 'package:multi_editor_core/multi_editor_core.dart'
+    hide Either, Left, Right;
 import '../../domain/ports/plugin_storage_port.dart';
 
 class InMemoryStorageAdapter implements PluginStoragePort {
@@ -7,18 +8,23 @@ class InMemoryStorageAdapter implements PluginStoragePort {
   @override
   Future<Either<DomainFailure, Map<String, dynamic>>> load(String key) async {
     if (!_storage.containsKey(key)) {
-      return Left(DomainFailure.notFound(
-        entityType: 'PluginConfig',
-        entityId: key,
-        message: 'Key not found: $key',
-      ));
+      return Left(
+        DomainFailure.notFound(
+          entityType: 'PluginConfig',
+          entityId: key,
+          message: 'Key not found: $key',
+        ),
+      );
     }
 
     return Right(Map<String, dynamic>.from(_storage[key]!));
   }
 
   @override
-  Future<Either<DomainFailure, void>> save(String key, Map<String, dynamic> data) async {
+  Future<Either<DomainFailure, void>> save(
+    String key,
+    Map<String, dynamic> data,
+  ) async {
     _storage[key] = Map<String, dynamic>.from(data);
     return const Right(null);
   }

@@ -24,19 +24,18 @@ class FileIconsPlugin extends BaseEditorPlugin with StatefulPlugin {
   late final IconResolutionService _resolutionService;
   late final SimpleIconsProvider _simpleIconsProvider;
 
-  FileIconsPlugin({
-    FileIconsConfig? config,
-  }) : config = config ?? const FileIconsConfig();
+  FileIconsPlugin({FileIconsConfig? config})
+    : config = config ?? const FileIconsConfig();
 
   @override
   PluginManifest get manifest => PluginManifest(
-        id: 'plugin.file-icons',
-        name: 'File Icons',
-        version: '0.2.0',
-        description:
-            'Provides beautiful colorful icons for files using Devicon CDN (150+ icons) with lazy SVG loading',
-        author: 'Editor Team',
-      );
+    id: 'plugin.file-icons',
+    name: 'File Icons',
+    version: '0.2.0',
+    description:
+        'Provides beautiful colorful icons for files using Devicon CDN (150+ icons) with lazy SVG loading',
+    author: 'Editor Team',
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {

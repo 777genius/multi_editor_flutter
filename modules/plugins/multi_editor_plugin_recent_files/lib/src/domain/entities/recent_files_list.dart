@@ -48,7 +48,8 @@ sealed class RecentFilesList with _$RecentFilesList {
 
   RecentFilesList clear() => copyWith(entries: []);
 
-  List<RecentFileEntry> get sortedByRecent => List<RecentFileEntry>.from(entries);
+  List<RecentFileEntry> get sortedByRecent =>
+      List<RecentFileEntry>.from(entries);
 
   bool contains(String fileId) => entries.any((e) => e.fileId == fileId);
 

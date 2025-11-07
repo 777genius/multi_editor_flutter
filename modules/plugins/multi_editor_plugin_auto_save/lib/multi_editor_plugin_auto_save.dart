@@ -1,4 +1,3 @@
-
 export 'src/domain/value_objects/save_interval.dart';
 export 'src/domain/value_objects/auto_save_config.dart';
 export 'src/domain/entities/save_task.dart';

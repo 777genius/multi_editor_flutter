@@ -130,9 +130,12 @@ class ConfigFieldSchemaBuilder {
     }
 
     // Validate type-specific requirements
-    if (_type == ConfigFieldType.select || _type == ConfigFieldType.multiSelect) {
+    if (_type == ConfigFieldType.select ||
+        _type == ConfigFieldType.multiSelect) {
       if (_options == null || _options!.isEmpty) {
-        throw ArgumentError('Options are required for select/multiSelect fields');
+        throw ArgumentError(
+          'Options are required for select/multiSelect fields',
+        );
       }
     }
 
@@ -167,17 +170,23 @@ class ConfigFieldSchemaBuilder {
       case ConfigFieldType.string:
       case ConfigFieldType.select:
         if (_defaultValue is! String) {
-          throw ArgumentError('Default value must be a string for $_type fields');
+          throw ArgumentError(
+            'Default value must be a string for $_type fields',
+          );
         }
         break;
       case ConfigFieldType.number:
         if (_defaultValue is! num) {
-          throw ArgumentError('Default value must be a number for $_type fields');
+          throw ArgumentError(
+            'Default value must be a number for $_type fields',
+          );
         }
         break;
       case ConfigFieldType.boolean:
         if (_defaultValue is! bool) {
-          throw ArgumentError('Default value must be a boolean for $_type fields');
+          throw ArgumentError(
+            'Default value must be a boolean for $_type fields',
+          );
         }
         break;
       case ConfigFieldType.multiSelect:

@@ -13,20 +13,13 @@ abstract class PluginMessage {
   /// Message timestamp
   final DateTime timestamp;
 
-  PluginMessage({
-    required this.senderId,
-    this.targetId,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
+  PluginMessage({required this.senderId, this.targetId, DateTime? timestamp})
+    : timestamp = timestamp ?? DateTime.now();
 }
 
 /// Request message that expects a response
 abstract class PluginRequest<T> extends PluginMessage {
-  PluginRequest({
-    required super.senderId,
-    super.targetId,
-    super.timestamp,
-  });
+  PluginRequest({required super.senderId, super.targetId, super.timestamp});
 }
 
 /// Response to a plugin request
@@ -35,23 +28,21 @@ class PluginResponse<T> {
   final String? error;
   final bool success;
 
-  PluginResponse.success(this.data)
-      : error = null,
-        success = true;
+  PluginResponse.success(this.data) : error = null, success = true;
 
-  PluginResponse.error(this.error)
-      : data = null,
-        success = false;
+  PluginResponse.error(this.error) : data = null, success = false;
 
   bool get isSuccess => success;
   bool get isError => !success;
 }
 
 /// Message handler
-typedef MessageHandler<T extends PluginMessage> = FutureOr<void> Function(T message);
+typedef MessageHandler<T extends PluginMessage> =
+    FutureOr<void> Function(T message);
 
 /// Request handler with response
-typedef RequestHandler<TReq extends PluginRequest<TRes>, TRes> = FutureOr<PluginResponse<TRes>> Function(TReq request);
+typedef RequestHandler<TReq extends PluginRequest<TRes>, TRes> =
+    FutureOr<PluginResponse<TRes>> Function(TReq request);
 
 /// Registered message handler
 class _MessageHandlerRegistration<T extends PluginMessage> {
@@ -124,7 +115,8 @@ class PluginMessageBus {
 
     for (final registration in handlers) {
       // Check if message is targeted to specific plugin
-      if (message.targetId != null && registration.pluginId != message.targetId) {
+      if (message.targetId != null &&
+          registration.pluginId != message.targetId) {
         continue;
       }
 
@@ -136,7 +128,9 @@ class PluginMessageBus {
       try {
         await registration.handler(message as dynamic);
       } catch (e, stackTrace) {
-        debugPrint('[PluginMessageBus] Error in handler "${registration.pluginId}": $e');
+        debugPrint(
+          '[PluginMessageBus] Error in handler "${registration.pluginId}": $e',
+        );
         debugPrintStack(stackTrace: stackTrace);
       }
     }
@@ -152,16 +146,18 @@ class PluginMessageBus {
     // Create a one-time handler for the response
     late StreamSubscription<PluginMessage> subscription;
 
-    subscription = messages.where((msg) {
-      return msg is PluginResponse &&
-             msg.senderId == request.targetId &&
-             msg.timestamp.isAfter(request.timestamp);
-    }).listen((msg) {
-      if (!completer.isCompleted) {
-        completer.complete(msg as PluginResponse<TRes>);
-        subscription.cancel();
-      }
-    });
+    subscription = messages
+        .where((msg) {
+          return msg is PluginResponse &&
+              msg.senderId == request.targetId &&
+              msg.timestamp.isAfter(request.timestamp);
+        })
+        .listen((msg) {
+          if (!completer.isCompleted) {
+            completer.complete(msg as PluginResponse<TRes>);
+            subscription.cancel();
+          }
+        });
 
     // Publish the request
     await publish(request);
@@ -194,8 +190,10 @@ class PluginMessageBus {
 
   /// Get statistics about the message bus
   MessageBusStatistics get statistics {
-    final totalHandlers = _handlers.values
-        .fold<int>(0, (sum, handlers) => sum + handlers.length);
+    final totalHandlers = _handlers.values.fold<int>(
+      0,
+      (sum, handlers) => sum + handlers.length,
+    );
 
     final handlersByType = <Type, int>{};
     for (final entry in _handlers.entries) {
@@ -291,9 +289,6 @@ class BroadcastMessage extends PluginMessage {
   final String topic;
   final Map<String, dynamic>? payload;
 
-  BroadcastMessage({
-    required super.senderId,
-    required this.topic,
-    this.payload,
-  }) : super(targetId: null);
+  BroadcastMessage({required super.senderId, required this.topic, this.payload})
+    : super(targetId: null);
 }

@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class DirtyChangesIndicator extends StatelessWidget {
   final VoidCallback onSave;
 
-  const DirtyChangesIndicator({
-    super.key,
-    required this.onSave,
-  });
+  const DirtyChangesIndicator({super.key, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -37,10 +34,7 @@ class DirtyChangesIndicator extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          TextButton(
-            onPressed: onSave,
-            child: const Text('Save'),
-          ),
+          TextButton(onPressed: onSave, child: const Text('Save')),
         ],
       ),
     );

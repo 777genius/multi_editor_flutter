@@ -101,11 +101,7 @@ void main() {
 
         final allState = plugin.getAllState();
 
-        expect(allState, {
-          'key1': 'value1',
-          'key2': 42,
-          'key3': true,
-        });
+        expect(allState, {'key1': 'value1', 'key2': 42, 'key3': true});
       });
 
       test('should return empty map when no state', () {

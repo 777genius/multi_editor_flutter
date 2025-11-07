@@ -7,9 +7,7 @@ part 'save_interval.g.dart';
 sealed class SaveInterval with _$SaveInterval {
   const SaveInterval._();
 
-  const factory SaveInterval({
-    required int seconds,
-  }) = _SaveInterval;
+  const factory SaveInterval({required int seconds}) = _SaveInterval;
 
   factory SaveInterval.fromJson(Map<String, dynamic> json) =>
       _$SaveIntervalFromJson(json);

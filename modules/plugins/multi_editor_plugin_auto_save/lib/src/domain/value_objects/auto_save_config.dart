@@ -19,11 +19,11 @@ sealed class AutoSaveConfig with _$AutoSaveConfig {
       _$AutoSaveConfigFromJson(json);
 
   factory AutoSaveConfig.defaultConfig() => AutoSaveConfig(
-        enabled: true,
-        interval: SaveInterval.defaultInterval(),
-        onlyWhenIdle: false,
-        showNotifications: true,
-      );
+    enabled: true,
+    interval: SaveInterval.defaultInterval(),
+    onlyWhenIdle: false,
+    showNotifications: true,
+  );
 
   AutoSaveConfig withInterval(SaveInterval newInterval) {
     return copyWith(interval: newInterval);

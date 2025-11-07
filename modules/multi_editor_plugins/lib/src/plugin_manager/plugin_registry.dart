@@ -100,7 +100,9 @@ class PluginRegistry extends ChangeNotifier {
       _instances[pluginId] = instance;
       return instance;
     } catch (e, stackTrace) {
-      debugPrint('[PluginRegistry] Failed to create instance of "$pluginId": $e');
+      debugPrint(
+        '[PluginRegistry] Failed to create instance of "$pluginId": $e',
+      );
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }

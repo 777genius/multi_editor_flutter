@@ -170,11 +170,11 @@ class PluginManifestBuilder {
   factory PluginManifestBuilder.fromManifest(PluginManifest manifest) {
     final builder = PluginManifestBuilder();
     builder
-      .withId(manifest.id)
-      .withName(manifest.name)
-      .withVersion(manifest.version)
-      .withDescription(manifest.description ?? '')
-      .withAuthor(manifest.author ?? '');
+        .withId(manifest.id)
+        .withName(manifest.name)
+        .withVersion(manifest.version)
+        .withDescription(manifest.description ?? '')
+        .withAuthor(manifest.author ?? '');
 
     if (manifest.dependencies.isNotEmpty) {
       builder.withDependencies(manifest.dependencies);

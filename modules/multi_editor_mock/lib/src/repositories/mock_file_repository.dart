@@ -4,7 +4,7 @@ import 'package:multi_editor_core/multi_editor_core.dart';
 class MockFileRepository implements FileRepository {
   final Map<String, FileDocument> _files = {};
   final Map<String, StreamController<Either<DomainFailure, FileDocument>>>
-      _watchers = {};
+  _watchers = {};
 
   int _idCounter = 0;
 
@@ -47,10 +47,7 @@ class MockFileRepository implements FileRepository {
     final file = _files[id];
     if (file == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: id,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: id),
       );
     }
 
@@ -63,10 +60,7 @@ class MockFileRepository implements FileRepository {
 
     if (!_files.containsKey(file.id)) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: file.id,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: file.id),
       );
     }
 
@@ -82,10 +76,7 @@ class MockFileRepository implements FileRepository {
 
     if (!_files.containsKey(id)) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: id,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: id),
       );
     }
 
@@ -105,10 +96,7 @@ class MockFileRepository implements FileRepository {
     final file = _files[fileId];
     if (file == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: fileId,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: fileId),
       );
     }
 
@@ -129,10 +117,7 @@ class MockFileRepository implements FileRepository {
     final file = _files[fileId];
     if (file == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: fileId,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: fileId),
       );
     }
 
@@ -153,10 +138,7 @@ class MockFileRepository implements FileRepository {
     final file = _files[fileId];
     if (file == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'FileDocument',
-          entityId: fileId,
-        ),
+        DomainFailure.notFound(entityType: 'FileDocument', entityId: fileId),
       );
     }
 
@@ -193,8 +175,7 @@ class MockFileRepository implements FileRepository {
   ) async {
     await Future.delayed(const Duration(milliseconds: 50));
 
-    final files =
-        _files.values.where((f) => f.folderId == folderId).toList();
+    final files = _files.values.where((f) => f.folderId == folderId).toList();
     return Right(files);
   }
 
@@ -218,9 +199,11 @@ class MockFileRepository implements FileRepository {
 
     if (query != null && query.isNotEmpty) {
       final lowerQuery = query.toLowerCase();
-      results = results.where((f) =>
-          f.name.toLowerCase().contains(lowerQuery) ||
-          f.content.toLowerCase().contains(lowerQuery));
+      results = results.where(
+        (f) =>
+            f.name.toLowerCase().contains(lowerQuery) ||
+            f.content.toLowerCase().contains(lowerQuery),
+      );
     }
 
     return Right(results.toList());

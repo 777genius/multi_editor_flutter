@@ -94,10 +94,7 @@ class ServiceLocator {
     pluginContext.registerService<PluginUIService>(pluginUIRegistry);
 
     // Create plugin manager with error tracker
-    pluginManager = PluginManager(
-      pluginContext,
-      errorTracker: errorTracker,
-    );
+    pluginManager = PluginManager(pluginContext, errorTracker: errorTracker);
 
     // Register plugins
     await pluginManager.registerPlugin(FileIconsPlugin());

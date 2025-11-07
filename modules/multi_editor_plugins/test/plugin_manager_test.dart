@@ -13,10 +13,7 @@ void main() {
   setUp(() {
     context = MockPluginContext();
     errorTracker = ErrorTracker();
-    manager = PluginManager(
-      context,
-      errorTracker: errorTracker,
-    );
+    manager = PluginManager(context, errorTracker: errorTracker);
   });
 
   tearDown(() {
@@ -84,18 +81,21 @@ void main() {
       expect(plugin.isDisposed, true);
     });
 
-    test('should not deactivate plugin if other plugins depend on it', () async {
-      final plugin1 = SimplePlugin();
-      final plugin2 = PluginWithDependencies();
+    test(
+      'should not deactivate plugin if other plugins depend on it',
+      () async {
+        final plugin1 = SimplePlugin();
+        final plugin2 = PluginWithDependencies();
 
-      await manager.registerPlugin(plugin1);
-      await manager.registerPlugin(plugin2);
+        await manager.registerPlugin(plugin1);
+        await manager.registerPlugin(plugin2);
 
-      final result = await manager.deactivatePlugin('test.simple');
+        final result = await manager.deactivatePlugin('test.simple');
 
-      expect(result, false);
-      expect(manager.isPluginActivated('test.simple'), true);
-    });
+        expect(result, false);
+        expect(manager.isPluginActivated('test.simple'), true);
+      },
+    );
 
     test('should reactivate a deactivated plugin', () async {
       final plugin = SimplePlugin();

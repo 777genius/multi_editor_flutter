@@ -37,14 +37,11 @@ void main() {
 
       test('should load existing configuration from storage', () async {
         // Pre-populate storage
-        await mockStorage.save(
-          'config.plugin.configurable-test-plugin',
-          {
-            'pluginId': {'value': 'plugin.configurable-test-plugin'},
-            'enabled': false,
-            'settings': {'option1': 'saved-value'},
-          },
-        );
+        await mockStorage.save('config.plugin.configurable-test-plugin', {
+          'pluginId': {'value': 'plugin.configurable-test-plugin'},
+          'enabled': false,
+          'settings': {'option1': 'saved-value'},
+        });
 
         await plugin.loadConfiguration(mockStorage, pluginId);
 
@@ -54,10 +51,9 @@ void main() {
 
       test('should create default config on load error from storage', () async {
         // Storage returns corrupted data
-        await mockStorage.save(
-          'config.plugin.configurable-test-plugin',
-          {'invalid': 'data'},
-        );
+        await mockStorage.save('config.plugin.configurable-test-plugin', {
+          'invalid': 'data',
+        });
 
         await plugin.loadConfiguration(mockStorage, pluginId);
 
@@ -75,7 +71,9 @@ void main() {
         await plugin.loadConfiguration(mockStorage, pluginId);
         await plugin.setConfigSetting('testKey', 'testValue');
 
-        final result = await mockStorage.load('config.plugin.configurable-test-plugin');
+        final result = await mockStorage.load(
+          'config.plugin.configurable-test-plugin',
+        );
         expect(result.fold((_) => false, (_) => true), true);
       });
 
@@ -90,10 +88,7 @@ void main() {
 
         // Should not throw, but fail silently or return Either
         // Depending on implementation, this might need adjustment
-        await expectLater(
-          plugin.saveConfiguration(),
-          completes,
-        );
+        await expectLater(plugin.saveConfiguration(), completes);
       });
     });
 
@@ -116,13 +111,12 @@ void main() {
         });
 
         // Verify it was saved
-        final result = await mockStorage.load('config.plugin.configurable-test-plugin');
-        result.fold(
-          (_) => fail('Should have saved successfully'),
-          (data) {
-            expect(data['settings']['newKey'], 'newValue');
-          },
+        final result = await mockStorage.load(
+          'config.plugin.configurable-test-plugin',
         );
+        result.fold((_) => fail('Should have saved successfully'), (data) {
+          expect(data['settings']['newKey'], 'newValue');
+        });
       });
 
       test('should throw StateError when updating without loading', () {
@@ -145,7 +139,10 @@ void main() {
         await plugin.loadConfiguration(mockStorage, pluginId);
 
         expect(
-          plugin.getConfigSetting<String>('nonexistent', defaultValue: 'default'),
+          plugin.getConfigSetting<String>(
+            'nonexistent',
+            defaultValue: 'default',
+          ),
           'default',
         );
       });
@@ -159,10 +156,7 @@ void main() {
       });
 
       test('should throw StateError when setting without loading', () {
-        expect(
-          () => plugin.setConfigSetting('key', 'value'),
-          throwsStateError,
-        );
+        expect(() => plugin.setConfigSetting('key', 'value'), throwsStateError);
       });
 
       test('should support different value types', () async {
@@ -209,13 +203,12 @@ void main() {
         await plugin.disable();
 
         // Load from storage to verify
-        final result = await mockStorage.load('config.plugin.configurable-test-plugin');
-        result.fold(
-          (_) => fail('Should have saved'),
-          (data) {
-            expect(data['enabled'], false);
-          },
+        final result = await mockStorage.load(
+          'config.plugin.configurable-test-plugin',
         );
+        result.fold((_) => fail('Should have saved'), (data) {
+          expect(data['enabled'], false);
+        });
       });
 
       test('should throw StateError when enabling without loading', () {

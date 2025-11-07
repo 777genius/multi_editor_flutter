@@ -140,7 +140,10 @@ void main() {
         final validator = DependencyValidator(manifests);
         final errors = validator.validateAll();
 
-        expect(errors.any((e) => e.type == DependencyErrorType.circularDependency), true);
+        expect(
+          errors.any((e) => e.type == DependencyErrorType.circularDependency),
+          true,
+        );
       });
 
       test('should detect version incompatibility', () {
@@ -165,7 +168,10 @@ void main() {
         final validator = DependencyValidator(manifests);
         final errors = validator.validateAll();
 
-        expect(errors.any((e) => e.type == DependencyErrorType.incompatibleVersion), true);
+        expect(
+          errors.any((e) => e.type == DependencyErrorType.incompatibleVersion),
+          true,
+        );
         expect(errors[0].pluginId, 'plugin-b');
       });
     });

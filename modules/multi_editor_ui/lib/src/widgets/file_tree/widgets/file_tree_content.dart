@@ -16,9 +16,9 @@ class FileTreeContent extends StatelessWidget {
   final ValueChanged<String>? onFileSelected;
   final bool enableDragDrop;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowFolderContextMenu;
+  onShowFolderContextMenu;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowFileContextMenu;
+  onShowFileContextMenu;
 
   const FileTreeContent({
     super.key,
@@ -73,7 +73,9 @@ class FileTreeContent extends StatelessWidget {
                 if (isHovered)
                   Positioned.fill(
                     child: Container(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
                     ),
                   ),
                 _buildLoadedContent(

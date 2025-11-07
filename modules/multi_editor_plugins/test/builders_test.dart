@@ -32,7 +32,10 @@ void main() {
           .withCapability('format', 'true')
           .addActivationEvent('onFileOpen:*.dart')
           .addActivationEvent('onFileOpen:*.json')
-          .withMetadata({'homepage': 'https://example.com', 'repository': 'github.com/example/plugin'})
+          .withMetadata({
+            'homepage': 'https://example.com',
+            'repository': 'github.com/example/plugin',
+          })
           .build();
 
       expect(manifest.id, 'full-plugin');
@@ -42,7 +45,10 @@ void main() {
       expect(manifest.author, 'John Doe');
       expect(manifest.dependencies, ['plugin-a', 'plugin-b@^1.0.0']);
       expect(manifest.capabilities, {'lint': 'true', 'format': 'true'});
-      expect(manifest.activationEvents, ['onFileOpen:*.dart', 'onFileOpen:*.json']);
+      expect(manifest.activationEvents, [
+        'onFileOpen:*.dart',
+        'onFileOpen:*.json',
+      ]);
       expect(manifest.metadata['homepage'], 'https://example.com');
     });
 
@@ -234,10 +240,7 @@ void main() {
 
         builder.reset();
 
-        expect(
-          () => builder.build(),
-          throwsArgumentError,
-        );
+        expect(() => builder.build(), throwsArgumentError);
       });
 
       test('should allow reuse after reset', () {
@@ -297,10 +300,9 @@ void main() {
           version: '1.0.0',
         );
 
-        final modified = PluginManifestBuilder.fromManifest(original)
-            .withVersion('2.0.0')
-            .addDependency('new-dep')
-            .build();
+        final modified = PluginManifestBuilder.fromManifest(
+          original,
+        ).withVersion('2.0.0').addDependency('new-dep').build();
 
         expect(modified.id, original.id);
         expect(modified.name, original.name);
@@ -383,21 +385,18 @@ void main() {
     });
 
     test('should build an object field', () {
-      final schema = ConfigFieldSchemaBuilder()
-          .withKey('server')
-          .asObject({
-            'host': const ConfigFieldSchema(
-              key: 'host',
-              type: ConfigFieldType.string,
-              defaultValue: 'localhost',
-            ),
-            'port': const ConfigFieldSchema(
-              key: 'port',
-              type: ConfigFieldType.number,
-              defaultValue: 8080,
-            ),
-          })
-          .build();
+      final schema = ConfigFieldSchemaBuilder().withKey('server').asObject({
+        'host': const ConfigFieldSchema(
+          key: 'host',
+          type: ConfigFieldType.string,
+          defaultValue: 'localhost',
+        ),
+        'port': const ConfigFieldSchema(
+          key: 'port',
+          type: ConfigFieldType.number,
+          defaultValue: 8080,
+        ),
+      }).build();
 
       expect(schema.key, 'server');
       expect(schema.type, ConfigFieldType.object);
@@ -430,38 +429,30 @@ void main() {
     group('Validation', () {
       test('should throw error when key is missing', () {
         expect(
-          () => ConfigFieldSchemaBuilder()
-              .asString()
-              .build(),
+          () => ConfigFieldSchemaBuilder().asString().build(),
           throwsArgumentError,
         );
       });
 
       test('should throw error when type is missing', () {
         expect(
-          () => ConfigFieldSchemaBuilder()
-              .withKey('field')
-              .build(),
+          () => ConfigFieldSchemaBuilder().withKey('field').build(),
           throwsArgumentError,
         );
       });
 
       test('should throw error for select without options', () {
         expect(
-          () => ConfigFieldSchemaBuilder()
-              .withKey('field')
-              .asSelect([])
-              .build(),
+          () =>
+              ConfigFieldSchemaBuilder().withKey('field').asSelect([]).build(),
           throwsArgumentError,
         );
       });
 
       test('should throw error for object without properties', () {
         expect(
-          () => ConfigFieldSchemaBuilder()
-              .withKey('field')
-              .asObject({})
-              .build(),
+          () =>
+              ConfigFieldSchemaBuilder().withKey('field').asObject({}).build(),
           throwsArgumentError,
         );
       });
@@ -524,16 +515,10 @@ void main() {
 
     test('should support adding fields using builder function', () {
       final configSchema = PluginConfigSchemaBuilder()
-          .field((b) => b
-              .withKey('name')
-              .asString()
-              .withDefault('default')
-              .build())
-          .field((b) => b
-              .withKey('count')
-              .asNumber()
-              .withDefault(0)
-              .build())
+          .field(
+            (b) => b.withKey('name').asString().withDefault('default').build(),
+          )
+          .field((b) => b.withKey('count').asNumber().withDefault(0).build())
           .build();
 
       expect(configSchema.fields.length, 2);
@@ -543,14 +528,8 @@ void main() {
 
     test('should allow adding multiple fields at once', () {
       final fields = [
-        ConfigFieldSchemaBuilder()
-            .withKey('field1')
-            .asString()
-            .build(),
-        ConfigFieldSchemaBuilder()
-            .withKey('field2')
-            .asNumber()
-            .build(),
+        ConfigFieldSchemaBuilder().withKey('field1').asString().build(),
+        ConfigFieldSchemaBuilder().withKey('field2').asNumber().build(),
       ];
 
       final configSchema = PluginConfigSchemaBuilder()
@@ -563,16 +542,10 @@ void main() {
     test('should allow removing fields', () {
       final configSchema = PluginConfigSchemaBuilder()
           .addField(
-            ConfigFieldSchemaBuilder()
-                .withKey('field1')
-                .asString()
-                .build(),
+            ConfigFieldSchemaBuilder().withKey('field1').asString().build(),
           )
           .addField(
-            ConfigFieldSchemaBuilder()
-                .withKey('field2')
-                .asString()
-                .build(),
+            ConfigFieldSchemaBuilder().withKey('field2').asString().build(),
           )
           .removeField('field1')
           .build();
@@ -582,10 +555,7 @@ void main() {
     });
 
     test('should throw error when no fields are added', () {
-      expect(
-        () => PluginConfigSchemaBuilder().build(),
-        throwsArgumentError,
-      );
+      expect(() => PluginConfigSchemaBuilder().build(), throwsArgumentError);
     });
 
     test('should create builder from existing schema', () {

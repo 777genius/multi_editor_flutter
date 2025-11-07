@@ -10,7 +10,7 @@ class FileTreeFolderItem extends StatelessWidget {
   final bool enableDragDrop;
   final FileTreeController controller;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowContextMenu;
+  onShowContextMenu;
 
   const FileTreeFolderItem({
     super.key,
@@ -91,10 +91,9 @@ class FileTreeFolderItem extends StatelessWidget {
             ),
           ),
           child: Container(
-            color:
-                isHovered
-                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
-                    : null,
+            color: isHovered
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                : null,
             child: FolderTile(
               data: data,
               isSelected: isSelected,

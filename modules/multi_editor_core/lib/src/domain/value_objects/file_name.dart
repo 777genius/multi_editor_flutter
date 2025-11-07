@@ -6,9 +6,28 @@ class FileName {
   static const int maxLength = 255;
   static final RegExp _validPattern = RegExp(r'^[a-zA-Z0-9._-]+$');
   static final Set<String> _reservedNames = {
-    'CON', 'PRN', 'AUX', 'NUL',
-    'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-    'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
   };
 
   FileName._(this.value);
@@ -40,7 +59,8 @@ class FileName {
       return Left(
         DomainFailure.validationError(
           field: 'fileName',
-          reason: 'File name contains invalid characters. Only letters, numbers, dots, hyphens, and underscores are allowed',
+          reason:
+              'File name contains invalid characters. Only letters, numbers, dots, hyphens, and underscores are allowed',
           value: input,
         ),
       );

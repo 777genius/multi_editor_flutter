@@ -76,12 +76,12 @@ class FileIconDescriptor {
     int priority = 100,
     required String pluginId,
   }) : this._(
-          type: FileIconType.url,
-          url: url,
-          size: size,
-          priority: priority,
-          pluginId: pluginId,
-        );
+         type: FileIconType.url,
+         url: url,
+         size: size,
+         priority: priority,
+         pluginId: pluginId,
+       );
 
   /// Create icon descriptor for local asset
   const FileIconDescriptor.asset({
@@ -90,12 +90,12 @@ class FileIconDescriptor {
     int priority = 100,
     required String pluginId,
   }) : this._(
-          type: FileIconType.local,
-          assetPath: assetPath,
-          size: size,
-          priority: priority,
-          pluginId: pluginId,
-        );
+         type: FileIconType.local,
+         assetPath: assetPath,
+         size: size,
+         priority: priority,
+         pluginId: pluginId,
+       );
 
   /// Create icon descriptor for icon font (IconData)
   const FileIconDescriptor.iconData({
@@ -106,24 +106,24 @@ class FileIconDescriptor {
     int priority = 100,
     required String pluginId,
   }) : this._(
-          type: FileIconType.iconData,
-          iconCode: iconCode,
-          iconFamily: iconFamily,
-          color: color,
-          size: size,
-          priority: priority,
-          pluginId: pluginId,
-        );
+         type: FileIconType.iconData,
+         iconCode: iconCode,
+         iconFamily: iconFamily,
+         color: color,
+         size: size,
+         priority: priority,
+         pluginId: pluginId,
+       );
 
   /// Create default icon descriptor (fallback to UI default)
   const FileIconDescriptor.defaultIcon({
     int priority = 999,
     required String pluginId,
   }) : this._(
-          type: FileIconType.defaultIcon,
-          priority: priority,
-          pluginId: pluginId,
-        );
+         type: FileIconType.defaultIcon,
+         priority: priority,
+         pluginId: pluginId,
+       );
 
   @override
   bool operator ==(Object other) =>
@@ -142,16 +142,16 @@ class FileIconDescriptor {
 
   @override
   int get hashCode => Object.hash(
-        type,
-        url,
-        assetPath,
-        iconCode,
-        iconFamily,
-        color,
-        size,
-        priority,
-        pluginId,
-      );
+    type,
+    url,
+    assetPath,
+    iconCode,
+    iconFamily,
+    color,
+    size,
+    priority,
+    pluginId,
+  );
 
   @override
   String toString() {

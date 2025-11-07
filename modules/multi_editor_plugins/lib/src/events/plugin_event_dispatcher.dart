@@ -38,9 +38,8 @@ class PluginEventContext<T extends EditorEvent> {
 }
 
 /// Handler function for plugin events
-typedef PluginEventHandler<T extends EditorEvent> = FutureOr<void> Function(
-  PluginEventContext<T> context,
-);
+typedef PluginEventHandler<T extends EditorEvent> =
+    FutureOr<void> Function(PluginEventContext<T> context);
 
 /// Registered event handler with metadata
 class _EventHandlerRegistration<T extends EditorEvent> {

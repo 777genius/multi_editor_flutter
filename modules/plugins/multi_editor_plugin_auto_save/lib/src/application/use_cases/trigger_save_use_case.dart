@@ -14,13 +14,15 @@ class TriggerSaveUseCase {
     final fileResult = await _fileRepository.load(task.fileId);
 
     await fileResult.fold(
-      (failure) => throw Exception('Failed to load file: ${failure.displayMessage}'),
+      (failure) =>
+          throw Exception('Failed to load file: ${failure.displayMessage}'),
       (file) async {
         final updatedFile = file.copyWith(content: task.content);
         final saveResult = await _fileRepository.save(updatedFile);
 
         await saveResult.fold(
-          (failure) => throw Exception('Failed to save file: ${failure.displayMessage}'),
+          (failure) =>
+              throw Exception('Failed to save file: ${failure.displayMessage}'),
           (_) => Future.value(),
         );
       },

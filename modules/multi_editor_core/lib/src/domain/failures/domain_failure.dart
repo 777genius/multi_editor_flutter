@@ -43,16 +43,14 @@ sealed class DomainFailure with _$DomainFailure {
   }) = _Unexpected;
 
   String get displayMessage => when(
-        notFound: (type, id, msg) =>
-            msg ?? '$type with id "$id" not found',
-        alreadyExists: (type, id, msg) =>
-            msg ?? '$type with id "$id" already exists',
-        validationError: (field, reason, value) =>
-            'Validation error in $field: $reason',
-        permissionDenied: (operation, resource, msg) =>
-            msg ?? 'Permission denied for $operation on $resource',
-        syncError: (operation, msg, cause) =>
-            msg ?? 'Sync error during $operation',
-        unexpected: (msg, cause, stackTrace) => msg,
-      );
+    notFound: (type, id, msg) => msg ?? '$type with id "$id" not found',
+    alreadyExists: (type, id, msg) =>
+        msg ?? '$type with id "$id" already exists',
+    validationError: (field, reason, value) =>
+        'Validation error in $field: $reason',
+    permissionDenied: (operation, resource, msg) =>
+        msg ?? 'Permission denied for $operation on $resource',
+    syncError: (operation, msg, cause) => msg ?? 'Sync error during $operation',
+    unexpected: (msg, cause, stackTrace) => msg,
+  );
 }

@@ -8,13 +8,13 @@ class TestPlugin extends BaseEditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'test-plugin',
-        name: 'Test Plugin',
-        version: '1.0.0',
-        author: 'Test Author',
-        description: 'A test plugin',
-        dependencies: [],
-      );
+    id: 'test-plugin',
+    name: 'Test Plugin',
+    version: '1.0.0',
+    author: 'Test Author',
+    description: 'A test plugin',
+    dependencies: [],
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {
@@ -54,13 +54,13 @@ class FailingPlugin extends BaseEditorPlugin {
 
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'failing-plugin',
-        name: 'Failing Plugin',
-        version: '1.0.0',
-        author: 'Test Author',
-        description: 'A plugin that fails to initialize',
-        dependencies: [],
-      );
+    id: 'failing-plugin',
+    name: 'Failing Plugin',
+    version: '1.0.0',
+    author: 'Test Author',
+    description: 'A plugin that fails to initialize',
+    dependencies: [],
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {
@@ -75,13 +75,13 @@ class FailingPlugin extends BaseEditorPlugin {
 class ThrowingDisposePlugin extends BaseEditorPlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'throwing-dispose-plugin',
-        name: 'Throwing Dispose Plugin',
-        version: '1.0.0',
-        author: 'Test Author',
-        description: 'A plugin that throws during disposal',
-        dependencies: [],
-      );
+    id: 'throwing-dispose-plugin',
+    name: 'Throwing Dispose Plugin',
+    version: '1.0.0',
+    author: 'Test Author',
+    description: 'A plugin that throws during disposal',
+    dependencies: [],
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {}
@@ -96,13 +96,13 @@ class ThrowingDisposePlugin extends BaseEditorPlugin {
 class ConfigurableTestPlugin extends BaseEditorPlugin with ConfigurablePlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'configurable-test-plugin',
-        name: 'Configurable Test Plugin',
-        version: '1.0.0',
-        author: 'Test Author',
-        description: 'A configurable test plugin',
-        dependencies: [],
-      );
+    id: 'configurable-test-plugin',
+    name: 'Configurable Test Plugin',
+    version: '1.0.0',
+    author: 'Test Author',
+    description: 'A configurable test plugin',
+    dependencies: [],
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {
@@ -113,25 +113,26 @@ class ConfigurableTestPlugin extends BaseEditorPlugin with ConfigurablePlugin {
   Future<void> onDispose() async {}
 
   Map<String, dynamic> get defaultConfiguration => {
-        'enabled': true,
-        'option1': 'default',
-        'timeout': 5000,
-      };
+    'enabled': true,
+    'option1': 'default',
+    'timeout': 5000,
+  };
 
-  PluginId get pluginId => const PluginId(value: 'plugin.configurable-test-plugin');
+  PluginId get pluginId =>
+      const PluginId(value: 'plugin.configurable-test-plugin');
 }
 
 /// Test plugin with state management
 class StatefulTestPlugin extends BaseEditorPlugin with StatefulPlugin {
   @override
   PluginManifest get manifest => const PluginManifest(
-        id: 'stateful-test-plugin',
-        name: 'Stateful Test Plugin',
-        version: '1.0.0',
-        author: 'Test Author',
-        description: 'A stateful test plugin',
-        dependencies: [],
-      );
+    id: 'stateful-test-plugin',
+    name: 'Stateful Test Plugin',
+    version: '1.0.0',
+    author: 'Test Author',
+    description: 'A stateful test plugin',
+    dependencies: [],
+  );
 
   @override
   Future<void> onInitialize(PluginContext context) async {}

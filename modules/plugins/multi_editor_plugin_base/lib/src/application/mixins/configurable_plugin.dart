@@ -9,7 +9,9 @@ mixin ConfigurablePlugin on EditorPlugin {
 
   PluginConfiguration get configuration {
     if (_configuration == null) {
-      throw StateError('Configuration not loaded. Call loadConfiguration() first.');
+      throw StateError(
+        'Configuration not loaded. Call loadConfiguration() first.',
+      );
     }
     return _configuration!;
   }

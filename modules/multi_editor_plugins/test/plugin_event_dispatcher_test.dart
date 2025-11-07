@@ -146,8 +146,14 @@ void main() {
         handler: (context) {},
       );
 
-      expect(dispatcher.getHandlersForEvent<FileOpened>(), contains('test-plugin'));
-      expect(dispatcher.getHandlersForEvent<FileSaved>(), contains('test-plugin'));
+      expect(
+        dispatcher.getHandlersForEvent<FileOpened>(),
+        contains('test-plugin'),
+      );
+      expect(
+        dispatcher.getHandlersForEvent<FileSaved>(),
+        contains('test-plugin'),
+      );
 
       dispatcher.removeHandlers('test-plugin');
 
@@ -351,10 +357,7 @@ void main() {
       );
       final event = FileOpened(file: file);
 
-      expect(
-        () => dispatcher.dispatch(event),
-        throwsException,
-      );
+      expect(() => dispatcher.dispatch(event), throwsException);
     });
   });
 

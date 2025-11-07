@@ -47,7 +47,8 @@ class EditorThemeExtension extends ThemeExtension<EditorThemeExtension> {
           fileTreeHoverBackground ?? this.fileTreeHoverBackground,
       fileTreeSelectionBackground:
           fileTreeSelectionBackground ?? this.fileTreeSelectionBackground,
-      fileTreeSelectionHoverBackground: fileTreeSelectionHoverBackground ??
+      fileTreeSelectionHoverBackground:
+          fileTreeSelectionHoverBackground ??
           this.fileTreeSelectionHoverBackground,
       fileTreeBorder: fileTreeBorder ?? this.fileTreeBorder,
     );
@@ -78,11 +79,7 @@ class EditorThemeExtension extends ThemeExtension<EditorThemeExtension> {
         other.fileTreeSelectionHoverBackground,
         t,
       )!,
-      fileTreeBorder: Color.lerp(
-        fileTreeBorder,
-        other.fileTreeBorder,
-        t,
-      )!,
+      fileTreeBorder: Color.lerp(fileTreeBorder, other.fileTreeBorder, t)!,
     );
   }
 }

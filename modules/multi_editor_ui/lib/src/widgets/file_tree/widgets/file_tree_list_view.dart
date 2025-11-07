@@ -20,9 +20,9 @@ class FileTreeListView extends StatelessWidget {
   final ValueChanged<String>? onFileSelected;
   final bool enableDragDrop;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowFolderContextMenu;
+  onShowFolderContextMenu;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowFileContextMenu;
+  onShowFileContextMenu;
 
   const FileTreeListView({
     super.key,

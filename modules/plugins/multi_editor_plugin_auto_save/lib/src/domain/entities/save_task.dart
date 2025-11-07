@@ -19,10 +19,7 @@ sealed class SaveTask with _$SaveTask {
   factory SaveTask.fromJson(Map<String, dynamic> json) =>
       _$SaveTaskFromJson(json);
 
-  factory SaveTask.create({
-    required String fileId,
-    required String content,
-  }) {
+  factory SaveTask.create({required String fileId, required String content}) {
     return SaveTask(
       fileId: fileId,
       content: content,
@@ -32,10 +29,8 @@ sealed class SaveTask with _$SaveTask {
 
   SaveTask markCompleted() => copyWith(completed: true);
 
-  SaveTask markFailed(String error) => copyWith(
-        failed: true,
-        errorMessage: error,
-      );
+  SaveTask markFailed(String error) =>
+      copyWith(failed: true, errorMessage: error);
 
   bool get isPending => !completed && !failed;
 

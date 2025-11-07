@@ -7,9 +7,7 @@ part 'plugin_id.g.dart';
 sealed class PluginId with _$PluginId {
   const PluginId._();
 
-  const factory PluginId({
-    required String value,
-  }) = _PluginId;
+  const factory PluginId({required String value}) = _PluginId;
 
   factory PluginId.fromJson(Map<String, dynamic> json) =>
       _$PluginIdFromJson(json);
@@ -22,7 +20,9 @@ sealed class PluginId with _$PluginId {
         .replaceAll(RegExp(r'^_|_$'), '');
 
     if (normalized.isEmpty) {
-      throw ArgumentError('Invalid plugin name: cannot be empty after normalization');
+      throw ArgumentError(
+        'Invalid plugin name: cannot be empty after normalization',
+      );
     }
 
     return PluginId(value: 'plugin.$normalized');

@@ -150,9 +150,7 @@ class AppThemeData {
       ),
 
       // Custom theme extension
-      extensions: <ThemeExtension<dynamic>>[
-        editorExtension,
-      ],
+      extensions: <ThemeExtension<dynamic>>[editorExtension],
     );
   }
 

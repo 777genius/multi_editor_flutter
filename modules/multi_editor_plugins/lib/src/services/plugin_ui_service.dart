@@ -66,10 +66,7 @@ class PluginUIUpdateEvent {
   final PluginUIUpdateType type;
   final PluginUIDescriptor descriptor;
 
-  const PluginUIUpdateEvent({
-    required this.type,
-    required this.descriptor,
-  });
+  const PluginUIUpdateEvent({required this.type, required this.descriptor});
 }
 
 /// Type of plugin UI update

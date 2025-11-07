@@ -13,7 +13,8 @@ class SimpleIconsProvider {
   static const String _deviconBaseUrl =
       'https://cdn.jsdelivr.net/gh/devicons/devicon/icons';
 
-  SimpleIconsProvider([http.Client? client]) : _client = client ?? http.Client();
+  SimpleIconsProvider([http.Client? client])
+    : _client = client ?? http.Client();
 
   /// Get icon URL for a file extension.
   /// Uses Devicon CDN with colorful -original.svg variant.

@@ -6,7 +6,7 @@ class FolderTile extends StatelessWidget {
   final FileTreeNode data;
   final bool isSelected;
   final void Function(BuildContext context, Offset position, FileTreeNode data)
-      onShowContextMenu;
+  onShowContextMenu;
 
   const FolderTile({
     super.key,
@@ -19,11 +19,8 @@ class FolderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return FileTreeItemWithHover(
       isSelected: isSelected,
-      onSecondaryTap: (details) => onShowContextMenu(
-        context,
-        details.globalPosition,
-        data,
-      ),
+      onSecondaryTap: (details) =>
+          onShowContextMenu(context, details.globalPosition, data),
       child: ListTile(
         dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

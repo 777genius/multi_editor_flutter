@@ -17,10 +17,7 @@ class IconResolutionService {
   /// 2. Generate icon URL based on theme provider
   /// 3. Handle special cases (e.g., compound extensions like "test.dart")
   /// 4. Fall back to generic icon if needed
-  IconUrl resolveIconUrl(
-    FileExtension extension,
-    IconTheme theme,
-  ) {
+  IconUrl resolveIconUrl(FileExtension extension, IconTheme theme) {
     // Handle unknown extensions
     if (extension.isUnknown) {
       return _getGenericIconUrl(theme);
@@ -89,7 +86,9 @@ class IconResolutionService {
     final compoundPattern = RegExp(r'\.(test|spec|stories|d)\.\w+$');
     final compoundMatch = compoundPattern.firstMatch(filename);
     if (compoundMatch != null) {
-      final compoundExt = compoundMatch.group(0)!.substring(1); // Remove leading dot
+      final compoundExt = compoundMatch
+          .group(0)!
+          .substring(1); // Remove leading dot
       return FileExtension(value: compoundExt);
     }
 

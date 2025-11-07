@@ -31,7 +31,9 @@ class PluginUIRegistry implements PluginUIService {
     _registry[descriptor.pluginId] = descriptor;
 
     final event = PluginUIUpdateEvent(
-      type: existed ? PluginUIUpdateType.updated : PluginUIUpdateType.registered,
+      type: existed
+          ? PluginUIUpdateType.updated
+          : PluginUIUpdateType.registered,
       descriptor: descriptor,
     );
 

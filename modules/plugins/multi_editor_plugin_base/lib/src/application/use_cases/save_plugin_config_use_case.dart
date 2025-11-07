@@ -11,7 +11,8 @@ class SavePluginConfigUseCase {
     final result = await _storage.save(key, config.toJson());
 
     return result.fold(
-      (failure) => throw Exception('Failed to save config: ${failure.displayMessage}'),
+      (failure) =>
+          throw Exception('Failed to save config: ${failure.displayMessage}'),
       (_) => Future<void>.value(),
     );
   }

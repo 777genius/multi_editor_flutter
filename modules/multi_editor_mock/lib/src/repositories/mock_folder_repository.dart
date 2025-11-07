@@ -48,12 +48,7 @@ class MockFolderRepository implements FolderRepository {
 
     final folder = _folders[id];
     if (folder == null) {
-      return Left(
-        DomainFailure.notFound(
-          entityType: 'Folder',
-          entityId: id,
-        ),
-      );
+      return Left(DomainFailure.notFound(entityType: 'Folder', entityId: id));
     }
 
     return Right(folder);
@@ -64,12 +59,7 @@ class MockFolderRepository implements FolderRepository {
     await Future.delayed(const Duration(milliseconds: 50));
 
     if (!_folders.containsKey(id)) {
-      return Left(
-        DomainFailure.notFound(
-          entityType: 'Folder',
-          entityId: id,
-        ),
-      );
+      return Left(DomainFailure.notFound(entityType: 'Folder', entityId: id));
     }
 
     _folders.remove(id);
@@ -86,10 +76,7 @@ class MockFolderRepository implements FolderRepository {
     final folder = _folders[folderId];
     if (folder == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'Folder',
-          entityId: folderId,
-        ),
+        DomainFailure.notFound(entityType: 'Folder', entityId: folderId),
       );
     }
 
@@ -108,10 +95,7 @@ class MockFolderRepository implements FolderRepository {
     final folder = _folders[folderId];
     if (folder == null) {
       return Left(
-        DomainFailure.notFound(
-          entityType: 'Folder',
-          entityId: folderId,
-        ),
+        DomainFailure.notFound(entityType: 'Folder', entityId: folderId),
       );
     }
 
@@ -134,8 +118,9 @@ class MockFolderRepository implements FolderRepository {
   ) async {
     await Future.delayed(const Duration(milliseconds: 50));
 
-    final folders =
-        _folders.values.where((f) => f.parentId == parentId).toList();
+    final folders = _folders.values
+        .where((f) => f.parentId == parentId)
+        .toList();
     return Right(folders);
   }
 

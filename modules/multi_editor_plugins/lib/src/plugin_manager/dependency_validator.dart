@@ -37,10 +37,7 @@ class DependencyRequirement {
   factory DependencyRequirement.parse(String depString) {
     // Format: "plugin-id@^1.0.0" or "plugin-id" (any version)
     if (!depString.contains('@')) {
-      return DependencyRequirement(
-        pluginId: depString,
-        versionConstraint: '*',
-      );
+      return DependencyRequirement(pluginId: depString, versionConstraint: '*');
     }
 
     final parts = depString.split('@');
@@ -90,11 +87,13 @@ class DependencyValidator {
 
       for (final depId in manifest.dependencies) {
         if (!_manifests.containsKey(depId)) {
-          errors.add(DependencyValidationError(
-            pluginId: pluginId,
-            message: 'Missing dependency: "$depId"',
-            type: DependencyErrorType.missingDependency,
-          ));
+          errors.add(
+            DependencyValidationError(
+              pluginId: pluginId,
+              message: 'Missing dependency: "$depId"',
+              type: DependencyErrorType.missingDependency,
+            ),
+          );
         }
       }
     }
@@ -116,11 +115,13 @@ class DependencyValidator {
         // Found cycle
         final cycleStart = path.indexOf(pluginId);
         final cycle = path.sublist(cycleStart)..add(pluginId);
-        errors.add(DependencyValidationError(
-          pluginId: pluginId,
-          message: 'Circular dependency: ${cycle.join(" -> ")}',
-          type: DependencyErrorType.circularDependency,
-        ));
+        errors.add(
+          DependencyValidationError(
+            pluginId: pluginId,
+            message: 'Circular dependency: ${cycle.join(" -> ")}',
+            type: DependencyErrorType.circularDependency,
+          ),
+        );
         return;
       }
 
@@ -225,12 +226,14 @@ class DependencyValidator {
 
         // Check version compatibility
         if (!requirement.isSatisfiedBy(depVersion)) {
-          errors.add(DependencyValidationError(
-            pluginId: pluginId,
-            message:
-                'Dependency "$depId" version $depVersion does not satisfy constraint ${requirement.versionConstraint}',
-            type: DependencyErrorType.incompatibleVersion,
-          ));
+          errors.add(
+            DependencyValidationError(
+              pluginId: pluginId,
+              message:
+                  'Dependency "$depId" version $depVersion does not satisfy constraint ${requirement.versionConstraint}',
+              type: DependencyErrorType.incompatibleVersion,
+            ),
+          );
         }
       }
     }

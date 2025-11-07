@@ -12,15 +12,14 @@ class LoadPluginConfigUseCase {
 
     final result = await _storage.load(key);
 
-    return result.fold(
-      (failure) => PluginConfiguration.create(pluginId),
-      (data) {
-        try {
-          return PluginConfiguration.fromJson(data);
-        } catch (e) {
-          return PluginConfiguration.create(pluginId);
-        }
-      },
-    );
+    return result.fold((failure) => PluginConfiguration.create(pluginId), (
+      data,
+    ) {
+      try {
+        return PluginConfiguration.fromJson(data);
+      } catch (e) {
+        return PluginConfiguration.create(pluginId);
+      }
+    });
   }
 }

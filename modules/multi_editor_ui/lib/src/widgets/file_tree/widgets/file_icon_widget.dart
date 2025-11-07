@@ -16,11 +16,7 @@ class FileIconWidget extends StatelessWidget {
   final FileIconDescriptor descriptor;
   final Widget? fallback;
 
-  const FileIconWidget({
-    super.key,
-    required this.descriptor,
-    this.fallback,
-  });
+  const FileIconWidget({super.key, required this.descriptor, this.fallback});
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +136,7 @@ class FileIconWidget extends StatelessWidget {
     if (iconCode == null) return _buildDefaultIcon();
 
     return Icon(
-      IconData(
-        iconCode,
-        fontFamily: descriptor.iconFamily,
-      ),
+      IconData(iconCode, fontFamily: descriptor.iconFamily),
       size: descriptor.size,
       color: descriptor.color != null ? Color(descriptor.color!) : null,
     );
@@ -151,10 +144,7 @@ class FileIconWidget extends StatelessWidget {
 
   /// Build default fallback icon
   Widget _buildDefaultIcon() {
-    return Icon(
-      Icons.insert_drive_file,
-      size: descriptor.size,
-    );
+    return Icon(Icons.insert_drive_file, size: descriptor.size);
   }
 }
 
@@ -174,9 +164,6 @@ class CachedFileIconWidget extends StatelessWidget {
     // For now, just use FileIconWidget
     // In the future, can add more sophisticated caching
     // with packages like cached_network_image
-    return FileIconWidget(
-      descriptor: descriptor,
-      fallback: fallback,
-    );
+    return FileIconWidget(descriptor: descriptor, fallback: fallback);
   }
 }

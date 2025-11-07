@@ -17,7 +17,8 @@ class PluginUINotifier extends ChangeNotifier {
       // Duck typing: check if plugin has stateChanges property
       try {
         final dynamic pluginDynamic = plugin;
-        final stateChanges = pluginDynamic.stateChanges as ValueListenable<int>?;
+        final stateChanges =
+            pluginDynamic.stateChanges as ValueListenable<int>?;
         if (stateChanges != null) {
           void listener() => notifyListeners();
           stateChanges.addListener(listener);

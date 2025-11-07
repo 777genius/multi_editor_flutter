@@ -56,13 +56,12 @@ class FileTreeController extends ValueNotifier<FileTreeState> {
   ) {
     final folder = allFolders.firstWhere(
       (f) => f.id == folderId,
-      orElse:
-          () => Folder(
-            id: folderId,
-            name: 'root',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
+      orElse: () => Folder(
+        id: folderId,
+        name: 'root',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
     );
 
     final childFolders = allFolders.where((f) => f.parentId == folderId);
@@ -375,8 +374,9 @@ class FileTreeController extends ValueNotifier<FileTreeState> {
   void expandAll() {
     value.mapOrNull(
       loaded: (state) {
-        final allFolderIds =
-            state.rootNode.allFolders.map((f) => f.id).toList();
+        final allFolderIds = state.rootNode.allFolders
+            .map((f) => f.id)
+            .toList();
         value = state.copyWith(expandedFolderIds: allFolderIds);
       },
     );
