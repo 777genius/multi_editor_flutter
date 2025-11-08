@@ -7,6 +7,7 @@ import 'package:editor_core/editor_core.dart';
 
 import '../stores/editor/editor_store.dart';
 import '../stores/lsp/lsp_store.dart';
+import '../infrastructure/mock_editor_repository.dart';
 
 /// Dependency Injection Container
 ///
@@ -88,11 +89,11 @@ Future<void> configureDependencies() async {
   );
 
   // Editor Infrastructure
-  // TODO: Register NativeEditorRepository when editor_native FFI is ready
-  // For now, we'll need a mock or in-memory implementation
-  // getIt.registerLazySingleton<ICodeEditorRepository>(
-  //   () => NativeEditorRepository(),
-  // );
+  // Using MockEditorRepository for MVP (until Rust native editor is compiled)
+  // TODO: Replace with NativeEditorRepository when editor_native FFI is ready
+  getIt.registerLazySingleton<ICodeEditorRepository>(
+    () => MockEditorRepository(),
+  );
 
   // ================================================================
   // Application Layer (Use Cases & Services)
@@ -120,8 +121,8 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<GetCompletionsUseCase>(
     () => GetCompletionsUseCase(
-      lspRepository: getIt<ILspClientRepository>(),
-      // editorRepository: getIt<ICodeEditorRepository>(),
+      getIt<ILspClientRepository>(),
+      getIt<ICodeEditorRepository>(),
     ),
   );
 
@@ -154,11 +155,11 @@ Future<void> configureDependencies() async {
   // ================================================================
 
   // Editor Store (Singleton - one instance per app)
-  // getIt.registerLazySingleton<EditorStore>(
-  //   () => EditorStore(
-  //     editorRepository: getIt<ICodeEditorRepository>(),
-  //   ),
-  // );
+  getIt.registerLazySingleton<EditorStore>(
+    () => EditorStore(
+      editorRepository: getIt<ICodeEditorRepository>(),
+    ),
+  );
 
   // LSP Store (Singleton - one instance per app)
   getIt.registerLazySingleton<LspStore>(
@@ -194,21 +195,9 @@ Future<void> configureDependencies() async {
 /// - Clean separation: Provider provides stores, Observer observes stores
 /// - Testability: Easy to provide mock stores for testing
 /// - Scoping: Can create scoped providers for different parts of app
-// List<Provider> createStoreProviders() {
-//   return [
-//     // Editor Store Provider
-//     Provider<EditorStore>(
-//       create: (_) => getIt<EditorStore>(),
-//       dispose: (_, store) => store.dispose(),
-//     ),
-//
-//     // LSP Store Provider
-//     Provider<LspStore>(
-//       create: (_) => getIt<LspStore>(),
-//       dispose: (_, store) => store.dispose(),
-//     ),
-//   ];
-// }
+///
+/// Note: For simple apps, you can just use GetIt directly without Provider.
+/// Provider is optional but recommended for better widget tree scoping.
 
 /// Alternative: Creates ChangeNotifierProvider list (if stores extend ChangeNotifier)
 ///

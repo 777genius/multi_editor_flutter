@@ -159,12 +159,20 @@ abstract class _EditorStore with Store {
     );
   }
 
-  /// Deletes text in range
+  /// Deletes text between two positions
   @action
-  Future<void> deleteText({required int start, required int end}) async {
+  Future<void> deleteText({
+    required CursorPosition start,
+    required CursorPosition end,
+  }) async {
     if (!isReady) return;
 
-    final result = await _editorRepository.deleteText(start: start, end: end);
+    // Use replaceText with empty string to delete
+    final result = await _editorRepository.replaceText(
+      start: start,
+      end: end,
+      text: '',
+    );
 
     result.fold(
       (failure) => _handleError('Failed to delete text', failure),
@@ -181,7 +189,7 @@ abstract class _EditorStore with Store {
   Future<void> moveCursor(CursorPosition position) async {
     if (!isReady) return;
 
-    final result = await _editorRepository.moveCursor(position);
+    final result = await _editorRepository.setCursorPosition(position);
 
     result.fold(
       (failure) => _handleError('Failed to move cursor', failure),
