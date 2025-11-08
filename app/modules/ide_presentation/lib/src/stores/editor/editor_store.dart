@@ -244,27 +244,41 @@ abstract class _EditorStore with Store {
     );
   }
 
-  /// Opens a document
+  /// Opens a document with content
   @action
   Future<void> openDocument({
     required DocumentUri uri,
     required LanguageId language,
+    required String initialContent,
   }) async {
     isLoading = true;
     errorMessage = null;
     errorFailure = null;
 
     try {
-      // TODO: Load document content from file system
-      // For now, start with empty content
+      // Set document metadata
       documentUri = uri;
       languageId = language;
-      content = '';
+      content = initialContent;
       cursorPosition = CursorPosition.create(line: 0, column: 0);
       selection = null;
       hasUnsavedChanges = false;
       canUndo = false;
       canRedo = false;
+
+      // Open in repository
+      final document = EditorDocument(
+        uri: uri,
+        content: initialContent,
+        languageId: language,
+        lastModified: DateTime.now(),
+      );
+
+      final result = await _editorRepository.openDocument(document);
+      result.fold(
+        (failure) => _handleError('Failed to open document', failure),
+        (_) => {}, // Success
+      );
     } finally {
       isLoading = false;
     }
@@ -285,23 +299,11 @@ abstract class _EditorStore with Store {
     errorFailure = null;
   }
 
-  /// Saves current document
+  /// Saves current document (marks as saved - actual file write happens externally via FileService)
   @action
-  Future<void> saveDocument() async {
+  Future<void> markDocumentSaved() async {
     if (!hasDocument) return;
-
-    isLoading = true;
-    errorMessage = null;
-    errorFailure = null;
-
-    try {
-      // TODO: Save document content to file system
-      hasUnsavedChanges = false;
-    } catch (e) {
-      errorMessage = 'Failed to save document: $e';
-    } finally {
-      isLoading = false;
-    }
+    hasUnsavedChanges = false;
   }
 
   /// Loads content into editor

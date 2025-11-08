@@ -181,7 +181,7 @@ class _IdeScreenState extends State<IdeScreen> {
             return IconButton(
               icon: const Icon(Icons.undo),
               tooltip: 'Undo',
-              onPressed: canUndo ? () async => await _editorStore.undo() : null,
+              onPressed: canUndo ? () => _editorStore.undo() : null,
             );
           },
         ),
@@ -194,7 +194,7 @@ class _IdeScreenState extends State<IdeScreen> {
             return IconButton(
               icon: const Icon(Icons.redo),
               tooltip: 'Redo',
-              onPressed: canRedo ? () async => await _editorStore.redo() : null,
+              onPressed: canRedo ? () => _editorStore.redo() : null,
             );
           },
         ),
@@ -568,13 +568,12 @@ class _IdeScreenState extends State<IdeScreen> {
           });
         }
 
+        // Open document with initial content (fixes race condition)
         await _editorStore.openDocument(
           uri: document.uri,
           language: document.languageId,
+          initialContent: document.content,
         );
-
-        // Set content
-        _editorStore.loadContent(document.content, uri: document.uri);
 
         // Show success
         if (mounted) {
@@ -634,7 +633,7 @@ class _IdeScreenState extends State<IdeScreen> {
       },
       (_) async {
         // Mark as saved
-        await _editorStore.saveDocument();
+        await _editorStore.markDocumentSaved();
 
         // Show success
         if (mounted) {
