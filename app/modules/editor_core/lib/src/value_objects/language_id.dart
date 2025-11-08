@@ -18,13 +18,22 @@ class LanguageId with _$LanguageId {
   static const rust = LanguageId('rust');
   static const go = LanguageId('go');
   static const java = LanguageId('java');
+  static const kotlin = LanguageId('kotlin');
+  static const swift = LanguageId('swift');
+  static const c = LanguageId('c');
   static const cpp = LanguageId('cpp');
   static const csharp = LanguageId('csharp');
+  static const ruby = LanguageId('ruby');
+  static const php = LanguageId('php');
   static const html = LanguageId('html');
   static const css = LanguageId('css');
+  static const scss = LanguageId('scss');
   static const json = LanguageId('json');
+  static const xml = LanguageId('xml');
   static const yaml = LanguageId('yaml');
   static const markdown = LanguageId('markdown');
+  static const sql = LanguageId('sql');
+  static const shellscript = LanguageId('shellscript');
   static const plaintext = LanguageId('plaintext');
 
   /// Detects language from file extension
@@ -32,19 +41,28 @@ class LanguageId with _$LanguageId {
     final normalized = extension.toLowerCase().replaceFirst('.', '');
     return switch (normalized) {
       'dart' => dart,
-      'js' || 'mjs' => javascript,
-      'ts' => typescript,
+      'js' || 'mjs' || 'jsx' => javascript,
+      'ts' || 'tsx' => typescript,
       'py' => python,
       'rs' => rust,
       'go' => go,
       'java' => java,
-      'cpp' || 'cc' || 'cxx' || 'c++' => cpp,
+      'kt' || 'kts' => kotlin,
+      'swift' => swift,
+      'c' => c,
+      'cpp' || 'cc' || 'cxx' || 'c++' || 'h' || 'hpp' => cpp,
       'cs' => csharp,
+      'rb' => ruby,
+      'php' => php,
       'html' || 'htm' => html,
       'css' => css,
+      'scss' || 'sass' => scss,
       'json' => json,
+      'xml' => xml,
       'yaml' || 'yml' => yaml,
-      'md' => markdown,
+      'md' || 'markdown' => markdown,
+      'sql' => sql,
+      'sh' || 'bash' => shellscript,
       _ => plaintext,
     };
   }

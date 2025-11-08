@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:mobx/mobx.dart';
 import 'package:editor_core/editor_core.dart';
 import 'package:injectable/injectable.dart';
@@ -56,6 +57,9 @@ class EditorStore = _EditorStore with _$EditorStore;
 
 abstract class _EditorStore with Store {
   final ICodeEditorRepository _editorRepository;
+
+  // Debounce timer for syncing content to Repository
+  Timer? _contentSyncTimer;
 
   _EditorStore({
     required ICodeEditorRepository editorRepository,
@@ -323,8 +327,8 @@ abstract class _EditorStore with Store {
   /// Updates content from UI (TextField changes)
   ///
   /// This is called when user types in TextField.
-  /// Unlike insertText(), this doesn't call repository - it just updates
-  /// the observable content to reflect UI state.
+  /// Uses debouncing to avoid excessive Repository updates.
+  /// After 300ms of inactivity, syncs with Repository for Undo/Redo support.
   @action
   void updateContentFromUI(String newContent) {
     if (content != newContent) {
@@ -332,7 +336,34 @@ abstract class _EditorStore with Store {
       hasUnsavedChanges = true;
       errorMessage = null;
       errorFailure = null;
+
+      // Cancel previous timer
+      _contentSyncTimer?.cancel();
+
+      // Schedule Repository sync after 300ms of inactivity (debouncing)
+      _contentSyncTimer = Timer(const Duration(milliseconds: 300), () {
+        _syncContentToRepository(newContent);
+      });
     }
+  }
+
+  /// Syncs content to Repository for Undo/Redo support
+  Future<void> _syncContentToRepository(String content) async {
+    if (!hasDocument) return;
+
+    // Set content in Repository so Undo/Redo stack is updated
+    final result = await _editorRepository.setContent(content);
+
+    result.fold(
+      (failure) {
+        // Don't show error to user for background sync, just log
+        // Presentation layer will continue working with local content
+      },
+      (_) {
+        // Successfully synced - update undo/redo state
+        canUndo = true;
+      },
+    );
   }
 
   /// Clears error state
@@ -376,6 +407,6 @@ abstract class _EditorStore with Store {
 
   /// Disposes store resources
   void dispose() {
-    // Cleanup if needed
+    _contentSyncTimer?.cancel();
   }
 }
