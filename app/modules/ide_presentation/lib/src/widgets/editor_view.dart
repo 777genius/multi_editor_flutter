@@ -1,35 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/editor/editor_bloc.dart';
-import '../bloc/editor/editor_state.dart';
-import '../bloc/editor/editor_event.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:get_it/get_it.dart';
+import '../stores/editor/editor_store.dart';
 
 /// EditorView
 ///
 /// Main code editor widget that displays and edits text content.
 ///
-/// Architecture:
-/// - Part of Presentation layer
-/// - Uses EditorBloc for state management
-/// - Dispatches events on user interactions
-/// - Rebuilds on state changes
+/// Architecture (Clean Architecture + MobX):
+/// ```
+/// EditorView (UI Widget)
+///     ↓ observes (@observable)
+/// EditorStore (MobX Store)
+///     ↓ calls (@action)
+/// Use Cases (Application Layer)
+///     ↓ uses
+/// Repositories (Domain Interfaces)
+/// ```
+///
+/// MobX Best Practices:
+/// - Observer: Automatically rebuilds when observables change
+/// - Reactions: Side effects in reaction() or autorun()
+/// - Computed: Derived state accessed as properties
+/// - Actions: Triggered directly on store
 ///
 /// Responsibilities:
-/// - Displays editor content
+/// - Displays editor content reactively
 /// - Handles text input and editing
 /// - Shows cursor and selection
 /// - Displays line numbers
 /// - Handles keyboard shortcuts
+/// - Observes EditorStore for state changes
 ///
 /// Example:
 /// ```dart
-/// BlocProvider(
-///   create: (context) => getIt<EditorBloc>(),
-///   child: EditorView(),
-/// );
+/// // Store is provided via GetIt
+/// final store = getIt<EditorStore>();
+///
+/// // In widget tree
+/// EditorView()
 /// ```
 class EditorView extends StatefulWidget {
-  const EditorView({super.key});
+  final EditorStore? store;
+
+  const EditorView({
+    super.key,
+    this.store,
+  });
 
   @override
   State<EditorView> createState() => _EditorViewState();
@@ -38,6 +55,17 @@ class EditorView extends StatefulWidget {
 class _EditorViewState extends State<EditorView> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  late final EditorStore _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _store = widget.store ?? GetIt.I<EditorStore>();
+
+    // Sync controller with store content
+    _controller.text = _store.content;
+  }
 
   @override
   void dispose() {
@@ -48,36 +76,35 @@ class _EditorViewState extends State<EditorView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<EditorBloc, EditorState>(
-      listener: (context, state) {
-        // Update text controller when state changes
-        if (state is EditorReadyState) {
-          if (_controller.text != state.content) {
-            _controller.text = state.content;
+    return Observer(
+      builder: (_) {
+        // Update text controller when store content changes
+        // (avoid rebuilding entire widget on every change)
+        if (_controller.text != _store.content) {
+          final cursorOffset = _controller.selection.baseOffset;
+          _controller.text = _store.content;
+
+          // Restore cursor position if valid
+          if (cursorOffset >= 0 && cursorOffset <= _store.content.length) {
+            _controller.selection = TextSelection.collapsed(offset: cursorOffset);
           }
         }
+
+        // Render based on store state
+        if (!_store.hasDocument) {
+          return _buildEmptyState();
+        }
+
+        if (_store.isLoading) {
+          return _buildLoadingState();
+        }
+
+        if (_store.hasError) {
+          return _buildErrorState();
+        }
+
+        return _buildEditor();
       },
-      child: BlocBuilder<EditorBloc, EditorState>(
-        builder: (context, state) {
-          if (state is EditorInitialState) {
-            return _buildEmptyState();
-          }
-
-          if (state is EditorLoadingState) {
-            return _buildLoadingState(state.message);
-          }
-
-          if (state is EditorErrorState) {
-            return _buildErrorState(state.message);
-          }
-
-          if (state is EditorReadyState) {
-            return _buildEditor(context, state);
-          }
-
-          return const SizedBox.shrink();
-        },
-      ),
     );
   }
 
@@ -93,29 +120,32 @@ class _EditorViewState extends State<EditorView> {
             'No document opened',
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
+          SizedBox(height: 8),
+          Text(
+            'Open a file to start editing',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
     );
   }
 
   /// Builds loading state
-  Widget _buildLoadingState(String? message) {
-    return Center(
+  Widget _buildLoadingState() {
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            Text(message),
-          ],
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Loading...'),
         ],
       ),
     );
   }
 
   /// Builds error state
-  Widget _buildErrorState(String message) {
+  Widget _buildErrorState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -127,21 +157,30 @@ class _EditorViewState extends State<EditorView> {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          Text(message),
+          Text(
+            _store.errorMessage ?? 'Unknown error',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.red),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () => _store.clearError(),
+            child: const Text('Clear Error'),
+          ),
         ],
       ),
     );
   }
 
   /// Builds the main editor
-  Widget _buildEditor(BuildContext context, EditorReadyState state) {
+  Widget _buildEditor() {
     return Container(
       color: const Color(0xFF1E1E1E), // VS Code dark background
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Line numbers
-          _buildLineNumbers(state),
+          _buildLineNumbers(),
 
           // Editor content
           Expanded(
@@ -161,11 +200,8 @@ class _EditorViewState extends State<EditorView> {
                 contentPadding: EdgeInsets.all(16),
               ),
               onChanged: (text) {
-                // Dispatch text changed event
-                context.read<EditorBloc>().add(TextInsertedEvent(
-                  text: text,
-                  position: _controller.selection.baseOffset,
-                ));
+                // Trigger action on store
+                _store.insertText(text);
               },
             ),
           ),
@@ -175,28 +211,39 @@ class _EditorViewState extends State<EditorView> {
   }
 
   /// Builds line numbers column
-  Widget _buildLineNumbers(EditorReadyState state) {
-    final lineCount = state.content.split('\n').length;
+  Widget _buildLineNumbers() {
+    return Observer(
+      builder: (_) {
+        final lineCount = _store.lineCount;
 
-    return Container(
-      width: 60,
-      color: const Color(0xFF252525), // Slightly lighter than editor
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(
-          lineCount,
-          (index) => Text(
-            '${index + 1}',
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 14,
-              color: Color(0xFF858585),
-              height: 1.5,
+        return Container(
+          width: 60,
+          color: const Color(0xFF252525), // Slightly lighter than editor
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(
+              lineCount,
+              (index) {
+                final isCurrentLine = index == _store.cursorPosition.line;
+
+                return Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    color: isCurrentLine
+                        ? const Color(0xFFC6C6C6) // Highlighted line number
+                        : const Color(0xFF858585), // Normal line number
+                    fontWeight: isCurrentLine ? FontWeight.bold : FontWeight.normal,
+                    height: 1.5,
+                  ),
+                );
+              },
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

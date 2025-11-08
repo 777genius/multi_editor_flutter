@@ -1,6 +1,6 @@
 /// IDE Presentation Layer
 ///
-/// This package provides UI widgets, BLoCs, and screens for the IDE.
+/// This package provides UI widgets, MobX Stores, and screens for the IDE.
 /// It is the outermost layer in Clean Architecture and coordinates user interactions.
 ///
 /// Architecture Layer: Presentation
@@ -10,30 +10,31 @@
 ///
 /// Key Components:
 ///
-/// **BLoCs** (Business Logic Components - State Management):
-/// - EditorBloc: Manages editor state and text editing operations
-/// - LspBloc: Coordinates LSP interactions (completions, hover, diagnostics)
+/// **MobX Stores** (Reactive State Management):
+/// - EditorStore: Manages editor state (@observable, @action, @computed)
+/// - LspStore: Coordinates LSP interactions (@observable, @action, @computed)
 ///
 /// **Widgets** (UI Components):
-/// - EditorView: Main code editor widget
-/// - CompletionPopup: Code completion suggestions popup
-/// - DiagnosticPanel: Errors and warnings panel
+/// - EditorView: Main code editor widget with Observer pattern
+/// - CompletionPopup: Code completion suggestions popup (TODO)
+/// - DiagnosticPanel: Errors and warnings panel (TODO)
 ///
 /// **Screens** (Full Page Layouts):
 /// - IdeScreen: Main IDE screen with editor, sidebar, panels
 ///
 /// **Dependency Injection**:
-/// - Uses Injectable + GetIt for dependency injection
+/// - Uses GetIt + Injectable for dependency injection
+/// - Uses Provider for widget tree store provision
 /// - Configured in injection_container.dart
 ///
-/// Architecture Pattern: Clean Architecture + BLoC
+/// Architecture Pattern: Clean Architecture + MobX + Provider
 /// ```
 /// User Interaction
 ///     ↓ triggers
-/// Widget (UI)
-///     ↓ dispatches events
-/// BLoC (Presentation Logic)
-///     ↓ calls
+/// Widget (UI with Observer)
+///     ↓ observes @observable
+/// MobX Store (Presentation Logic)
+///     ↓ calls @action
 /// Use Cases (Application Logic)
 ///     ↓ uses
 /// Repositories (Domain Interfaces)
@@ -41,43 +42,50 @@
 /// Infrastructure Adapters
 /// ```
 ///
+/// MobX Best Practices Applied:
+/// - **@observable**: Reactive state (content, cursor, completions)
+/// - **@action**: State mutations (insertText, getCompletions)
+/// - **@computed**: Derived state (hasDocument, errorCount)
+/// - **Observer**: Granular rebuilds only when observables change
+/// - **Provider**: Widget tree dependency provision
+/// - **GetIt**: Service locator for stores and use cases
+///
 /// Example:
 /// ```dart
 /// // Setup dependency injection
 /// await configureDependencies();
 ///
-/// // Use BlocProvider to provide BLoCs to widgets
-/// BlocProvider(
-///   create: (context) => getIt<EditorBloc>(),
-///   child: EditorView(),
+/// // Provide stores via Provider
+/// runApp(
+///   MultiProvider(
+///     providers: [
+///       Provider<EditorStore>(create: (_) => getIt<EditorStore>()),
+///       Provider<LspStore>(create: (_) => getIt<LspStore>()),
+///     ],
+///     child: MyApp(),
+///   ),
 /// );
 ///
-/// // In widget, dispatch events
-/// context.read<EditorBloc>().add(TextInsertedEvent(
-///   text: 'Hello',
-///   position: 0,
-/// ));
+/// // In widget, get store from Provider or GetIt
+/// final editorStore = context.read<EditorStore>();
+/// // or
+/// final editorStore = getIt<EditorStore>();
 ///
-/// // In widget, listen to state changes
-/// BlocBuilder<EditorBloc, EditorState>(
-///   builder: (context, state) {
-///     if (state is EditorReadyState) {
-///       return Text(state.content);
-///     }
-///     return CircularProgressIndicator();
+/// // In widget, observe state
+/// Observer(
+///   builder: (_) {
+///     return Text(editorStore.content);
 ///   },
 /// );
+///
+/// // Trigger action
+/// editorStore.insertText('Hello');
 /// ```
 library ide_presentation;
 
-// BLoCs
-export 'src/bloc/editor/editor_bloc.dart';
-export 'src/bloc/editor/editor_event.dart';
-export 'src/bloc/editor/editor_state.dart';
-
-export 'src/bloc/lsp/lsp_bloc.dart';
-export 'src/bloc/lsp/lsp_event.dart';
-export 'src/bloc/lsp/lsp_state.dart';
+// MobX Stores
+export 'src/stores/editor/editor_store.dart';
+export 'src/stores/lsp/lsp_store.dart';
 
 // Widgets
 export 'src/widgets/editor_view.dart';

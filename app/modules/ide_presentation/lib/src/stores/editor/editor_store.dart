@@ -1,0 +1,356 @@
+import 'package:mobx/mobx.dart';
+import 'package:editor_core/editor_core.dart';
+import 'package:injectable/injectable.dart';
+
+part 'editor_store.g.dart';
+
+/// EditorStore
+///
+/// MobX Store для управления состоянием редактора.
+///
+/// Architecture (Clean Architecture + MobX):
+/// ```
+/// UI Widget
+///     ↓ observes (@observable)
+/// EditorStore
+///     ↓ calls (@action)
+/// Use Cases (Application Layer)
+///     ↓ uses
+/// Repositories (Domain Interfaces)
+///     ↑ implemented by
+/// Infrastructure Adapters
+/// ```
+///
+/// MobX Best Practices:
+/// - @observable: Reactive state (content, cursor, selection)
+/// - @action: State mutations (insertText, moveCursor, undo/redo)
+/// - @computed: Derived state (hasUnsavedChanges, canUndo, canRedo)
+/// - Single Responsibility: Manages only editor state
+/// - Dependency Injection: Repository injected via constructor
+/// - Clean Architecture: Depends only on domain interfaces
+///
+/// Responsibilities:
+/// - Manages editor content and cursor state
+/// - Handles text editing operations
+/// - Coordinates undo/redo operations
+/// - Tracks document changes and save state
+/// - Exposes reactive state for UI
+///
+/// Example:
+/// ```dart
+/// // In UI widget
+/// @override
+/// Widget build(BuildContext context) {
+///   final store = getIt<EditorStore>();
+///
+///   return Observer(
+///     builder: (_) => Text(store.content),
+///   );
+/// }
+///
+/// // Trigger action
+/// store.insertText('Hello', 0);
+/// ```
+@injectable
+class EditorStore = _EditorStore with _$EditorStore;
+
+abstract class _EditorStore with Store {
+  final ICodeEditorRepository _editorRepository;
+
+  _EditorStore({
+    required ICodeEditorRepository editorRepository,
+  }) : _editorRepository = editorRepository;
+
+  // ================================================================
+  // Observable State (Reactive)
+  // ================================================================
+
+  /// Current editor content
+  @observable
+  String content = '';
+
+  /// Current cursor position
+  @observable
+  CursorPosition cursorPosition = CursorPosition.create(line: 0, column: 0);
+
+  /// Current text selection (null if no selection)
+  @observable
+  TextSelection? selection;
+
+  /// Current document URI (null if no document opened)
+  @observable
+  DocumentUri? documentUri;
+
+  /// Current language ID (null if no language set)
+  @observable
+  LanguageId? languageId;
+
+  /// Whether document has unsaved changes
+  @observable
+  bool hasUnsavedChanges = false;
+
+  /// Whether undo operation is available
+  @observable
+  bool canUndo = false;
+
+  /// Whether redo operation is available
+  @observable
+  bool canRedo = false;
+
+  /// Whether editor is loading
+  @observable
+  bool isLoading = false;
+
+  /// Error message (null if no error)
+  @observable
+  String? errorMessage;
+
+  /// Error failure object (null if no error)
+  @observable
+  EditorFailure? errorFailure;
+
+  // ================================================================
+  // Computed Properties (Derived State)
+  // ================================================================
+
+  /// Whether a document is currently opened
+  @computed
+  bool get hasDocument => documentUri != null;
+
+  /// Whether editor is in error state
+  @computed
+  bool get hasError => errorMessage != null;
+
+  /// Whether editor is ready for editing
+  @computed
+  bool get isReady => hasDocument && !isLoading && !hasError;
+
+  /// Total number of lines in document
+  @computed
+  int get lineCount => content.split('\n').length;
+
+  /// Current line content
+  @computed
+  String get currentLine {
+    if (content.isEmpty) return '';
+    final lines = content.split('\n');
+    if (cursorPosition.line >= lines.length) return '';
+    return lines[cursorPosition.line];
+  }
+
+  // ================================================================
+  // Actions (State Mutations)
+  // ================================================================
+
+  /// Inserts text at current cursor position
+  @action
+  Future<void> insertText(String text) async {
+    if (!isReady) return;
+
+    final result = await _editorRepository.insertText(text);
+
+    result.fold(
+      (failure) => _handleError('Failed to insert text', failure),
+      (_) async {
+        await _refreshEditorState();
+        hasUnsavedChanges = true;
+        canUndo = true;
+      },
+    );
+  }
+
+  /// Deletes text in range
+  @action
+  Future<void> deleteText({required int start, required int end}) async {
+    if (!isReady) return;
+
+    final result = await _editorRepository.deleteText(start: start, end: end);
+
+    result.fold(
+      (failure) => _handleError('Failed to delete text', failure),
+      (_) async {
+        await _refreshEditorState();
+        hasUnsavedChanges = true;
+        canUndo = true;
+      },
+    );
+  }
+
+  /// Moves cursor to position
+  @action
+  Future<void> moveCursor(CursorPosition position) async {
+    if (!isReady) return;
+
+    final result = await _editorRepository.moveCursor(position);
+
+    result.fold(
+      (failure) => _handleError('Failed to move cursor', failure),
+      (_) {
+        cursorPosition = position;
+        selection = null; // Clear selection on cursor move
+      },
+    );
+  }
+
+  /// Sets text selection
+  @action
+  void setSelection(TextSelection newSelection) {
+    selection = newSelection;
+  }
+
+  /// Clears text selection
+  @action
+  void clearSelection() {
+    selection = null;
+  }
+
+  /// Performs undo operation
+  @action
+  Future<void> undo() async {
+    if (!canUndo) return;
+
+    final result = await _editorRepository.undo();
+
+    result.fold(
+      (failure) => _handleError('Failed to undo', failure),
+      (_) async {
+        await _refreshEditorState();
+        canRedo = true;
+      },
+    );
+  }
+
+  /// Performs redo operation
+  @action
+  Future<void> redo() async {
+    if (!canRedo) return;
+
+    final result = await _editorRepository.redo();
+
+    result.fold(
+      (failure) => _handleError('Failed to redo', failure),
+      (_) async {
+        await _refreshEditorState();
+        canUndo = true;
+      },
+    );
+  }
+
+  /// Opens a document
+  @action
+  Future<void> openDocument({
+    required DocumentUri uri,
+    required LanguageId language,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+    errorFailure = null;
+
+    try {
+      // TODO: Load document content from file system
+      // For now, start with empty content
+      documentUri = uri;
+      languageId = language;
+      content = '';
+      cursorPosition = CursorPosition.create(line: 0, column: 0);
+      selection = null;
+      hasUnsavedChanges = false;
+      canUndo = false;
+      canRedo = false;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  /// Closes current document
+  @action
+  void closeDocument() {
+    content = '';
+    cursorPosition = CursorPosition.create(line: 0, column: 0);
+    selection = null;
+    documentUri = null;
+    languageId = null;
+    hasUnsavedChanges = false;
+    canUndo = false;
+    canRedo = false;
+    errorMessage = null;
+    errorFailure = null;
+  }
+
+  /// Saves current document
+  @action
+  Future<void> saveDocument() async {
+    if (!hasDocument) return;
+
+    isLoading = true;
+    errorMessage = null;
+    errorFailure = null;
+
+    try {
+      // TODO: Save document content to file system
+      hasUnsavedChanges = false;
+    } catch (e) {
+      errorMessage = 'Failed to save document: $e';
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  /// Loads content into editor
+  @action
+  void loadContent(String newContent, {DocumentUri? uri}) {
+    content = newContent;
+    cursorPosition = CursorPosition.create(line: 0, column: 0);
+    selection = null;
+    if (uri != null) {
+      documentUri = uri;
+    }
+    hasUnsavedChanges = false;
+    errorMessage = null;
+    errorFailure = null;
+  }
+
+  /// Clears error state
+  @action
+  void clearError() {
+    errorMessage = null;
+    errorFailure = null;
+  }
+
+  // ================================================================
+  // Private Methods
+  // ================================================================
+
+  /// Refreshes editor state from repository
+  @action
+  Future<void> _refreshEditorState() async {
+    final contentResult = await _editorRepository.getContent();
+    final cursorResult = await _editorRepository.getCursorPosition();
+
+    contentResult.fold(
+      (failure) => _handleError('Failed to get content', failure),
+      (newContent) {
+        content = newContent;
+      },
+    );
+
+    cursorResult.fold(
+      (failure) => _handleError('Failed to get cursor', failure),
+      (newCursor) {
+        cursorPosition = newCursor;
+      },
+    );
+  }
+
+  /// Handles error by setting error state
+  @action
+  void _handleError(String message, EditorFailure failure) {
+    errorMessage = message;
+    errorFailure = failure;
+  }
+
+  /// Disposes store resources
+  void dispose() {
+    // Cleanup if needed
+  }
+}

@@ -5,16 +5,16 @@ import 'package:lsp_infrastructure/lsp_infrastructure.dart';
 import 'package:lsp_domain/lsp_domain.dart';
 import 'package:editor_core/editor_core.dart';
 
-import '../bloc/editor/editor_bloc.dart';
-import '../bloc/lsp/lsp_bloc.dart';
+import '../stores/editor/editor_store.dart';
+import '../stores/lsp/lsp_store.dart';
 
 /// Dependency Injection Container
 ///
-/// Configures and provides all dependencies for the IDE Presentation layer.
+/// Configures and provides all dependencies using GetIt + Injectable + Provider pattern.
 ///
 /// Architecture (Dependency Inversion Principle):
 /// ```
-/// Presentation Layer
+/// Presentation Layer (MobX Stores)
 ///     ↓ depends on
 /// Application Layer (Use Cases, Services)
 ///     ↓ depends on
@@ -23,9 +23,11 @@ import '../bloc/lsp/lsp_bloc.dart';
 /// Infrastructure Layer (Adapters)
 /// ```
 ///
-/// Using:
-/// - GetIt: Service locator for dependency injection
-/// - Injectable: Code generation for dependency registration
+/// Patterns Used:
+/// - **GetIt**: Service locator for dependency injection
+/// - **Injectable**: Code generation for dependency registration
+/// - **Provider**: Widget tree dependency provision (for stores)
+/// - **MobX**: Reactive state management in stores
 ///
 /// Layers and their dependencies:
 /// 1. **Infrastructure** (Adapters):
@@ -36,20 +38,32 @@ import '../bloc/lsp/lsp_bloc.dart';
 ///    - Use Cases depend on ILspClientRepository
 ///    - Services coordinate multiple use cases
 ///
-/// 3. **Presentation** (BLoCs):
-///    - BLoCs depend on Use Cases
-///    - UI widgets depend on BLoCs
+/// 3. **Presentation** (MobX Stores):
+///    - Stores depend on Use Cases
+///    - UI widgets observe Stores via Provider + Observer
 ///
 /// Example:
 /// ```dart
 /// // In main.dart
 /// void main() async {
 ///   await configureDependencies();
-///   runApp(MyApp());
+///
+///   runApp(
+///     MultiProvider(
+///       providers: createStoreProviders(),
+///       child: MyApp(),
+///     ),
+///   );
 /// }
 ///
-/// // In widget
-/// final bloc = getIt<EditorBloc>();
+/// // In widget (Option 1: Provider.of)
+/// final editorStore = Provider.of<EditorStore>(context, listen: false);
+///
+/// // In widget (Option 2: GetIt)
+/// final editorStore = getIt<EditorStore>();
+///
+/// // In widget (Option 3: context.read)
+/// final editorStore = context.read<EditorStore>();
 /// ```
 
 final getIt = GetIt.instance;
@@ -58,6 +72,7 @@ final getIt = GetIt.instance;
 ///
 /// Must be called before using any dependencies.
 /// Typically called in main() before runApp().
+@InjectableInit()
 Future<void> configureDependencies() async {
   // ================================================================
   // Infrastructure Layer (Adapters)
@@ -135,19 +150,19 @@ Future<void> configureDependencies() async {
   );
 
   // ================================================================
-  // Presentation Layer (BLoCs)
+  // Presentation Layer (MobX Stores)
   // ================================================================
 
-  // Editor BLoC
-  // getIt.registerFactory<EditorBloc>(
-  //   () => EditorBloc(
+  // Editor Store (Singleton - one instance per app)
+  // getIt.registerLazySingleton<EditorStore>(
+  //   () => EditorStore(
   //     editorRepository: getIt<ICodeEditorRepository>(),
   //   ),
   // );
 
-  // LSP BLoC
-  getIt.registerFactory<LspBloc>(
-    () => LspBloc(
+  // LSP Store (Singleton - one instance per app)
+  getIt.registerLazySingleton<LspStore>(
+    () => LspStore(
       initializeSessionUseCase: getIt<InitializeLspSessionUseCase>(),
       shutdownSessionUseCase: getIt<ShutdownLspSessionUseCase>(),
       getCompletionsUseCase: getIt<GetCompletionsUseCase>(),
@@ -158,6 +173,47 @@ Future<void> configureDependencies() async {
     ),
   );
 }
+
+/// Creates Provider list for MobX Stores
+///
+/// Use this with MultiProvider to provide stores to widget tree.
+///
+/// Example:
+/// ```dart
+/// runApp(
+///   MultiProvider(
+///     providers: createStoreProviders(),
+///     child: MyApp(),
+///   ),
+/// );
+/// ```
+///
+/// Benefits of Provider + MobX:
+/// - Provider: Widget tree-based dependency injection
+/// - MobX: Reactive state management within stores
+/// - Clean separation: Provider provides stores, Observer observes stores
+/// - Testability: Easy to provide mock stores for testing
+/// - Scoping: Can create scoped providers for different parts of app
+// List<Provider> createStoreProviders() {
+//   return [
+//     // Editor Store Provider
+//     Provider<EditorStore>(
+//       create: (_) => getIt<EditorStore>(),
+//       dispose: (_, store) => store.dispose(),
+//     ),
+//
+//     // LSP Store Provider
+//     Provider<LspStore>(
+//       create: (_) => getIt<LspStore>(),
+//       dispose: (_, store) => store.dispose(),
+//     ),
+//   ];
+// }
+
+/// Alternative: Creates ChangeNotifierProvider list (if stores extend ChangeNotifier)
+///
+/// Note: MobX stores don't need ChangeNotifier because they use their own
+/// reactive system with Observer widgets. Use regular Provider instead.
 
 /// Resets all dependencies (useful for testing)
 Future<void> resetDependencies() async {
