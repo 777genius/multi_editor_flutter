@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:mobx/mobx.dart';
 import 'package:get_it/get_it.dart';
 import '../stores/editor/editor_store.dart';
 
@@ -57,18 +58,39 @@ class _EditorViewState extends State<EditorView> {
   final FocusNode _focusNode = FocusNode();
 
   late final EditorStore _store;
+  late final ReactionDisposer _contentReactionDisposer;
 
   @override
   void initState() {
     super.initState();
     _store = widget.store ?? GetIt.I<EditorStore>();
 
-    // Sync controller with store content
+    // Initial sync
     _controller.text = _store.content;
+
+    // React to store content changes
+    // This is the CORRECT way - reaction() instead of modifying in build()
+    _contentReactionDisposer = reaction(
+      // What to observe
+      (_) => _store.content,
+      // What to do when it changes
+      (String newContent) {
+        if (_controller.text != newContent) {
+          final cursorOffset = _controller.selection.baseOffset;
+          _controller.text = newContent;
+
+          // Restore cursor position if valid
+          if (cursorOffset >= 0 && cursorOffset <= newContent.length) {
+            _controller.selection = TextSelection.collapsed(offset: cursorOffset);
+          }
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    _contentReactionDisposer();  // Dispose reaction
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -78,17 +100,8 @@ class _EditorViewState extends State<EditorView> {
   Widget build(BuildContext context) {
     return Observer(
       builder: (_) {
-        // Update text controller when store content changes
-        // (avoid rebuilding entire widget on every change)
-        if (_controller.text != _store.content) {
-          final cursorOffset = _controller.selection.baseOffset;
-          _controller.text = _store.content;
-
-          // Restore cursor position if valid
-          if (cursorOffset >= 0 && cursorOffset <= _store.content.length) {
-            _controller.selection = TextSelection.collapsed(offset: cursorOffset);
-          }
-        }
+        // Pure build - no side effects!
+        // Content sync handled by reaction() in initState
 
         // Render based on store state
         if (!_store.hasDocument) {

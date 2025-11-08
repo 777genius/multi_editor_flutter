@@ -8,8 +8,8 @@ import '../stores/lsp/lsp_store.dart';
 import '../widgets/editor_view.dart';
 import '../widgets/diagnostics_panel.dart';
 import '../widgets/settings_dialog.dart';
-import '../services/file_service.dart';
-import '../services/file_picker_service.dart';
+import '../infrastructure/file_service.dart';
+import '../infrastructure/file_picker_service.dart';
 
 /// IdeScreen
 ///
@@ -100,6 +100,19 @@ class _IdeScreenState extends State<IdeScreen> {
         );
       }
     }
+  }
+
+  @override
+  void dispose() {
+    // Dispose Repository which holds Rust FFI handle
+    // This is important to prevent memory leaks
+    try {
+      final repo = GetIt.I<ICodeEditorRepository>();
+      repo.dispose();
+    } catch (e) {
+      debugPrint('Error disposing editor repository: $e');
+    }
+    super.dispose();
   }
 
   @override

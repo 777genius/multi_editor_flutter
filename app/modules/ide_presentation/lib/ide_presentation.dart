@@ -97,9 +97,9 @@ export 'src/widgets/settings_dialog.dart';
 // Screens
 export 'src/screens/ide_screen.dart';
 
-// Services
-export 'src/services/file_service.dart';
-export 'src/services/file_picker_service.dart';
+// Infrastructure Services
+export 'src/infrastructure/file_service.dart';
+export 'src/infrastructure/file_picker_service.dart';
 
 // Dependency Injection
 export 'src/di/injection_container.dart';
