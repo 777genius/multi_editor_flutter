@@ -51,10 +51,11 @@ class FileService {
       final uri = DocumentUri.fromFilePath(filePath);
 
       // Create EditorDocument
-      final document = EditorDocument.create(
+      final document = EditorDocument(
         uri: uri,
         content: content,
         languageId: languageId,
+        lastModified: DateTime.now(),
       );
 
       return right(document);
