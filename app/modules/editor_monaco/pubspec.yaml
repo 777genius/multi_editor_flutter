@@ -20,9 +20,13 @@ dependencies:
   # Utilities
   dartz: ^0.10.1
   rxdart: ^0.28.0
+  injectable: ^2.5.0
+  get_it: ^8.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   test: ^1.25.8
   mocktail: ^1.0.4
+  build_runner: ^2.4.13
+  injectable_generator: ^2.6.2
