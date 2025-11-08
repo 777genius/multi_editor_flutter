@@ -1,0 +1,23 @@
+name: editor_ffi
+description: FFI bridge between Dart and Rust native editor
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  # Domain layer (abstractions)
+  editor_core:
+    path: ../editor_core
+
+  # FFI
+  ffi: ^2.1.2
+
+  # Utilities
+  dartz: ^0.10.1
+  path: ^1.9.0
+
+dev_dependencies:
+  test: ^1.25.8
+  mocktail: ^1.0.4
