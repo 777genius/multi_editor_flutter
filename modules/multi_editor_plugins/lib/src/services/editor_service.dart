@@ -5,11 +5,9 @@ abstract class EditorService {
   /// Check if the editor service is currently available
   bool get isAvailable;
 
-  /// Register code snippets for a specific language
-  ///
-  /// [languageId] - The language identifier (e.g., 'dart', 'javascript')
-  /// [snippets] - List of snippet definitions
-  Future<void> registerSnippets(String languageId, List<dynamic> snippets);
+  // Note: registerSnippets method removed in v0.1.1
+  // Snippets registration moved to Monaco's completion API
+  // See flutter_monaco_crossplatform documentation for new approach
 
   /// Optional: Dispose resources when service is no longer needed
   void dispose() {}

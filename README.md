@@ -9,11 +9,6 @@ A production-ready, extensible multi-file code editor for Flutter built on **Cle
 
 ![Multi-File Code Editor](image.png)
 
-**Repository**: https://github.com/777genius/multi_editor_flutter
-**Platforms**: Windows | macOS | Linux | Web | easy to add Mobile
-**Architecture**: Clean Architecture + DDD + SOLID
-**Monorepo**: Melos + Pub Workspaces
-
 ## ✨ Features
 
 - ✅ **Monaco Editor** - VS Code's professional editor

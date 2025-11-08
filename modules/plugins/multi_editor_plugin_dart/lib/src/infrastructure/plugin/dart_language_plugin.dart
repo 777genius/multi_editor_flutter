@@ -111,13 +111,15 @@ class DartLanguagePlugin extends LanguagePlugin {
     try {
       final snippets = await provideSnippets();
 
-      // Type-safe call to EditorService.registerSnippets()
-      await _editorService!.registerSnippets(languageId, snippets);
+      // Note: registerSnippets removed in flutter_monaco_crossplatform v1.0.1
+      // TODO: Implement snippet registration using Monaco's completion API
+      // See: https://microsoft.github.io/monaco-editor/api/interfaces/monaco.languages.CompletionItemProvider.html
+      // await _editorService!.registerSnippets(languageId, snippets);
 
       _snippetsRegistered = true;
-      print('[DartPlugin] Registered ${snippets.length} pure Dart snippets');
+      print('[DartPlugin] Prepared ${snippets.length} pure Dart snippets (registration pending)');
     } catch (e, stack) {
-      print('[DartPlugin] Error registering snippets: $e\n$stack');
+      print('[DartPlugin] Error preparing snippets: $e\n$stack');
     }
   }
 
