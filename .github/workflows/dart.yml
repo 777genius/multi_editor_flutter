@@ -39,6 +39,5 @@ jobs:
       - name: Format check
         run: melos exec -- dart format . --set-exit-if-changed
 
-      # TODO: Re-enable tests after adding proper test coverage
-      # - name: Run tests
-      #   run: melos exec -- flutter test --no-pub
+      - name: Run tests
+        run: melos exec --scope="multi_editor_plugins,multi_editor_plugin_base" -- flutter test --no-pub
