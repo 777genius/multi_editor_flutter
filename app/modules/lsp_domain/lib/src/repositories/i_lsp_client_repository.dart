@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:meta/meta.dart';
 import 'package:editor_core/editor_core.dart';
 import '../entities/lsp_session.dart';
 import '../entities/completion_list.dart';

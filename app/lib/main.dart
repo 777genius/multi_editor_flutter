@@ -113,7 +113,7 @@ class FlutterIdeApp extends StatelessWidget {
       ),
 
       // Card theme
-      cardTheme: const CardTheme(
+      cardTheme: const CardThemeData(
         color: Color(0xFF252526),
         elevation: 0,
       ),

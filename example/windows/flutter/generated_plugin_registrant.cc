@@ -7,11 +7,11 @@
 #include "generated_plugin_registrant.h"
 
 #include <desktop_drop/desktop_drop_plugin.h>
-#include <webview_cef/webview_cef_plugin_c_api.h>
+#include <webview_windows/webview_windows_plugin.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   DesktopDropPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("DesktopDropPlugin"));
-  WebviewCefPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("WebviewCefPluginCApi"));
+  WebviewWindowsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("WebviewWindowsPlugin"));
 }

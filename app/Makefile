@@ -79,7 +79,7 @@ run-lsp-bridge-dev: ## Run LSP Bridge server in dev mode
 run-dev: ## Run app in development mode
 	@echo "$(BLUE)Starting Flutter IDE (development)...$(NC)"
 	@echo "$(YELLOW)Note: Make sure LSP Bridge is running (make run-lsp-bridge)$(NC)"
-	flutter run -d linux
+	flutter run -d macos
 
 run-web: ## Run app in web browser
 	@echo "$(BLUE)Starting Flutter IDE (web)...$(NC)"

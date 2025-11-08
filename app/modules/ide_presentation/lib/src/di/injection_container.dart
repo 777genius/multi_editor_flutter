@@ -9,8 +9,8 @@ import 'package:editor_ffi/editor_ffi.dart';
 
 import '../stores/editor/editor_store.dart';
 import '../stores/lsp/lsp_store.dart';
-import '../services/file_service.dart';
-import '../services/file_picker_service.dart';
+import '../infrastructure/file_service.dart';
+import '../infrastructure/file_picker_service.dart';
 
 /// Dependency Injection Container
 ///
