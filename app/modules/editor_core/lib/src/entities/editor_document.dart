@@ -37,7 +37,11 @@ class EditorDocument with _$EditorDocument {
   }
 
   /// Gets the number of lines in the document
-  int get lineCount => content.split('\n').length;
+  /// Optimized to avoid allocating intermediate array
+  int get lineCount {
+    if (content.isEmpty) return 1;
+    return '\n'.allMatches(content).length + 1;
+  }
 
   /// Gets the number of characters in the document
   int get characterCount => content.length;

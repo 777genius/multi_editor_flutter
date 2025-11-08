@@ -91,20 +91,34 @@ class LspSessionService {
   /// - [languageId]: Programming language
   ///
   /// Returns:
-  /// - Right(LspSession) if exists
-  /// - Left(LspFailure) if not found
+  /// - Right(LspSession) if exists and is active
+  /// - Left(LspFailure) if not found or inactive
   Future<Either<LspFailure, LspSession>> getSession({
     required LanguageId languageId,
   }) async {
-    // Check cache
+    // Check cache - verify isActive before returning
     final cachedSession = _activeSessions[languageId];
 
     if (cachedSession != null) {
-      return right(cachedSession);
+      // CRITICAL FIX: Verify session is still active before returning
+      if (cachedSession.isActive) {
+        return right(cachedSession);
+      } else {
+        // Remove stale session from cache
+        _activeSessions.remove(languageId);
+      }
     }
 
     // Check repository
-    return _lspRepository.getSession(languageId);
+    final repoResult = await _lspRepository.getSession(languageId);
+
+    // Update cache if session is active
+    return repoResult.map((session) {
+      if (session.isActive) {
+        _activeSessions[languageId] = session;
+      }
+      return session;
+    });
   }
 
   /// Checks if a session exists for a language.
@@ -171,9 +185,18 @@ class LspSessionService {
 
   /// Gets all active sessions.
   ///
-  /// Returns: List of active sessions
+  /// Returns: List of active sessions (filters out stale/inactive sessions)
   List<LspSession> getActiveSessions() {
-    return _activeSessions.values.toList();
+    // Filter out any stale sessions that became inactive
+    final activeSessions = _activeSessions.entries
+        .where((entry) => entry.value.isActive)
+        .map((entry) => entry.value)
+        .toList();
+
+    // Clean up stale sessions from cache
+    _activeSessions.removeWhere((_, session) => !session.isActive);
+
+    return activeSessions;
   }
 
   /// Gets count of active sessions.

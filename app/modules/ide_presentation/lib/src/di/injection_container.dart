@@ -83,9 +83,17 @@ Future<void> configureDependencies() async {
   // ================================================================
 
   // LSP Infrastructure
+  // WebSocket URL configurable via environment variable for different deployments
+  // Usage: flutter run --dart-define=LSP_BRIDGE_URL=ws://production-server:9999
+  const defaultLspBridgeUrl = 'ws://localhost:9999';
+  const lspBridgeUrl = String.fromEnvironment(
+    'LSP_BRIDGE_URL',
+    defaultValue: defaultLspBridgeUrl,
+  );
+
   getIt.registerLazySingleton<ILspClientRepository>(
     () => WebSocketLspClientRepository(
-      bridgeUrl: 'ws://localhost:9999',
+      bridgeUrl: lspBridgeUrl,
       connectionTimeout: const Duration(seconds: 10),
       requestTimeout: const Duration(seconds: 30),
     ),

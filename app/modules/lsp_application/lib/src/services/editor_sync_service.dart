@@ -184,11 +184,12 @@ class EditorSyncService {
     _cursorSubscription = _editorRepository.onCursorPositionChanged
         .debounceTime(const Duration(milliseconds: 100))
         .listen((position) {
+      // TODO: Implement cursor position tracking for LSP features
       // Cursor position can be used for:
-      // - Context-aware completions
-      // - Hover info
-      // - Signature help
-      // Currently just logged, can be used later
+      // - Context-aware completions (send position to completion provider)
+      // - Hover info (update hover based on cursor position)
+      // - Signature help (show function signatures at cursor)
+      // Future implementation: Send cursor position updates to active LSP session
     });
   }
 
@@ -197,10 +198,12 @@ class EditorSyncService {
   /// Some IDEs notify LSP when editor gains/loses focus.
   void _setupFocusListener() {
     _focusSubscription = _editorRepository.onFocusChanged.listen((hasFocus) {
+      // TODO: Implement focus-based LSP optimization
       // Can be used to:
-      // - Pause/resume LSP updates when not focused
-      // - Trigger re-validation when gaining focus
-      // Currently just logged
+      // - Pause/resume LSP updates when not focused (battery saving)
+      // - Trigger re-validation when gaining focus (catch external changes)
+      // - Debounce diagnostics updates when unfocused
+      // Future implementation: Notify LSP session about focus changes
     });
   }
 

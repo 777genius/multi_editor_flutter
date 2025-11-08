@@ -35,6 +35,11 @@ class LspSession with _$LspSession {
     );
   }
 
+  /// Marks session as initializing (transition from created to initializing)
+  LspSession markInitializing() {
+    return copyWith(state: SessionState.initializing);
+  }
+
   /// Marks session as initialized
   LspSession markInitialized() {
     return copyWith(
