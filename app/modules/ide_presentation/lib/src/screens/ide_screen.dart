@@ -168,7 +168,7 @@ class _IdeScreenState extends State<IdeScreen> {
             return IconButton(
               icon: const Icon(Icons.undo),
               tooltip: 'Undo',
-              onPressed: canUndo ? () => _editorStore.undo() : null,
+              onPressed: canUndo ? () async => await _editorStore.undo() : null,
             );
           },
         ),
@@ -181,7 +181,7 @@ class _IdeScreenState extends State<IdeScreen> {
             return IconButton(
               icon: const Icon(Icons.redo),
               tooltip: 'Redo',
-              onPressed: canRedo ? () => _editorStore.redo() : null,
+              onPressed: canRedo ? () async => await _editorStore.redo() : null,
             );
           },
         ),
@@ -660,8 +660,8 @@ class _IdeScreenState extends State<IdeScreen> {
   }
 
   /// Handles clicking on a diagnostic
-  void _handleDiagnosticTap(Diagnostic diagnostic) {
+  Future<void> _handleDiagnosticTap(Diagnostic diagnostic) async {
     // Jump to diagnostic location
-    _editorStore.moveCursor(diagnostic.range.start);
+    await _editorStore.moveCursor(diagnostic.range.start);
   }
 }
