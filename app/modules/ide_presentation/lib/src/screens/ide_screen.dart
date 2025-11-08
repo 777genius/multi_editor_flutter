@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
+import 'package:editor_core/editor_core.dart';
 import '../stores/editor/editor_store.dart';
 import '../stores/lsp/lsp_store.dart';
 import '../widgets/editor_view.dart';
+import '../widgets/diagnostics_panel.dart';
+import '../widgets/settings_dialog.dart';
+import '../services/file_service.dart';
+import '../services/file_picker_service.dart';
 
 /// IdeScreen
 ///
@@ -22,7 +27,7 @@ import '../widgets/editor_view.dart';
 ///
 /// MobX Best Practices:
 /// - Observer: Reactively rebuilds on store changes
-/// - GetIt: Dependency injection for stores
+/// - GetIt: Dependency injection for stores and services
 /// - Composition: Multiple stores for different concerns
 /// - Separation: UI logic in widgets, business logic in stores
 ///
@@ -36,6 +41,8 @@ import '../widgets/editor_view.dart';
 /// │         │   (Code Editor)           │
 /// │         │                           │
 /// ├─────────┴───────────────────────────┤
+/// │ Diagnostics Panel (if problems)     │
+/// ├─────────────────────────────────────┤
 /// │ Status Bar (Language, Diagnostics)  │
 /// └─────────────────────────────────────┘
 /// ```
@@ -56,12 +63,28 @@ class IdeScreen extends StatefulWidget {
 class _IdeScreenState extends State<IdeScreen> {
   late final EditorStore _editorStore;
   late final LspStore _lspStore;
+  late final FileService _fileService;
+  late final FilePickerService _filePickerService;
+
+  bool _showDiagnosticsPanel = false;
+  String? _currentFilePath;
 
   @override
   void initState() {
     super.initState();
     _editorStore = GetIt.I<EditorStore>();
     _lspStore = GetIt.I<LspStore>();
+    _fileService = GetIt.I<FileService>();
+    _filePickerService = GetIt.I<FilePickerService>();
+
+    // Initialize editor repository
+    _initializeEditor();
+  }
+
+  Future<void> _initializeEditor() async {
+    // Initialize the native editor
+    final repo = GetIt.I<ICodeEditorRepository>();
+    await repo.initialize();
   }
 
   @override
@@ -79,7 +102,7 @@ class _IdeScreenState extends State<IdeScreen> {
       title: Observer(
         builder: (_) {
           final hasUnsaved = _editorStore.hasUnsavedChanges;
-          final fileName = _editorStore.documentUri?.path.split('/').last ?? 'Untitled';
+          final fileName = _currentFilePath?.split('/').last ?? 'Untitled';
 
           return Row(
             children: [
@@ -148,6 +171,29 @@ class _IdeScreenState extends State<IdeScreen> {
           },
         ),
 
+        // Toggle diagnostics panel
+        Observer(
+          builder: (_) {
+            final hasDiagnostics = _lspStore.hasDiagnostics;
+
+            return IconButton(
+              icon: Badge(
+                isLabelVisible: hasDiagnostics,
+                label: Text('${_lspStore.errorCount + _lspStore.warningCount}'),
+                child: Icon(
+                  _showDiagnosticsPanel
+                      ? Icons.keyboard_arrow_down
+                      : Icons.warning_outlined,
+                ),
+              ),
+              tooltip: 'Problems',
+              onPressed: hasDiagnostics
+                  ? () => setState(() => _showDiagnosticsPanel = !_showDiagnosticsPanel)
+                  : null,
+            );
+          },
+        ),
+
         // Settings
         IconButton(
           icon: const Icon(Icons.settings),
@@ -160,15 +206,36 @@ class _IdeScreenState extends State<IdeScreen> {
 
   /// Builds the main body
   Widget _buildBody() {
-    return Row(
+    return Column(
       children: [
-        // File Explorer Sidebar (left)
-        _buildSidebar(),
+        // Main editor area
+        Expanded(
+          child: Row(
+            children: [
+              // File Explorer Sidebar (left)
+              _buildSidebar(),
 
-        // Main Editor Area (center)
-        const Expanded(
-          child: EditorView(),
+              // Main Editor Area (center)
+              const Expanded(
+                child: EditorView(),
+              ),
+            ],
+          ),
         ),
+
+        // Diagnostics panel (bottom, collapsible)
+        if (_showDiagnosticsPanel)
+          Observer(
+            builder: (_) {
+              if (!_lspStore.hasDiagnostics) return const SizedBox.shrink();
+
+              return DiagnosticsPanel(
+                diagnostics: _lspStore.diagnostics?.toList() ?? [],
+                onDiagnosticTap: _handleDiagnosticTap,
+                onClose: () => setState(() => _showDiagnosticsPanel = false),
+              );
+            },
+          ),
       ],
     );
   }
@@ -195,31 +262,59 @@ class _IdeScreenState extends State<IdeScreen> {
             ),
           ),
 
-          // File tree
-          Expanded(
-            child: ListView(
+          // Quick actions
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
               children: [
-                _buildFileTreeItem(
-                  icon: Icons.folder,
-                  name: 'app',
-                  isDirectory: true,
+                ListTile(
+                  leading: const Icon(Icons.add, color: Colors.white, size: 16),
+                  title: const Text(
+                    'New File',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                  onTap: _handleNewFile,
+                  dense: true,
                 ),
-                _buildFileTreeItem(
-                  icon: Icons.folder,
-                  name: 'modules',
-                  isDirectory: true,
-                  indent: 1,
-                ),
-                _buildFileTreeItem(
-                  icon: Icons.insert_drive_file,
-                  name: 'main.dart',
-                  indent: 1,
-                ),
-                _buildFileTreeItem(
-                  icon: Icons.insert_drive_file,
-                  name: 'README.md',
+                ListTile(
+                  leading: const Icon(Icons.folder_open, color: Colors.white, size: 16),
+                  title: const Text(
+                    'Open File',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                  onTap: _handleOpenFile,
+                  dense: true,
                 ),
               ],
+            ),
+          ),
+
+          const Divider(color: Color(0xFF3E3E42)),
+
+          // File tree (placeholder)
+          Expanded(
+            child: Observer(
+              builder: (_) {
+                if (_currentFilePath == null) {
+                  return const Center(
+                    child: Text(
+                      'No file opened',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  );
+                }
+
+                return ListView(
+                  children: [
+                    _buildFileTreeItem(
+                      icon: Icons.insert_drive_file,
+                      name: _currentFilePath!.split('/').last,
+                      isSelected: true,
+                      onTap: () {},
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -232,15 +327,12 @@ class _IdeScreenState extends State<IdeScreen> {
     required IconData icon,
     required String name,
     bool isDirectory = false,
+    bool isSelected = false,
     int indent = 0,
+    VoidCallback? onTap,
   }) {
     return InkWell(
-      onTap: () {
-        // TODO: Open file
-        if (!isDirectory) {
-          _handleOpenFileByName(name);
-        }
-      },
+      onTap: onTap,
       child: Container(
         padding: EdgeInsets.only(
           left: 16.0 + (indent * 16.0),
@@ -248,6 +340,7 @@ class _IdeScreenState extends State<IdeScreen> {
           bottom: 8,
           right: 16,
         ),
+        color: isSelected ? const Color(0xFF094771) : null,
         child: Row(
           children: [
             Icon(
@@ -414,24 +507,144 @@ class _IdeScreenState extends State<IdeScreen> {
   // Event Handlers
   // ================================================================
 
-  void _handleOpenFile() {
-    // TODO: Implement file picker
-    debugPrint('Open file clicked');
-  }
+  /// Handles opening a file with file picker
+  Future<void> _handleOpenFile() async {
+    // Show file picker
+    final filePath = await _filePickerService.pickFile(
+      allowedExtensions: FilePickerService.allTextExtensions,
+      dialogTitle: 'Open File',
+    );
 
-  void _handleOpenFileByName(String name) {
-    // TODO: Load actual file content
-    _editorStore.loadContent(
-      '// File: $name\n\nvoid main() {\n  print("Hello World");\n}\n',
+    if (filePath == null) return;
+
+    // Load file using FileService
+    final result = await _fileService.readFile(filePath);
+
+    result.fold(
+      (failure) {
+        // Show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to open file: ${failure.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      (document) {
+        // Open document in editor
+        setState(() {
+          _currentFilePath = filePath;
+        });
+
+        _editorStore.openDocument(
+          uri: document.uri,
+          language: document.languageId,
+        );
+
+        // Set content
+        _editorStore.loadContent(document.content, uri: document.uri);
+
+        // Show success
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Opened: ${document.uri.path}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      },
     );
   }
 
-  void _handleSave() {
-    _editorStore.saveDocument();
+  /// Handles creating a new file
+  void _handleNewFile() {
+    setState(() {
+      _currentFilePath = null;
+    });
+
+    _editorStore.closeDocument();
+    _editorStore.loadContent('');
   }
 
+  /// Handles saving the current file
+  Future<void> _handleSave() async {
+    if (_currentFilePath == null) {
+      // Save As - pick location
+      final directory = await _filePickerService.pickDirectory(
+        dialogTitle: 'Save File',
+      );
+
+      if (directory == null) return;
+
+      // For now, save as "untitled.txt"
+      // In real implementation, show dialog to enter filename
+      _currentFilePath = '$directory/untitled.txt';
+    }
+
+    // Save file using FileService
+    final result = await _fileService.writeFile(
+      filePath: _currentFilePath!,
+      content: _editorStore.content,
+    );
+
+    result.fold(
+      (failure) {
+        // Show error
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save file: ${failure.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      (_) {
+        // Mark as saved
+        _editorStore.saveDocument();
+
+        // Show success
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Saved: $_currentFilePath'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  /// Handles opening settings dialog
   void _handleSettings() {
-    // TODO: Implement settings dialog
-    debugPrint('Settings clicked');
+    showDialog(
+      context: context,
+      builder: (context) => SettingsDialog(
+        initialSettings: {
+          'fontSize': 14.0,
+          'showLineNumbers': true,
+          'wordWrap': false,
+          'theme': 'dark',
+          'lspBridgeUrl': 'ws://localhost:9999',
+          'connectionTimeout': 10,
+          'requestTimeout': 30,
+        },
+        onSave: (settings) {
+          // Apply settings
+          debugPrint('Settings saved: $settings');
+          // TODO: Persist settings and apply them
+        },
+      ),
+    );
+  }
+
+  /// Handles clicking on a diagnostic
+  void _handleDiagnosticTap(diagnostic) {
+    // Jump to diagnostic location
+    _editorStore.moveCursor(diagnostic.range.start);
   }
 }
