@@ -9,6 +9,7 @@ use crate::lsp_manager::LspManager;
 
 /// JSON-RPC request from Flutter client
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct JsonRpcRequest {
     jsonrpc: String,
     id: Option<Value>,
@@ -247,8 +248,8 @@ async fn handle_completion(
 
 async fn handle_hover(
     id: Value,
-    params: Option<Value>,
-    lsp_manager: &LspManager,
+    _params: Option<Value>,
+    _lsp_manager: &LspManager,
 ) -> JsonRpcResponse {
     // Similar to handle_completion
     JsonRpcResponse {
@@ -289,8 +290,8 @@ async fn handle_did_open(
 
 async fn handle_did_change(
     id: Value,
-    params: Option<Value>,
-    lsp_manager: &LspManager,
+    _params: Option<Value>,
+    _lsp_manager: &LspManager,
 ) -> JsonRpcResponse {
     // Similar to handle_did_open
     JsonRpcResponse {

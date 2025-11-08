@@ -1,8 +1,6 @@
 use anyhow::Result;
 use ropey::Rope;
 use tree_sitter::{Parser, Language, Tree};
-use tree_sitter_highlight::{HighlightConfiguration, Highlighter, HighlightEvent};
-use std::collections::HashMap;
 
 /// Cursor position in the editor (0-indexed)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -95,6 +95,7 @@ impl LspManager {
     }
 
     /// Gets active session count
+    #[allow(dead_code)]
     pub async fn session_count(&self) -> usize {
         let servers = self.servers.read().await;
         servers.len()

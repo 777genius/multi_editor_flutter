@@ -13,6 +13,7 @@ use tracing::{info, error};
 /// - Communication via stdin/stdout
 /// - JSON-RPC protocol handling
 pub struct LspServerInstance {
+    #[allow(dead_code)]
     language: String,
     process: Mutex<Child>,
     stdin: Mutex<ChildStdin>,
