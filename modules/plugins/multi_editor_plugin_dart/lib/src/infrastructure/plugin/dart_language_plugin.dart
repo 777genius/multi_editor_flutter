@@ -117,7 +117,9 @@ class DartLanguagePlugin extends LanguagePlugin {
       // await _editorService!.registerSnippets(languageId, snippets);
 
       _snippetsRegistered = true;
-      print('[DartPlugin] Prepared ${snippets.length} pure Dart snippets (registration pending)');
+      print(
+        '[DartPlugin] Prepared ${snippets.length} pure Dart snippets (registration pending)',
+      );
     } catch (e, stack) {
       print('[DartPlugin] Error preparing snippets: $e\n$stack');
     }
