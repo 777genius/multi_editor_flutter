@@ -122,20 +122,20 @@ Future<void> configureDependencies() async {
   // LSP Services
   getIt.registerLazySingleton<LspSessionService>(
     () => LspSessionService(
-      lspRepository: getIt<ILspClientRepository>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 
   // LSP Use Cases
   getIt.registerLazySingleton<InitializeLspSessionUseCase>(
     () => InitializeLspSessionUseCase(
-      sessionService: getIt<LspSessionService>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 
   getIt.registerLazySingleton<ShutdownLspSessionUseCase>(
     () => ShutdownLspSessionUseCase(
-      sessionService: getIt<LspSessionService>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 
@@ -148,25 +148,26 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<GetHoverInfoUseCase>(
     () => GetHoverInfoUseCase(
-      lspRepository: getIt<ILspClientRepository>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 
   getIt.registerLazySingleton<GetDiagnosticsUseCase>(
     () => GetDiagnosticsUseCase(
-      lspRepository: getIt<ILspClientRepository>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 
   getIt.registerLazySingleton<GoToDefinitionUseCase>(
     () => GoToDefinitionUseCase(
-      lspRepository: getIt<ILspClientRepository>(),
+      getIt<ILspClientRepository>(),
+      getIt<ICodeEditorRepository>(),
     ),
   );
 
   getIt.registerLazySingleton<FindReferencesUseCase>(
     () => FindReferencesUseCase(
-      lspRepository: getIt<ILspClientRepository>(),
+      getIt<ILspClientRepository>(),
     ),
   );
 

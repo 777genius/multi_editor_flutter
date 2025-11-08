@@ -35,4 +35,19 @@ class EditorFailure with _$EditorFailure implements Exception {
     required String message,
     Object? error,
   }) = _Unexpected;
+
+  const EditorFailure._();
+
+  /// Gets a human-readable message for any failure variant
+  String get message => when(
+        notInitialized: (msg) => msg,
+        invalidPosition: (msg) => msg,
+        invalidRange: (msg) => msg,
+        documentNotFound: (msg) => msg,
+        operationFailed: (operation, reason) =>
+            'Operation "$operation" failed${reason != null ? ": $reason" : ""}',
+        unsupportedOperation: (operation) =>
+            'Operation "$operation" is not supported',
+        unexpected: (msg, error) => msg,
+      );
 }

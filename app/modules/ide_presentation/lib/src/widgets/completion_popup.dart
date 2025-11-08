@@ -304,8 +304,8 @@ class _CompletionPopupState extends State<CompletionPopup> {
         icon = Icons.adjust;
         color = const Color(0xFF4FC1FF); // Blue
         break;
-      case CompletionItemKind.classSymbol:
-      case CompletionItemKind.interfaceSymbol:
+      case CompletionItemKind.class_:
+      case CompletionItemKind.interface:
       case CompletionItemKind.struct:
         icon = Icons.class_;
         color = const Color(0xFF4EC9B0); // Teal

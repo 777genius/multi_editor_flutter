@@ -20,10 +20,10 @@ class CursorPosition with _$CursorPosition {
     required int column,
   }) {
     if (line < 0) {
-      throw EditorFailure.invalidPosition('Line must be >= 0, got $line');
+      throw EditorFailure.invalidPosition(message: 'Line must be >= 0, got $line');
     }
     if (column < 0) {
-      throw EditorFailure.invalidPosition('Column must be >= 0, got $column');
+      throw EditorFailure.invalidPosition(message: 'Column must be >= 0, got $column');
     }
     return CursorPosition(line: line, column: column);
   }

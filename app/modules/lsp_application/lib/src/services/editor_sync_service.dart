@@ -3,6 +3,8 @@ import 'package:editor_core/editor_core.dart';
 import 'package:lsp_domain/lsp_domain.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'lsp_session_service.dart';
+
 /// Application Service: Synchronizes editor state with LSP server.
 ///
 /// This service is responsible for:

@@ -79,23 +79,17 @@ class HoverInfoWidget extends StatelessWidget {
   }
 
   List<Widget> _buildContent() {
-    final widgets = <Widget>[];
-
-    for (final content in hoverInfo.contents) {
-      if (content is MarkedString) {
-        widgets.add(_buildMarkedString(content));
-      } else if (content is String) {
-        widgets.add(_buildPlainText(content));
-      }
-      widgets.add(const SizedBox(height: 8));
-    }
-
-    return widgets;
+    return [_buildText(hoverInfo.contents)];
   }
 
-  Widget _buildMarkedString(MarkedString markedString) {
-    if (markedString.language != null) {
-      // Code block with syntax highlighting (simplified)
+  Widget _buildText(String text) {
+    // Check if content looks like code (contains backticks or brackets)
+    final isCode = text.contains('```') ||
+                   text.contains('`') ||
+                   (text.contains('{') && text.contains('}'));
+
+    if (isCode) {
+      // Display as code block
       return Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -104,7 +98,7 @@ class HoverInfoWidget extends StatelessWidget {
           border: Border.all(color: const Color(0xFF3E3E42)),
         ),
         child: SelectableText(
-          markedString.value,
+          text.replaceAll('```', '').trim(),
           style: const TextStyle(
             fontFamily: 'monospace',
             fontSize: 12,
@@ -113,24 +107,14 @@ class HoverInfoWidget extends StatelessWidget {
         ),
       );
     } else {
-      // Plain marked string
+      // Display as plain text
       return SelectableText(
-        markedString.value,
+        text,
         style: const TextStyle(
           fontSize: 13,
           color: Color(0xFFCCCCCC),
         ),
       );
     }
-  }
-
-  Widget _buildPlainText(String text) {
-    return SelectableText(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        color: Color(0xFFCCCCCC),
-      ),
-    );
   }
 }
