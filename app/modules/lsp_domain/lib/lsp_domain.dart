@@ -9,6 +9,12 @@ export 'src/entities/completion_list.dart';
 export 'src/entities/diagnostic.dart';
 export 'src/entities/hover_info.dart';
 export 'src/entities/lsp_session.dart';
+export 'src/entities/code_action.dart';
+export 'src/entities/signature_help.dart';
+export 'src/entities/document_symbol.dart';
+export 'src/entities/formatting_options.dart';
+export 'src/entities/call_hierarchy.dart';
+export 'src/entities/type_hierarchy.dart';
 
 // Value Objects
 export 'src/value_objects/session_id.dart';

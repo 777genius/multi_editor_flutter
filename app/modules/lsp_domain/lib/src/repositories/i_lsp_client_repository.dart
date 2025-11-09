@@ -5,6 +5,12 @@ import '../entities/lsp_session.dart';
 import '../entities/completion_list.dart';
 import '../entities/diagnostic.dart';
 import '../entities/hover_info.dart';
+import '../entities/code_action.dart';
+import '../entities/signature_help.dart';
+import '../entities/document_symbol.dart';
+import '../entities/formatting_options.dart';
+import '../entities/call_hierarchy.dart';
+import '../entities/type_hierarchy.dart';
 import '../value_objects/session_id.dart';
 import '../failures/lsp_failure.dart';
 
@@ -104,6 +110,94 @@ abstract class ILspClientRepository {
     required SessionId sessionId,
     required DocumentUri documentUri,
     required CursorPosition position,
+  });
+
+  /// Requests code actions (quick fixes, refactorings) for a range
+  Future<Either<LspFailure, List<CodeAction>>> getCodeActions({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required TextSelection range,
+    required List<Diagnostic> diagnostics,
+  });
+
+  /// Requests signature help at a position
+  Future<Either<LspFailure, SignatureHelp>> getSignatureHelp({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+    String? triggerCharacter,
+  });
+
+  /// Requests document formatting
+  Future<Either<LspFailure, List<TextEdit>>> formatDocument({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required FormattingOptions options,
+  });
+
+  /// Requests symbol rename
+  Future<Either<LspFailure, WorkspaceEdit>> rename({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+    required String newName,
+  });
+
+  /// Executes a server command
+  Future<Either<LspFailure, dynamic>> executeCommand({
+    required SessionId sessionId,
+    required String command,
+    List<dynamic>? arguments,
+  });
+
+  /// Requests document symbols
+  Future<Either<LspFailure, List<DocumentSymbol>>> getDocumentSymbols({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Requests workspace symbols
+  Future<Either<LspFailure, List<WorkspaceSymbol>>> getWorkspaceSymbols({
+    required SessionId sessionId,
+    required String query,
+  });
+
+  /// Prepares call hierarchy at position
+  Future<Either<LspFailure, CallHierarchyItem?>> prepareCallHierarchy({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+  });
+
+  /// Gets incoming calls for a call hierarchy item
+  Future<Either<LspFailure, List<CallHierarchyIncomingCall>>> getIncomingCalls({
+    required SessionId sessionId,
+    required CallHierarchyItem item,
+  });
+
+  /// Gets outgoing calls for a call hierarchy item
+  Future<Either<LspFailure, List<CallHierarchyOutgoingCall>>> getOutgoingCalls({
+    required SessionId sessionId,
+    required CallHierarchyItem item,
+  });
+
+  /// Prepares type hierarchy at position
+  Future<Either<LspFailure, TypeHierarchyItem?>> prepareTypeHierarchy({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+  });
+
+  /// Gets supertypes for a type hierarchy item
+  Future<Either<LspFailure, List<TypeHierarchyItem>>> getSupertypes({
+    required SessionId sessionId,
+    required TypeHierarchyItem item,
+  });
+
+  /// Gets subtypes for a type hierarchy item
+  Future<Either<LspFailure, List<TypeHierarchyItem>>> getSubtypes({
+    required SessionId sessionId,
+    required TypeHierarchyItem item,
   });
 
   // ============================================================
