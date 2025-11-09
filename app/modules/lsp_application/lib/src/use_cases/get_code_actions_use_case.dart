@@ -61,69 +61,48 @@ class GetCodeActionsUseCase {
     required TextSelection range,
     List<Diagnostic>? diagnostics,
   }) async {
-    // Step 1: Get LSP session
+    // Get LSP session
     final sessionResult = await _lspRepository.getSession(languageId);
 
-    final session = sessionResult.fold(
-      (failure) => null,
-      (s) => s,
+    return sessionResult.fold(
+      (failure) => left(failure),
+      (session) async {
+        // Get current document content and sync with LSP
+        final contentResult = await _editorRepository.getContent();
+
+        return contentResult.fold(
+          (failure) => left(const LspFailure.unexpected(
+            message: 'Failed to get document content from editor',
+          )),
+          (content) async {
+            // Notify LSP about current document state
+            await _lspRepository.notifyDocumentChanged(
+              sessionId: session.id,
+              documentUri: documentUri,
+              content: content,
+            );
+
+            // Request code actions from LSP
+            final codeActionsResult = await _lspRepository.getCodeActions(
+              sessionId: session.id,
+              documentUri: documentUri,
+              range: range,
+              diagnostics: diagnostics ?? [],
+            );
+
+            // Sort code actions by priority
+            return codeActionsResult.map((actions) {
+              actions.sort((a, b) {
+                final aPriority = _getActionPriority(a);
+                final bPriority = _getActionPriority(b);
+                return aPriority.compareTo(bPriority);
+              });
+              return actions;
+            });
+          },
+        );
+      },
     );
-
-    if (session == null) {
-      return left(LspFailure.sessionNotFound(
-        message: 'No LSP session found for language: ${languageId.value}',
-      ));
-    }
-
-    if (!session.canHandleRequests) {
-      return left(LspFailure.serverNotResponding(
-        message: 'LSP session is not ready (state: ${session.state})',
-      ));
-    }
-
-    // Step 2: Get current document content
-    final contentResult = await _editorRepository.getContent();
-
-    final content = contentResult.fold(
-      (failure) => null,
-      (c) => c,
-    );
-
-    if (content == null) {
-      return left(const LspFailure.unexpected(
-        message: 'Failed to get document content from editor',
-      ));
-    }
-
-    // Step 3: Notify LSP about current document state
-    await _lspRepository.notifyDocumentChanged(
-      sessionId: session.id,
-      documentUri: documentUri,
-      content: content,
-    );
-
-    // Step 4: Request code actions from LSP
-    final codeActionsResult = await _lspRepository.getCodeActions(
-      sessionId: session.id,
-      documentUri: documentUri,
-      range: range,
-      diagnostics: diagnostics ?? [],
-    );
-
-    // Step 5: Filter and sort code actions
-    return codeActionsResult.map((actions) {
-      // Sort by priority:
-      // 1. Quick fixes (have associated diagnostics)
-      // 2. Refactorings
-      // 3. Source actions
-      actions.sort((a, b) {
-        final aPriority = _getActionPriority(a);
-        final bPriority = _getActionPriority(b);
-        return aPriority.compareTo(bPriority);
-      });
-
-      return actions;
-    });
   }
 
   /// Gets priority for sorting code actions.
