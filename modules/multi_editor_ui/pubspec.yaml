@@ -1,6 +1,6 @@
 name: multi_editor_ui
 description: UI layer for MultiEditor - Flutter widgets, controllers, and state management for file tree, code editor, and editor scaffold. Includes Monaco editor integration and drag-and-drop support.
-version: 0.1.2
+version: 0.1.3
 homepage: https://github.com/777genius/multi_editor_flutter
 repository: https://github.com/777genius/multi_editor_flutter/tree/main/modules/multi_editor_ui
 issue_tracker: https://github.com/777genius/multi_editor_flutter/issues

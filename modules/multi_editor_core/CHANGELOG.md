@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2025-11-09
+
+### Fixed
+- Fixed missing Freezed-generated files (.freezed.dart, .g.dart)
+- Package now compiles correctly when installed from pub.dev
+- All generated files are now included in published package
 
 ## [0.1.1] - 2025-01-08
 
