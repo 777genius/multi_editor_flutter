@@ -152,9 +152,8 @@ abstract class LspApplicationModule {
   @injectable
   GetHoverInfoUseCase provideGetHoverInfoUseCase(
     ILspClientRepository lspRepository,
-    ICodeEditorRepository editorRepository,
   ) {
-    return GetHoverInfoUseCase(lspRepository, editorRepository);
+    return GetHoverInfoUseCase(lspRepository);
   }
 
   /// Provides GetDiagnosticsUseCase (factory).
@@ -178,9 +177,8 @@ abstract class LspApplicationModule {
   @injectable
   FindReferencesUseCase provideFindReferencesUseCase(
     ILspClientRepository lspRepository,
-    ICodeEditorRepository editorRepository,
   ) {
-    return FindReferencesUseCase(lspRepository, editorRepository);
+    return FindReferencesUseCase(lspRepository);
   }
 
   /// Provides InitializeLspSessionUseCase (factory).
