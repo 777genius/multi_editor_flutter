@@ -55,12 +55,20 @@ class _AdvancedCompletionPopupState extends State<AdvancedCompletionPopup> {
   late List<CompletionItem> _filteredCompletions;
   int _selectedIndex = 0;
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _keyboardFocusNode = FocusNode();
   CompletionItem? _hoveredItem;
 
   @override
   void initState() {
     super.initState();
     _filterCompletions();
+
+    // Request focus after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _keyboardFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
@@ -187,6 +195,7 @@ class _AdvancedCompletionPopupState extends State<AdvancedCompletionPopup> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _keyboardFocusNode.dispose();
     super.dispose();
   }
 
@@ -202,7 +211,7 @@ class _AdvancedCompletionPopupState extends State<AdvancedCompletionPopup> {
       left: widget.position.dx,
       top: widget.position.dy,
       child: RawKeyboardListener(
-        focusNode: FocusNode()..requestFocus(),
+        focusNode: _keyboardFocusNode,
         onKey: _handleKeyEvent,
         child: Material(
           elevation: 8,

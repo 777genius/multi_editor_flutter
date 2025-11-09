@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
@@ -140,11 +141,12 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
   void _toggleDirectory(String dirPath) {
     setState(() {
       _expandedDirs[dirPath] = !(_expandedDirs[dirPath] ?? false);
-
-      if (_expandedDirs[dirPath]! && !_dirContents.containsKey(dirPath)) {
-        _loadDirectoryContents(dirPath);
-      }
     });
+
+    // Load directory contents after setState
+    if (_expandedDirs[dirPath]! && !_dirContents.containsKey(dirPath)) {
+      _loadDirectoryContents(dirPath);
+    }
   }
 
   void _selectPath(String filePath) {
@@ -262,8 +264,8 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
         _showNewFolderDialog(entityPath);
         break;
       case 'reveal':
-        // Open in system file manager
-        Process.run('open', [path.dirname(entityPath)]);
+        // Open in system file manager (cross-platform)
+        _revealInFileManager(entityPath);
         break;
     }
   }
@@ -299,12 +301,15 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
           : File(entityPath);
 
       await entity.delete(recursive: true);
-      setState(() {
-        // Refresh parent directory
-        final parentPath = path.dirname(entityPath);
-        _dirContents.remove(parentPath);
-        _loadDirectoryContents(parentPath);
-      });
+
+      // Refresh parent directory
+      final parentPath = path.dirname(entityPath);
+      _dirContents.remove(parentPath);
+      await _loadDirectoryContents(parentPath);
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error deleting entity: $e');
     }
@@ -353,10 +358,12 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
         await File(oldPath).rename(newPath);
       }
 
-      setState(() {
-        _dirContents.remove(parentPath);
-        _loadDirectoryContents(parentPath);
-      });
+      _dirContents.remove(parentPath);
+      await _loadDirectoryContents(parentPath);
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error renaming entity: $e');
     }
@@ -399,10 +406,12 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
       final filePath = path.join(parentDir, fileName);
       await File(filePath).create();
 
-      setState(() {
-        _dirContents.remove(parentDir);
-        _loadDirectoryContents(parentDir);
-      });
+      _dirContents.remove(parentDir);
+      await _loadDirectoryContents(parentDir);
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error creating file: $e');
     }
@@ -445,12 +454,40 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
       final folderPath = path.join(parentDir, folderName);
       await Directory(folderPath).create();
 
-      setState(() {
-        _dirContents.remove(parentDir);
-        _loadDirectoryContents(parentDir);
-      });
+      _dirContents.remove(parentDir);
+      await _loadDirectoryContents(parentDir);
+
+      if (mounted) {
+        setState(() {});
+      }
     } catch (e) {
       debugPrint('Error creating folder: $e');
+    }
+  }
+
+  /// Reveals file/directory in system file manager (cross-platform)
+  Future<void> _revealInFileManager(String entityPath) async {
+    if (kIsWeb) {
+      debugPrint('Reveal in file manager not supported on web');
+      return;
+    }
+
+    try {
+      final dirPath = FileSystemEntity.isDirectorySync(entityPath)
+          ? entityPath
+          : path.dirname(entityPath);
+
+      if (Platform.isMacOS) {
+        await Process.run('open', [dirPath]);
+      } else if (Platform.isLinux) {
+        await Process.run('xdg-open', [dirPath]);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [dirPath]);
+      } else {
+        debugPrint('Reveal in file manager not supported on this platform');
+      }
+    } catch (e) {
+      debugPrint('Error revealing in file manager: $e');
     }
   }
 

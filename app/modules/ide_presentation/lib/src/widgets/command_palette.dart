@@ -76,6 +76,7 @@ class CommandPalette extends StatefulWidget {
 class _CommandPaletteState extends State<CommandPalette> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _keyboardFocusNode = FocusNode();
   late List<Command> _filteredCommands;
   int _selectedIndex = 0;
 
@@ -93,6 +94,7 @@ class _CommandPaletteState extends State<CommandPalette> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _keyboardFocusNode.dispose();
     super.dispose();
   }
 
@@ -182,7 +184,7 @@ class _CommandPaletteState extends State<CommandPalette> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 100),
       child: RawKeyboardListener(
-        focusNode: FocusNode(),
+        focusNode: _keyboardFocusNode,
         onKey: _handleKeyEvent,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 600),

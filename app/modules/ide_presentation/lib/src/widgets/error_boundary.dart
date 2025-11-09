@@ -43,10 +43,14 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
   Object? _error;
   StackTrace? _stackTrace;
   int _errorCount = 0;
+  FlutterExceptionHandler? _previousErrorHandler;
 
   @override
   void initState() {
     super.initState();
+
+    // Save previous error handler to restore later
+    _previousErrorHandler = FlutterError.onError;
 
     // Set up global error handler for this subtree
     FlutterError.onError = (details) {
@@ -61,9 +65,19 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
       // Call custom error handler
       widget.onError?.call(details.exception, details.stack ?? StackTrace.current);
 
+      // Call previous error handler if exists
+      _previousErrorHandler?.call(details);
+
       // Log to console in debug mode
       FlutterError.presentError(details);
     };
+  }
+
+  @override
+  void dispose() {
+    // Restore previous error handler
+    FlutterError.onError = _previousErrorHandler;
+    super.dispose();
   }
 
   void _retry() {
