@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:editor_core/editor_core.dart';
+import 'location.dart';
 
 part 'inlay_hint.freezed.dart';
 

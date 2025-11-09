@@ -11,6 +11,7 @@ import '../entities/document_symbol.dart';
 import '../entities/formatting_options.dart';
 import '../entities/call_hierarchy.dart';
 import '../entities/type_hierarchy.dart';
+import '../entities/location.dart';
 import '../value_objects/session_id.dart';
 import '../failures/lsp_failure.dart';
 
@@ -266,18 +267,6 @@ abstract class ILspClientRepository {
 
   /// Stream of LSP server status changes
   Stream<LspServerStatus> get onStatusChanged;
-}
-
-/// Represents a location in a document
-@immutable
-class Location {
-  final DocumentUri uri;
-  final TextSelection range;
-
-  const Location({
-    required this.uri,
-    required this.range,
-  });
 }
 
 /// Diagnostic update event
