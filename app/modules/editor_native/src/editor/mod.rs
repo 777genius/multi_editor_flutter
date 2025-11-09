@@ -2,6 +2,20 @@ use anyhow::Result;
 use ropey::Rope;
 use tree_sitter::{Parser, Language, Tree};
 
+// Sub-modules
+pub mod search;
+pub mod multiline_edit;
+pub mod performance;
+pub mod clipboard;
+pub mod syntax_query;
+
+// Re-export commonly used items
+pub use search::{SearchOptions, SearchMatch, search_rope, find_next, replace_all};
+pub use multiline_edit::{MultiCursor, ColumnSelection, MultiEdit};
+pub use performance::{PerformanceMetrics, OperationTimer, PerformanceStats};
+pub use clipboard::{Clipboard, ClipboardMode, copy_text, cut_text, paste_text};
+pub use syntax_query::{SyntaxQuery, QueryError};
+
 /// Cursor position in the editor (0-indexed)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
