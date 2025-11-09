@@ -432,6 +432,7 @@ class WebSocketLspClientRepository implements ILspClientRepository {
     required SessionId sessionId,
     required DocumentUri documentUri,
     required CursorPosition position,
+    bool includeDeclaration = true,
   }) async {
     return _sendRequest(
       method: 'textDocument/references',
@@ -441,7 +442,7 @@ class WebSocketLspClientRepository implements ILspClientRepository {
           documentUri,
         ),
         'position': LspProtocolMappers.fromDomainPosition(position),
-        'context': {'includeDeclaration': true},
+        'context': {'includeDeclaration': includeDeclaration},
       },
       mapper: (result) => LspProtocolMappers.toDomainLocations(result as List?),
     );

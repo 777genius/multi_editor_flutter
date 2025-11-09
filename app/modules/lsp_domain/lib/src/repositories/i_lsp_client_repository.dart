@@ -110,6 +110,7 @@ abstract class ILspClientRepository {
     required SessionId sessionId,
     required DocumentUri documentUri,
     required CursorPosition position,
+    bool includeDeclaration = true,
   });
 
   /// Requests code actions (quick fixes, refactorings) for a range
