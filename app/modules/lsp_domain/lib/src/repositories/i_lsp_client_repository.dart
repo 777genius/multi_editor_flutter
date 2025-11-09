@@ -213,6 +213,50 @@ abstract class ILspClientRepository {
     required CodeLens codeLens,
   });
 
+  /// Gets semantic tokens for a document
+  Future<Either<LspFailure, SemanticTokens>> getSemanticTokens({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Gets semantic tokens delta (incremental update)
+  Future<Either<LspFailure, SemanticTokensDelta>> getSemanticTokensDelta({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required String previousResultId,
+  });
+
+  /// Gets inlay hints for a document range
+  Future<Either<LspFailure, List<InlayHint>>> getInlayHints({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required TextSelection range,
+  });
+
+  /// Resolves an inlay hint (fetches additional data)
+  Future<Either<LspFailure, InlayHint>> resolveInlayHint({
+    required SessionId sessionId,
+    required InlayHint hint,
+  });
+
+  /// Gets folding ranges for a document
+  Future<Either<LspFailure, List<FoldingRange>>> getFoldingRanges({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Gets document links for a document
+  Future<Either<LspFailure, List<DocumentLink>>> getDocumentLinks({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Resolves a document link (fetches target URI)
+  Future<Either<LspFailure, DocumentLink>> resolveDocumentLink({
+    required SessionId sessionId,
+    required DocumentLink link,
+  });
+
   // ============================================================
   // Events
   // ============================================================

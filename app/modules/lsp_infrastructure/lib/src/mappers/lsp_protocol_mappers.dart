@@ -714,4 +714,198 @@ class LspProtocolMappers {
 
     return result;
   }
+
+  // ================================================================
+  // Semantic Tokens Mapping
+  // ================================================================
+
+  /// Converts LSP semantic tokens to domain.
+  static SemanticTokens toDomainSemanticTokens(Map<String, dynamic> json) {
+    return SemanticTokens(
+      resultId: json['resultId'] as String?,
+      data: (json['data'] as List<dynamic>).cast<int>(),
+    );
+  }
+
+  /// Converts LSP semantic tokens delta to domain.
+  static SemanticTokensDelta toDomainSemanticTokensDelta(Map<String, dynamic> json) {
+    final edits = (json['edits'] as List<dynamic>?)?.map((e) {
+      final edit = e as Map<String, dynamic>;
+      return SemanticTokensEdit(
+        start: edit['start'] as int,
+        deleteCount: edit['deleteCount'] as int,
+        data: (edit['data'] as List<dynamic>?)?.cast<int>(),
+      );
+    }).toList() ?? [];
+
+    return SemanticTokensDelta(
+      resultId: json['resultId'] as String?,
+      edits: edits,
+    );
+  }
+
+  // ================================================================
+  // Inlay Hint Mapping
+  // ================================================================
+
+  /// Converts list of LSP inlay hints to domain.
+  static List<InlayHint> toDomainInlayHints(List<dynamic>? json) {
+    if (json == null) return [];
+    return json.map((item) => toDomainInlayHint(item as Map<String, dynamic>)).toList();
+  }
+
+  /// Converts single LSP inlay hint to domain.
+  static InlayHint toDomainInlayHint(Map<String, dynamic> json) {
+    final position = toDomainPosition(json['position'] as Map<String, dynamic>);
+
+    // Parse label (can be string or array of parts)
+    final labelJson = json['label'];
+    InlayHintLabel label;
+    if (labelJson is String) {
+      label = InlayHintLabel.string(labelJson);
+    } else if (labelJson is List) {
+      final parts = labelJson.map((p) {
+        final part = p as Map<String, dynamic>;
+        return InlayHintLabelPart(
+          value: part['value'] as String,
+          tooltip: part['tooltip'] as String?,
+          location: part['location'] != null
+              ? toDomainLocation(part['location'] as Map<String, dynamic>)
+              : null,
+        );
+      }).toList();
+      label = InlayHintLabel.parts(parts);
+    } else {
+      label = const InlayHintLabel.string('');
+    }
+
+    return InlayHint(
+      position: position,
+      label: label,
+      kind: _toInlayHintKind(json['kind'] as int?),
+      tooltip: json['tooltip'] as String?,
+      paddingLeft: json['paddingLeft'] as bool? ?? false,
+      paddingRight: json['paddingRight'] as bool? ?? false,
+      data: json['data'],
+    );
+  }
+
+  static InlayHintKind? _toInlayHintKind(int? kind) {
+    if (kind == null) return null;
+    switch (kind) {
+      case 1:
+        return InlayHintKind.type;
+      case 2:
+        return InlayHintKind.parameter;
+      default:
+        return InlayHintKind.other;
+    }
+  }
+
+  /// Converts domain inlay hint to LSP format.
+  static Map<String, dynamic> fromDomainInlayHint(InlayHint hint) {
+    final result = <String, dynamic>{
+      'position': fromDomainPosition(hint.position),
+    };
+
+    // Convert label
+    hint.label.when(
+      string: (value) => result['label'] = value,
+      parts: (parts) => result['label'] = parts.map((p) {
+        final partJson = <String, dynamic>{'value': p.value};
+        if (p.tooltip != null) partJson['tooltip'] = p.tooltip;
+        if (p.location != null) partJson['location'] = fromDomainLocation(p.location!);
+        return partJson;
+      }).toList(),
+    );
+
+    if (hint.kind != null) {
+      result['kind'] = _fromInlayHintKind(hint.kind!);
+    }
+    if (hint.tooltip != null) result['tooltip'] = hint.tooltip;
+    if (hint.paddingLeft) result['paddingLeft'] = true;
+    if (hint.paddingRight) result['paddingRight'] = true;
+    if (hint.data != null) result['data'] = hint.data;
+
+    return result;
+  }
+
+  static int _fromInlayHintKind(InlayHintKind kind) {
+    switch (kind) {
+      case InlayHintKind.type:
+        return 1;
+      case InlayHintKind.parameter:
+        return 2;
+      case InlayHintKind.other:
+        return 0;
+    }
+  }
+
+  // ================================================================
+  // Folding Range Mapping
+  // ================================================================
+
+  /// Converts list of LSP folding ranges to domain.
+  static List<FoldingRange> toDomainFoldingRanges(List<dynamic>? json) {
+    if (json == null) return [];
+    return json.map((item) => _toDomainFoldingRange(item as Map<String, dynamic>)).toList();
+  }
+
+  static FoldingRange _toDomainFoldingRange(Map<String, dynamic> json) {
+    return FoldingRange(
+      startLine: json['startLine'] as int,
+      startCharacter: json['startCharacter'] as int?,
+      endLine: json['endLine'] as int,
+      endCharacter: json['endCharacter'] as int?,
+      kind: _toFoldingRangeKind(json['kind'] as String?),
+      collapsedText: json['collapsedText'] as String?,
+    );
+  }
+
+  static FoldingRangeKind? _toFoldingRangeKind(String? kind) {
+    if (kind == null) return null;
+    switch (kind) {
+      case 'comment':
+        return FoldingRangeKind.comment;
+      case 'imports':
+        return FoldingRangeKind.imports;
+      case 'region':
+        return FoldingRangeKind.region;
+      default:
+        return FoldingRangeKind.other;
+    }
+  }
+
+  // ================================================================
+  // Document Link Mapping
+  // ================================================================
+
+  /// Converts list of LSP document links to domain.
+  static List<DocumentLink> toDomainDocumentLinks(List<dynamic>? json) {
+    if (json == null) return [];
+    return json.map((item) => toDomainDocumentLink(item as Map<String, dynamic>)).toList();
+  }
+
+  /// Converts single LSP document link to domain.
+  static DocumentLink toDomainDocumentLink(Map<String, dynamic> json) {
+    return DocumentLink(
+      range: toDomainRange(json['range'] as Map<String, dynamic>),
+      target: json['target'] as String?,
+      tooltip: json['tooltip'] as String?,
+      data: json['data'],
+    );
+  }
+
+  /// Converts domain document link to LSP format.
+  static Map<String, dynamic> fromDomainDocumentLink(DocumentLink link) {
+    final result = <String, dynamic>{
+      'range': fromDomainRange(link.range),
+    };
+
+    if (link.target != null) result['target'] = link.target;
+    if (link.tooltip != null) result['tooltip'] = link.tooltip;
+    if (link.data != null) result['data'] = link.data;
+
+    return result;
+  }
 }

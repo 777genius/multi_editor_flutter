@@ -130,7 +130,14 @@ async fn handle_request(
         "typeHierarchy/supertypes" |
         "typeHierarchy/subtypes" |
         "textDocument/codeLens" |
-        "codeLens/resolve" => {
+        "codeLens/resolve" |
+        "textDocument/semanticTokens/full" |
+        "textDocument/semanticTokens/full/delta" |
+        "textDocument/inlayHint" |
+        "inlayHint/resolve" |
+        "textDocument/foldingRange" |
+        "textDocument/documentLink" |
+        "documentLink/resolve" => {
             handle_generic_lsp_request(id, &request.method, request.params, lsp_manager).await
         }
         _ => {

@@ -868,4 +868,113 @@ class WebSocketLspClientRepository implements ILspClientRepository {
       mapper: (result) => LspProtocolMappers.toDomainCodeLens(result as Map<String, dynamic>),
     );
   }
+
+  @override
+  Future<Either<LspFailure, SemanticTokens>> getSemanticTokens({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  }) async {
+    return _sendRequest(
+      method: 'textDocument/semanticTokens/full',
+      params: {
+        'sessionId': sessionId.value,
+        'textDocument': LspProtocolMappers.toTextDocumentIdentifier(documentUri),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainSemanticTokens(result as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, SemanticTokensDelta>> getSemanticTokensDelta({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required String previousResultId,
+  }) async {
+    return _sendRequest(
+      method: 'textDocument/semanticTokens/full/delta',
+      params: {
+        'sessionId': sessionId.value,
+        'textDocument': LspProtocolMappers.toTextDocumentIdentifier(documentUri),
+        'previousResultId': previousResultId,
+      },
+      mapper: (result) => LspProtocolMappers.toDomainSemanticTokensDelta(result as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, List<InlayHint>>> getInlayHints({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required TextSelection range,
+  }) async {
+    return _sendRequest(
+      method: 'textDocument/inlayHint',
+      params: {
+        'sessionId': sessionId.value,
+        'textDocument': LspProtocolMappers.toTextDocumentIdentifier(documentUri),
+        'range': LspProtocolMappers.fromDomainRange(range),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainInlayHints(result as List?),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, InlayHint>> resolveInlayHint({
+    required SessionId sessionId,
+    required InlayHint hint,
+  }) async {
+    return _sendRequest(
+      method: 'inlayHint/resolve',
+      params: {
+        'sessionId': sessionId.value,
+        'hint': LspProtocolMappers.fromDomainInlayHint(hint),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainInlayHint(result as Map<String, dynamic>),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, List<FoldingRange>>> getFoldingRanges({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  }) async {
+    return _sendRequest(
+      method: 'textDocument/foldingRange',
+      params: {
+        'sessionId': sessionId.value,
+        'textDocument': LspProtocolMappers.toTextDocumentIdentifier(documentUri),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainFoldingRanges(result as List?),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, List<DocumentLink>>> getDocumentLinks({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  }) async {
+    return _sendRequest(
+      method: 'textDocument/documentLink',
+      params: {
+        'sessionId': sessionId.value,
+        'textDocument': LspProtocolMappers.toTextDocumentIdentifier(documentUri),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainDocumentLinks(result as List?),
+    );
+  }
+
+  @override
+  Future<Either<LspFailure, DocumentLink>> resolveDocumentLink({
+    required SessionId sessionId,
+    required DocumentLink link,
+  }) async {
+    return _sendRequest(
+      method: 'documentLink/resolve',
+      params: {
+        'sessionId': sessionId.value,
+        'link': LspProtocolMappers.fromDomainDocumentLink(link),
+      },
+      mapper: (result) => LspProtocolMappers.toDomainDocumentLink(result as Map<String, dynamic>),
+    );
+  }
 }
