@@ -79,8 +79,8 @@ class GetDocumentSymbolsUseCase {
     });
 
     for (final symbol in symbols) {
-      if (symbol.children.isNotEmpty) {
-        _sortSymbolsRecursively(symbol.children);
+      if (symbol.children != null && symbol.children!.isNotEmpty) {
+        _sortSymbolsRecursively(symbol.children!);
       }
     }
   }
