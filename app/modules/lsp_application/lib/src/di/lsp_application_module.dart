@@ -6,6 +6,9 @@ import '../services/diagnostic_service.dart';
 import '../services/editor_sync_service.dart';
 import '../services/code_lens_service.dart';
 import '../services/semantic_tokens_service.dart';
+import '../services/inlay_hints_service.dart';
+import '../services/folding_service.dart';
+import '../services/document_links_service.dart';
 import '../use_cases/get_completions_use_case.dart';
 import '../use_cases/get_hover_info_use_case.dart';
 import '../use_cases/get_diagnostics_use_case.dart';
@@ -20,6 +23,8 @@ import '../use_cases/get_signature_help_use_case.dart';
 import '../use_cases/execute_code_action_use_case.dart';
 import '../use_cases/get_document_symbols_use_case.dart';
 import '../use_cases/get_workspace_symbols_use_case.dart';
+import '../use_cases/get_call_hierarchy_use_case.dart';
+import '../use_cases/get_type_hierarchy_use_case.dart';
 
 /// Dependency Injection module for LSP Application Layer.
 ///
@@ -98,6 +103,36 @@ abstract class LspApplicationModule {
     ILspClientRepository lspRepository,
   ) {
     return SemanticTokensService(lspRepository);
+  }
+
+  /// Provides InlayHintsService (singleton).
+  ///
+  /// Manages inlay hints for type annotations.
+  @singleton
+  InlayHintsService provideInlayHintsService(
+    ILspClientRepository lspRepository,
+  ) {
+    return InlayHintsService(lspRepository);
+  }
+
+  /// Provides FoldingService (singleton).
+  ///
+  /// Manages code folding regions.
+  @singleton
+  FoldingService provideFoldingService(
+    ILspClientRepository lspRepository,
+  ) {
+    return FoldingService(lspRepository);
+  }
+
+  /// Provides DocumentLinksService (singleton).
+  ///
+  /// Manages document links.
+  @singleton
+  DocumentLinksService provideDocumentLinksService(
+    ILspClientRepository lspRepository,
+  ) {
+    return DocumentLinksService(lspRepository);
   }
 
   // ================================================================
@@ -222,5 +257,21 @@ abstract class LspApplicationModule {
     ILspClientRepository lspRepository,
   ) {
     return GetWorkspaceSymbolsUseCase(lspRepository);
+  }
+
+  /// Provides GetCallHierarchyUseCase (factory).
+  @injectable
+  GetCallHierarchyUseCase provideGetCallHierarchyUseCase(
+    ILspClientRepository lspRepository,
+  ) {
+    return GetCallHierarchyUseCase(lspRepository);
+  }
+
+  /// Provides GetTypeHierarchyUseCase (factory).
+  @injectable
+  GetTypeHierarchyUseCase provideGetTypeHierarchyUseCase(
+    ILspClientRepository lspRepository,
+  ) {
+    return GetTypeHierarchyUseCase(lspRepository);
   }
 }

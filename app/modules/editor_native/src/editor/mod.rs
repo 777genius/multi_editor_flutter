@@ -14,7 +14,7 @@ pub mod auto_indent;
 pub mod comment_toggle;
 
 // Re-export commonly used items
-pub use cursor::{Position as CursorPosition, Selection};
+pub use cursor::{Position, Selection};
 pub use search::{SearchOptions, SearchMatch, search_rope, find_next, replace_all};
 pub use multiline_edit::{MultiCursor, ColumnSelection, MultiEdit};
 pub use performance::{PerformanceMetrics, OperationTimer, PerformanceStats};
@@ -23,68 +23,6 @@ pub use syntax_query::{SyntaxQuery, QueryError};
 pub use bracket_matching::{BracketType, BracketMatch, find_matching_bracket, find_all_bracket_pairs, are_brackets_balanced};
 pub use auto_indent::{IndentConfig, calculate_indent_for_newline, indent_lines, dedent_lines, normalize_indentation};
 pub use comment_toggle::{CommentConfig, toggle_line_comments, toggle_block_comment};
-
-/// Cursor position in the editor (0-indexed)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl Position {
-    pub fn new(line: usize, column: usize) -> Self {
-        Self { line, column }
-    }
-
-    /// Converts position to byte offset in rope
-    pub fn to_byte_offset(&self, rope: &Rope) -> usize {
-        let line_offset = rope.line_to_byte(self.line);
-        let line = rope.line(self.line);
-        let char_offset = line.char_to_byte(self.column.min(line.len_chars()));
-        line_offset + char_offset
-    }
-
-    /// Creates position from byte offset
-    pub fn from_byte_offset(rope: &Rope, byte_offset: usize) -> Self {
-        let line = rope.byte_to_line(byte_offset);
-        let line_start = rope.line_to_byte(line);
-        let column_bytes = byte_offset - line_start;
-        let line_slice = rope.line(line);
-        let column = line_slice.byte_to_char(column_bytes.min(line_slice.len_bytes()));
-
-        Self { line, column }
-    }
-}
-
-/// Text selection range
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Selection {
-    pub start: Position,
-    pub end: Position,
-}
-
-impl Selection {
-    pub fn new(start: Position, end: Position) -> Self {
-        Self { start, end }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.start == self.end
-    }
-
-    pub fn normalize(&self) -> Self {
-        if self.start.line < self.end.line
-            || (self.start.line == self.end.line && self.start.column <= self.end.column)
-        {
-            *self
-        } else {
-            Self {
-                start: self.end,
-                end: self.start,
-            }
-        }
-    }
-}
 
 /// Language identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
