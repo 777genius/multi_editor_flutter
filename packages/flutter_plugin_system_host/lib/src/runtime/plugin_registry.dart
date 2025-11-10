@@ -53,13 +53,20 @@ class PluginEntry {
 /// Plugin registry
 ///
 /// Central registry for managing loaded plugins with their contexts and states.
-/// Provides thread-safe access to plugin instances.
 ///
 /// ## Design Principles
 ///
 /// - **Single Responsibility**: Only manages plugin storage and retrieval
 /// - **Immutability**: Uses immutable PluginEntry internally
-/// - **Thread Safety**: Can be accessed from multiple isolates
+///
+/// ## Concurrency
+///
+/// **IMPORTANT**: This class is NOT thread-safe. All operations should be
+/// called from the same isolate. For multi-isolate use, wrap calls in a
+/// single isolate and use message passing for communication.
+///
+/// Flutter applications typically run in a single isolate, so this is not
+/// a concern for most use cases
 ///
 /// ## Example
 ///

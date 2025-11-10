@@ -97,6 +97,12 @@ enum ErrorSeverity {
 /// - **Observer Pattern**: Streams errors to subscribers
 /// - **Bounded History**: Limits history per plugin to prevent memory leaks
 ///
+/// ## Concurrency
+///
+/// **IMPORTANT**: This class is NOT thread-safe. All operations should be
+/// called from the same isolate. Flutter applications typically run in a
+/// single isolate, so this is not a concern for most use cases.
+///
 /// ## Example
 ///
 /// ```dart

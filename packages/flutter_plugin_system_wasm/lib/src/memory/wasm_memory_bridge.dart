@@ -156,22 +156,27 @@ class WasmMemoryBridge {
       final resultPtr = (packedResult >> 32) & 0xFFFFFFFF;
       final resultLen = packedResult & 0xFFFFFFFF;
 
+      // 6. Handle empty result
       if (resultLen == 0) {
+        // Free result pointer even if length is 0 (WASM may have allocated)
+        if (resultPtr != 0) {
+          await deallocFn([resultPtr, resultLen]);
+        }
         return {};
       }
 
       try {
-        // 6. Read result from WASM memory
+        // 7. Read result from WASM memory
         final resultBytes = await memory.read(resultPtr, resultLen);
 
-        // 7. Deserialize result
+        // 8. Deserialize result
         return _serializer.deserialize(resultBytes);
       } finally {
-        // 8. Free result memory (plugin allocated it)
+        // 9. Free result memory (plugin allocated it)
         await deallocFn([resultPtr, resultLen]);
       }
     } finally {
-      // 9. Free input memory (we allocated it)
+      // 10. Free input memory (we allocated it)
       await deallocFn([inputPtr, dataLen]);
     }
   }

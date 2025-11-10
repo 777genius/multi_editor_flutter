@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_plugin_system_core/flutter_plugin_system_core.dart';
 import '../host/host_function_registry.dart';
 import '../messaging/event_dispatcher.dart';
@@ -72,6 +73,10 @@ class PluginManager {
   final SecurityGuard _securityGuard;
   final ErrorTracker _errorTracker;
   final ErrorBoundary _errorBoundary;
+
+  // Track event subscriptions for cleanup
+  final Map<String, List<StreamSubscription<PluginEvent>>> _eventSubscriptions =
+      {};
 
   /// Create plugin manager
   ///
@@ -187,65 +192,73 @@ class PluginManager {
   }) async {
     final pluginId = manifest.id;
 
-    await _errorBoundary.execute(
-      pluginId,
-      () async {
-        // 1. Validate manifest
-        _validateManifest(manifest);
+    // Pre-register with unloaded state to enable state tracking
+    IPlugin? loadedPlugin;
+    PluginContext? pluginContext;
 
-        // 2. Check runtime compatibility
-        if (!runtime.isCompatible(manifest)) {
-          throw PluginLoadException(
-            'Runtime ${runtime.type} not compatible with plugin ${manifest.runtime}',
-            pluginId: pluginId,
+    try {
+      // 1. Validate manifest
+      _validateManifest(manifest);
+
+      // 2. Check runtime compatibility
+      if (!runtime.isCompatible(manifest)) {
+        throw PluginLoadException(
+          'Runtime ${runtime.type} not compatible with plugin ${manifest.runtime}',
+          pluginId: pluginId,
+        );
+      }
+
+      // 3. Register permissions
+      final pluginPermissions = permissions ??
+          PluginPermissions(
+            allowedHostFunctions: manifest.requiredHostFunctions,
           );
-        }
+      _permissionSystem.registerPlugin(pluginId, pluginPermissions);
 
-        // 3. Register permissions
-        final pluginPermissions = permissions ??
-            PluginPermissions(
-              allowedHostFunctions: manifest.requiredHostFunctions,
-            );
-        _permissionSystem.registerPlugin(pluginId, pluginPermissions);
+      // 4. Load plugin through runtime
+      loadedPlugin = await runtime.loadPlugin(
+        pluginId: pluginId,
+        source: source,
+        config: config,
+      );
 
-        // 4. Load plugin through runtime
-        _registry.updateState(pluginId, PluginState.loading);
-        final plugin = await runtime.loadPlugin(
-          pluginId: pluginId,
-          source: source,
-          config: config,
-        );
-        _registry.updateState(pluginId, PluginState.loaded);
+      // 5. Create plugin context
+      pluginContext = _createPluginContext(
+        pluginId: pluginId,
+        config: config ?? const PluginConfig(),
+      );
 
-        // 5. Create plugin context
-        final context = _createPluginContext(
-          pluginId: pluginId,
-          config: config ?? const PluginConfig(),
-        );
+      // 6. Register in registry with loaded state
+      _registry.register(
+        pluginId,
+        loadedPlugin,
+        pluginContext,
+        state: PluginState.loaded,
+      );
 
-        // 6. Initialize plugin (with timeout and error isolation)
-        _registry.updateState(pluginId, PluginState.initializing);
-        await _securityGuard.executeWithTimeout(
+      // 7. Initialize plugin (with timeout and error isolation)
+      _registry.updateState(pluginId, PluginState.initializing);
+      await _errorBoundary.execute(
+        pluginId,
+        () => _securityGuard.executeWithTimeout(
           pluginId,
-          () => plugin.initialize(context),
-        );
+          () => loadedPlugin!.initialize(pluginContext!),
+        ),
+      );
 
-        // 7. Register in registry
-        _registry.register(
-          pluginId,
-          plugin,
-          context,
-          state: PluginState.ready,
-        );
+      // 8. Update to ready state
+      _registry.updateState(pluginId, PluginState.ready);
 
-        // 8. Subscribe to events
-        _subscribeToEvents(pluginId, manifest.subscribesTo);
-      },
-      fallback: (error) {
+      // 9. Subscribe to events
+      _subscribeToEvents(pluginId, manifest.subscribesTo);
+    } catch (e) {
+      // Clean up on error
+      if (_registry.isLoaded(pluginId)) {
         _registry.updateState(pluginId, PluginState.error);
-        throw error;
-      },
-    );
+      }
+      _permissionSystem.unregisterPlugin(pluginId);
+      rethrow;
+    }
   }
 
   /// Unload plugin
@@ -282,17 +295,21 @@ class PluginManager {
     await _errorBoundary.execute(
       pluginId,
       () async {
-        // 1. Dispose plugin
+        // 1. Cancel event subscriptions
+        _unsubscribeFromEvents(pluginId);
+
+        // 2. Dispose plugin
         await plugin.dispose();
 
-        // 2. Unregister from registry
+        // 3. Unregister from registry
         _registry.unregister(pluginId);
 
-        // 3. Unregister permissions
+        // 4. Unregister permissions
         _permissionSystem.unregisterPlugin(pluginId);
       },
       fallback: (error) {
         // Even if dispose fails, clean up
+        _unsubscribeFromEvents(pluginId);
         _registry.unregister(pluginId);
         _permissionSystem.unregisterPlugin(pluginId);
       },
@@ -664,15 +681,18 @@ class PluginManager {
   /// ```
   Future<void> dispose() async {
     // Get all plugin IDs
-    final pluginIds = _registry.getAllPlugins().keys.toList();
+    final pluginIds = _registry.getAllPluginIds();
 
     // Unload all plugins
     await Future.wait(
       pluginIds.map((id) => unloadPlugin(id)),
     );
 
-    // Clear event dispatcher
+    // Dispose event dispatcher
     _eventDispatcher.dispose();
+
+    // Dispose error tracker
+    _errorTracker.dispose();
   }
 
   // ============================================================================
@@ -705,17 +725,36 @@ class PluginManager {
     final plugin = _registry.getPlugin(pluginId);
     if (plugin == null) return;
 
-    // Subscribe to each event type
+    // Initialize subscriptions list for this plugin
+    _eventSubscriptions[pluginId] = [];
+
+    // Subscribe to each event type and store subscription
     for (final eventType in eventTypes) {
-      _eventDispatcher.streamFor(eventType).listen((event) async {
+      final subscription =
+          _eventDispatcher.streamFor(eventType).listen((event) async {
+        // Get plugin again (don't capture in closure)
+        final currentPlugin = _registry.getPlugin(pluginId);
+        if (currentPlugin == null) return;
+
         await _errorBoundary.execute(
           pluginId,
           () => _securityGuard.executeWithTimeout(
             pluginId,
-            () => plugin.handleEvent(event),
+            () => currentPlugin.handleEvent(event),
           ),
         );
       });
+
+      _eventSubscriptions[pluginId]!.add(subscription);
+    }
+  }
+
+  void _unsubscribeFromEvents(String pluginId) {
+    final subscriptions = _eventSubscriptions.remove(pluginId);
+    if (subscriptions != null) {
+      for (final subscription in subscriptions) {
+        subscription.cancel();
+      }
     }
   }
 }
