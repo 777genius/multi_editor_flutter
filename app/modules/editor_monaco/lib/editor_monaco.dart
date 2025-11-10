@@ -12,3 +12,6 @@ library editor_monaco;
 
 export 'src/adapters/monaco_editor_repository.dart';
 export 'src/mappers/monaco_mappers.dart';
+
+// Dependency Injection
+export 'src/di/editor_monaco_module.dart';

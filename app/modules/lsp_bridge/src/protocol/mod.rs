@@ -114,6 +114,32 @@ async fn handle_request(
         "textDocument/didChange" => {
             handle_did_change(id, request.params, lsp_manager).await
         }
+        // Generic LSP request handlers
+        "textDocument/definition" |
+        "textDocument/references" |
+        "textDocument/codeAction" |
+        "textDocument/signatureHelp" |
+        "textDocument/formatting" |
+        "textDocument/rename" |
+        "textDocument/documentSymbol" |
+        "workspace/symbol" |
+        "textDocument/prepareCallHierarchy" |
+        "callHierarchy/incomingCalls" |
+        "callHierarchy/outgoingCalls" |
+        "textDocument/prepareTypeHierarchy" |
+        "typeHierarchy/supertypes" |
+        "typeHierarchy/subtypes" |
+        "textDocument/codeLens" |
+        "codeLens/resolve" |
+        "textDocument/semanticTokens/full" |
+        "textDocument/semanticTokens/full/delta" |
+        "textDocument/inlayHint" |
+        "inlayHint/resolve" |
+        "textDocument/foldingRange" |
+        "textDocument/documentLink" |
+        "documentLink/resolve" => {
+            handle_generic_lsp_request(id, &request.method, request.params, lsp_manager).await
+        }
         _ => {
             warn!("Unsupported method: {}", request.method);
             JsonRpcResponse {
@@ -248,15 +274,44 @@ async fn handle_completion(
 
 async fn handle_hover(
     id: Value,
-    _params: Option<Value>,
-    _lsp_manager: &LspManager,
+    params: Option<Value>,
+    lsp_manager: &LspManager,
 ) -> JsonRpcResponse {
-    // Similar to handle_completion
+    if let Some(params) = params {
+        if let Some(session_id) = params.get("sessionId").and_then(|v| v.as_str()) {
+            // Extract LSP params
+            let lsp_params = serde_json::json!({
+                "textDocument": params.get("textDocument"),
+                "position": params.get("position"),
+            });
+
+            match lsp_manager
+                .send_request(session_id, "textDocument/hover", lsp_params)
+                .await
+            {
+                Ok(result) => {
+                    return JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id,
+                        result: Some(result),
+                        error: None,
+                    };
+                }
+                Err(e) => {
+                    error!("LSP hover request failed: {:?}", e);
+                }
+            }
+        }
+    }
+
     JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         id,
-        result: Some(Value::Null),
-        error: None,
+        result: None,
+        error: Some(JsonRpcError {
+            code: -32603,
+            message: "Internal error".to_string(),
+        }),
     }
 }
 
@@ -290,15 +345,84 @@ async fn handle_did_open(
 
 async fn handle_did_change(
     id: Value,
-    _params: Option<Value>,
-    _lsp_manager: &LspManager,
+    params: Option<Value>,
+    lsp_manager: &LspManager,
 ) -> JsonRpcResponse {
-    // Similar to handle_did_open
+    if let Some(params) = params {
+        if let Some(session_id) = params.get("sessionId").and_then(|v| v.as_str()) {
+            let lsp_params = serde_json::json!({
+                "textDocument": params.get("textDocument"),
+                "contentChanges": params.get("contentChanges"),
+            });
+
+            if let Err(e) = lsp_manager
+                .send_notification(session_id, "textDocument/didChange", lsp_params)
+                .await
+            {
+                error!("LSP didChange notification failed: {:?}", e);
+            }
+        }
+    }
+
     JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         id,
         result: Some(Value::Null),
         error: None,
+    }
+}
+
+/// Generic handler for LSP requests that just forwards to LSP server
+async fn handle_generic_lsp_request(
+    id: Value,
+    method: &str,
+    params: Option<Value>,
+    lsp_manager: &LspManager,
+) -> JsonRpcResponse {
+    if let Some(params) = params {
+        if let Some(session_id) = params.get("sessionId").and_then(|v| v.as_str()) {
+            // Remove sessionId from params before sending to LSP
+            let mut lsp_params = params.clone();
+            if let Some(obj) = lsp_params.as_object_mut() {
+                obj.remove("sessionId");
+            }
+
+            match lsp_manager
+                .send_request(session_id, method, lsp_params)
+                .await
+            {
+                Ok(result) => {
+                    return JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id,
+                        result: Some(result),
+                        error: None,
+                    };
+                }
+                Err(e) => {
+                    error!("LSP request failed for {}: {:?}", method, e);
+                    return JsonRpcResponse {
+                        jsonrpc: "2.0".to_string(),
+                        id,
+                        result: None,
+                        error: Some(JsonRpcError {
+                            code: -32603,
+                            message: format!("LSP request failed: {}", e),
+                        }),
+                    };
+                }
+            }
+        }
+    }
+
+    JsonRpcResponse {
+        jsonrpc: "2.0".to_string(),
+        id,
+        result: None,
+        error: Some(JsonRpcError {
+            code: -32602,
+            message: "Invalid params: missing sessionId".to_string(),
+        }),
     }
 }
 

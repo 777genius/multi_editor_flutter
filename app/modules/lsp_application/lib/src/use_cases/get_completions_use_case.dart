@@ -54,71 +54,58 @@ class GetCompletionsUseCase {
     required CursorPosition position,
     String? filterPrefix,
   }) async {
-    // Step 1: Get or create LSP session for this language
+    // Get LSP session
     final sessionResult = await _lspRepository.getSession(languageId);
 
-    // If session doesn't exist, it's a failure
-    final session = sessionResult.fold(
-      (failure) => null,
-      (s) => s,
+    return sessionResult.fold(
+      (failure) => left(failure),
+      (session) async {
+        // Validate session can handle requests
+        if (!session.canHandleRequests) {
+          return left(LspFailure.serverNotResponding(
+            message: 'LSP session is not ready (state: ${session.state})',
+          ));
+        }
+
+        // Get current document content and sync with LSP
+        final contentResult = await _editorRepository.getContent();
+
+        return contentResult.fold(
+          (failure) => left(const LspFailure.unexpected(
+            message: 'Failed to get document content from editor',
+          )),
+          (content) async {
+            // Notify LSP server about current document state
+            await _lspRepository.notifyDocumentChanged(
+              sessionId: session.id,
+              documentUri: documentUri,
+              content: content,
+            );
+
+            // Request completions from LSP server
+            final completionsResult = await _lspRepository.getCompletions(
+              sessionId: session.id,
+              documentUri: documentUri,
+              position: position,
+            );
+
+            // Post-process completions (filter, sort)
+            return completionsResult.map((completionList) {
+              var processedList = completionList;
+
+              // Filter by prefix if provided
+              if (filterPrefix != null && filterPrefix.isNotEmpty) {
+                processedList = processedList.filterByPrefix(filterPrefix);
+              }
+
+              // Sort by relevance
+              processedList = processedList.sortByRelevance();
+
+              return processedList;
+            });
+          },
+        );
+      },
     );
-
-    if (session == null) {
-      return left(LspFailure.sessionNotFound(
-        message: 'No LSP session found for language: ${languageId.value}',
-      ));
-    }
-
-    // Step 2: Validate session can handle requests
-    if (!session.canHandleRequests) {
-      return left(LspFailure.serverNotResponding(
-        message: 'LSP session is not ready (state: ${session.state})',
-      ));
-    }
-
-    // Step 3: Get current document content from editor
-    // This ensures we send the latest content to LSP
-    final contentResult = await _editorRepository.getContent();
-
-    final content = contentResult.fold(
-      (failure) => null,
-      (c) => c,
-    );
-
-    if (content == null) {
-      return left(const LspFailure.unexpected(
-        message: 'Failed to get document content from editor',
-      ));
-    }
-
-    // Step 4: Notify LSP server about current document state
-    // This is crucial for accurate completions
-    await _lspRepository.notifyDocumentChanged(
-      sessionId: session.id,
-      documentUri: documentUri,
-      content: content,
-    );
-
-    // Step 5: Request completions from LSP server
-    final completionsResult = await _lspRepository.getCompletions(
-      sessionId: session.id,
-      documentUri: documentUri,
-      position: position,
-    );
-
-    // Step 6: Post-process completions (filter, sort)
-    return completionsResult.map((completionList) {
-      var processedList = completionList;
-
-      // Filter by prefix if provided
-      if (filterPrefix != null && filterPrefix.isNotEmpty) {
-        processedList = processedList.filterByPrefix(filterPrefix);
-      }
-
-      // Sort by relevance
-      processedList = processedList.sortByRelevance();
-
-      return processedList;
-    });
   }
 }

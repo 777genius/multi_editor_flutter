@@ -2,67 +2,27 @@ use anyhow::Result;
 use ropey::Rope;
 use tree_sitter::{Parser, Language, Tree};
 
-/// Cursor position in the editor (0-indexed)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-}
+// Sub-modules
+pub mod cursor;
+pub mod search;
+pub mod multiline_edit;
+pub mod performance;
+pub mod clipboard;
+pub mod syntax_query;
+pub mod bracket_matching;
+pub mod auto_indent;
+pub mod comment_toggle;
 
-impl Position {
-    pub fn new(line: usize, column: usize) -> Self {
-        Self { line, column }
-    }
-
-    /// Converts position to byte offset in rope
-    pub fn to_byte_offset(&self, rope: &Rope) -> usize {
-        let line_offset = rope.line_to_byte(self.line);
-        let line = rope.line(self.line);
-        let char_offset = line.char_to_byte(self.column.min(line.len_chars()));
-        line_offset + char_offset
-    }
-
-    /// Creates position from byte offset
-    pub fn from_byte_offset(rope: &Rope, byte_offset: usize) -> Self {
-        let line = rope.byte_to_line(byte_offset);
-        let line_start = rope.line_to_byte(line);
-        let column_bytes = byte_offset - line_start;
-        let line_slice = rope.line(line);
-        let column = line_slice.byte_to_char(column_bytes.min(line_slice.len_bytes()));
-
-        Self { line, column }
-    }
-}
-
-/// Text selection range
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Selection {
-    pub start: Position,
-    pub end: Position,
-}
-
-impl Selection {
-    pub fn new(start: Position, end: Position) -> Self {
-        Self { start, end }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.start == self.end
-    }
-
-    pub fn normalize(&self) -> Self {
-        if self.start.line < self.end.line
-            || (self.start.line == self.end.line && self.start.column <= self.end.column)
-        {
-            *self
-        } else {
-            Self {
-                start: self.end,
-                end: self.start,
-            }
-        }
-    }
-}
+// Re-export commonly used items
+pub use cursor::{Position, Selection};
+pub use search::{SearchOptions, SearchMatch, search_rope, find_next, replace_all};
+pub use multiline_edit::{MultiCursor, ColumnSelection, MultiEdit};
+pub use performance::{PerformanceMetrics, OperationTimer, PerformanceStats};
+pub use clipboard::{Clipboard, ClipboardMode, copy_text, cut_text, paste_text};
+pub use syntax_query::{SyntaxQuery, QueryError};
+pub use bracket_matching::{BracketType, BracketMatch, find_matching_bracket, find_all_bracket_pairs, are_brackets_balanced};
+pub use auto_indent::{IndentConfig, calculate_indent_for_newline, indent_lines, dedent_lines, normalize_indentation};
+pub use comment_toggle::{CommentConfig, toggle_line_comments, toggle_block_comment};
 
 /// Language identifier
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -77,9 +37,11 @@ pub enum LanguageId {
     PlainText,
 }
 
-impl LanguageId {
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for LanguageId {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "rust" | "rs" => Self::Rust,
             "javascript" | "js" => Self::JavaScript,
             "typescript" | "ts" => Self::TypeScript,
@@ -88,7 +50,14 @@ impl LanguageId {
             "go" => Self::Go,
             "dart" => Self::Dart,
             _ => Self::PlainText,
-        }
+        })
+    }
+}
+
+impl LanguageId {
+    /// Creates a LanguageId from a string identifier
+    pub fn parse(s: &str) -> Self {
+        s.parse().unwrap_or(Self::PlainText)
     }
 
     pub fn tree_sitter_language(&self) -> Option<Language> {
@@ -104,12 +73,12 @@ impl LanguageId {
     }
 }
 
-/// Undo/Redo history
+/// Edit record for undo/redo operations
 #[derive(Debug, Clone)]
-struct Edit {
-    position: usize,
-    deleted_text: String,
-    inserted_text: String,
+pub struct Edit {
+    pub position: usize,
+    pub deleted_text: String,
+    pub inserted_text: String,
 }
 
 /// Main Editor struct
@@ -536,26 +505,26 @@ mod tests {
 
     #[test]
     fn test_language_from_str() {
-        assert_eq!(LanguageId::from_str("rust"), LanguageId::Rust);
-        assert_eq!(LanguageId::from_str("rs"), LanguageId::Rust);
-        assert_eq!(LanguageId::from_str("Rust"), LanguageId::Rust);
-        assert_eq!(LanguageId::from_str("RUST"), LanguageId::Rust);
+        assert_eq!(LanguageId::parse("rust"), LanguageId::Rust);
+        assert_eq!(LanguageId::parse("rs"), LanguageId::Rust);
+        assert_eq!(LanguageId::parse("Rust"), LanguageId::Rust);
+        assert_eq!(LanguageId::parse("RUST"), LanguageId::Rust);
 
-        assert_eq!(LanguageId::from_str("javascript"), LanguageId::JavaScript);
-        assert_eq!(LanguageId::from_str("js"), LanguageId::JavaScript);
+        assert_eq!(LanguageId::parse("javascript"), LanguageId::JavaScript);
+        assert_eq!(LanguageId::parse("js"), LanguageId::JavaScript);
 
-        assert_eq!(LanguageId::from_str("typescript"), LanguageId::TypeScript);
-        assert_eq!(LanguageId::from_str("ts"), LanguageId::TypeScript);
+        assert_eq!(LanguageId::parse("typescript"), LanguageId::TypeScript);
+        assert_eq!(LanguageId::parse("ts"), LanguageId::TypeScript);
 
-        assert_eq!(LanguageId::from_str("python"), LanguageId::Python);
-        assert_eq!(LanguageId::from_str("py"), LanguageId::Python);
+        assert_eq!(LanguageId::parse("python"), LanguageId::Python);
+        assert_eq!(LanguageId::parse("py"), LanguageId::Python);
 
-        assert_eq!(LanguageId::from_str("java"), LanguageId::Java);
-        assert_eq!(LanguageId::from_str("go"), LanguageId::Go);
-        assert_eq!(LanguageId::from_str("dart"), LanguageId::Dart);
+        assert_eq!(LanguageId::parse("java"), LanguageId::Java);
+        assert_eq!(LanguageId::parse("go"), LanguageId::Go);
+        assert_eq!(LanguageId::parse("dart"), LanguageId::Dart);
 
-        assert_eq!(LanguageId::from_str("unknown"), LanguageId::PlainText);
-        assert_eq!(LanguageId::from_str(""), LanguageId::PlainText);
+        assert_eq!(LanguageId::parse("unknown"), LanguageId::PlainText);
+        assert_eq!(LanguageId::parse(""), LanguageId::PlainText);
     }
 
     #[test]

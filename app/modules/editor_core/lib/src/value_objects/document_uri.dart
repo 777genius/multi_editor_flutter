@@ -32,6 +32,9 @@ class DocumentUri with _$DocumentUri {
     return value.replaceFirst('file:///', '');
   }
 
+  /// Gets the file path (alias for toFilePath())
+  String get path => toFilePath();
+
   /// Gets the file name from the URI
   String get fileName {
     final path = toFilePath();

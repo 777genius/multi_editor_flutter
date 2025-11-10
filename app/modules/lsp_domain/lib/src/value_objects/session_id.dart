@@ -1,3 +1,4 @@
+import 'dart:math' show Random;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:meta/meta.dart';
 
@@ -10,11 +11,14 @@ class SessionId with _$SessionId {
 
   const SessionId._();
 
+  static final _random = Random();
+
   /// Generates a new unique session ID
   factory SessionId.generate() {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = timestamp.hashCode;
-    return SessionId('session_${timestamp}_$random');
+    final random1 = _random.nextInt(0xFFFFFFFF);
+    final random2 = _random.nextInt(0xFFFFFFFF);
+    return SessionId('session_${timestamp}_${random1}_$random2');
   }
 
   /// Creates a session ID from a string

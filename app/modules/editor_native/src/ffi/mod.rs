@@ -54,7 +54,7 @@ pub unsafe extern "C" fn editor_with_content(
         Err(_) => return ptr::null_mut(),
     };
 
-    let language = LanguageId::from_str(language_str);
+    let language = LanguageId::parse(language_str);
 
     match Editor::with_content(content_str, language) {
         Ok(editor) => Box::into_raw(Box::new(editor)),
@@ -329,7 +329,7 @@ pub unsafe extern "C" fn editor_set_language(
         Err(_) => return ResultCode::ErrorInvalidUtf8,
     };
 
-    let language = LanguageId::from_str(language_str);
+    let language = LanguageId::parse(language_str);
 
     match editor.set_language(language) {
         Ok(_) => ResultCode::Success,

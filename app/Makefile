@@ -41,8 +41,11 @@ install: ## Install Flutter dependencies only
 codegen: ## Generate code (MobX, Injectable, Freezed)
 	@echo "$(BLUE)Generating code...$(NC)"
 	@echo "$(YELLOW)Running build_runner for all modules...$(NC)"
-	cd modules/ide_presentation && dart run build_runner build --delete-conflicting-outputs
+	cd modules/editor_core && dart run build_runner build --delete-conflicting-outputs
+	cd modules/lsp_domain && dart run build_runner build --delete-conflicting-outputs
+	cd modules/lsp_application && dart run build_runner build --delete-conflicting-outputs
 	cd modules/lsp_infrastructure && dart run build_runner build --delete-conflicting-outputs
+	cd modules/ide_presentation && dart run build_runner build --delete-conflicting-outputs
 	@echo "$(GREEN)✓ Code generation complete$(NC)"
 
 codegen-watch: ## Watch and auto-generate code

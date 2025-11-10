@@ -65,3 +65,6 @@ export 'src/protocol/request_manager.dart';
 
 // Mappers
 export 'src/mappers/lsp_protocol_mappers.dart';
+
+// Dependency Injection
+export 'src/di/lsp_infrastructure_module.dart';

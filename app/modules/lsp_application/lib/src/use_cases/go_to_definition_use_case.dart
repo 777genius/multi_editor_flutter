@@ -54,32 +54,35 @@ class GoToDefinitionUseCase {
     return sessionResult.fold(
       (failure) => left(failure),
       (session) async {
-        // Step 2: Validate session is ready
+        // Validate session is ready
         if (!session.canHandleRequests) {
           return left(LspFailure.serverNotResponding(
             message: 'LSP session not ready for ${languageId.value}',
           ));
         }
 
-        // Step 3: Ensure document content is synced with LSP
+        // Get current document content and sync with LSP
         final contentResult = await _editorRepository.getContent();
 
-        await contentResult.fold(
-          (_) async {},
+        return contentResult.fold(
+          (failure) => left(const LspFailure.unexpected(
+            message: 'Failed to get document content from editor',
+          )),
           (content) async {
+            // Notify LSP about current document state
             await _lspRepository.notifyDocumentChanged(
               sessionId: session.id,
               documentUri: documentUri,
               content: content,
             );
-          },
-        );
 
-        // Step 4: Request definition from LSP server
-        return _lspRepository.getDefinition(
-          sessionId: session.id,
-          documentUri: documentUri,
-          position: position,
+            // Request definition from LSP server
+            return _lspRepository.getDefinition(
+              sessionId: session.id,
+              documentUri: documentUri,
+              position: position,
+            );
+          },
         );
       },
     );

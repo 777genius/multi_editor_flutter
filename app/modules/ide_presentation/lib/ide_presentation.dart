@@ -93,9 +93,18 @@ export 'src/widgets/completion_popup.dart';
 export 'src/widgets/diagnostics_panel.dart';
 export 'src/widgets/hover_info_widget.dart';
 export 'src/widgets/settings_dialog.dart';
+export 'src/widgets/error_boundary.dart';
+export 'src/widgets/advanced_completion_popup.dart';
+export 'src/widgets/file_tree_explorer.dart';
+export 'src/widgets/command_palette.dart';
+export 'src/widgets/editor_tab_bar.dart';
+export 'src/widgets/search_and_replace_panel.dart';
 
 // Screens
 export 'src/screens/ide_screen.dart';
+
+// Theme
+export 'src/theme/ide_theme.dart';
 
 // Infrastructure Services
 export 'src/infrastructure/file_service.dart';

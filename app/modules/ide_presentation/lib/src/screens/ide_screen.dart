@@ -104,6 +104,19 @@ class _IdeScreenState extends State<IdeScreen> {
 
   @override
   void dispose() {
+    // Dispose stores (prevent memory leaks)
+    try {
+      _editorStore.dispose();
+    } catch (e) {
+      debugPrint('Error disposing editor store: $e');
+    }
+
+    try {
+      _lspStore.dispose();
+    } catch (e) {
+      debugPrint('Error disposing LSP store: $e');
+    }
+
     // Dispose Repository which holds Rust FFI handle
     // This is important to prevent memory leaks
     try {
@@ -112,6 +125,7 @@ class _IdeScreenState extends State<IdeScreen> {
     } catch (e) {
       debugPrint('Error disposing editor repository: $e');
     }
+
     super.dispose();
   }
 

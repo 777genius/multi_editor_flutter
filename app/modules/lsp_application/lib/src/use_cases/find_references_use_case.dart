@@ -65,6 +65,7 @@ class FindReferencesUseCase {
           sessionId: session.id,
           documentUri: documentUri,
           position: position,
+          includeDeclaration: includeDeclaration,
         );
       },
     );

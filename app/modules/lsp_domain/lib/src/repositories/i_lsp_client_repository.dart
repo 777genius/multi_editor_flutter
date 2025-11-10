@@ -5,6 +5,13 @@ import '../entities/lsp_session.dart';
 import '../entities/completion_list.dart';
 import '../entities/diagnostic.dart';
 import '../entities/hover_info.dart';
+import '../entities/code_action.dart';
+import '../entities/signature_help.dart';
+import '../entities/document_symbol.dart';
+import '../entities/formatting_options.dart';
+import '../entities/call_hierarchy.dart';
+import '../entities/type_hierarchy.dart';
+import '../entities/location.dart';
 import '../value_objects/session_id.dart';
 import '../failures/lsp_failure.dart';
 
@@ -104,6 +111,151 @@ abstract class ILspClientRepository {
     required SessionId sessionId,
     required DocumentUri documentUri,
     required CursorPosition position,
+    bool includeDeclaration = true,
+  });
+
+  /// Requests code actions (quick fixes, refactorings) for a range
+  Future<Either<LspFailure, List<CodeAction>>> getCodeActions({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required TextSelection range,
+    required List<Diagnostic> diagnostics,
+  });
+
+  /// Requests signature help at a position
+  Future<Either<LspFailure, SignatureHelp>> getSignatureHelp({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+    String? triggerCharacter,
+  });
+
+  /// Requests document formatting
+  Future<Either<LspFailure, List<TextEdit>>> formatDocument({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required FormattingOptions options,
+  });
+
+  /// Requests symbol rename
+  Future<Either<LspFailure, WorkspaceEdit>> rename({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+    required String newName,
+  });
+
+  /// Executes a server command
+  Future<Either<LspFailure, dynamic>> executeCommand({
+    required SessionId sessionId,
+    required String command,
+    List<dynamic>? arguments,
+  });
+
+  /// Requests document symbols
+  Future<Either<LspFailure, List<DocumentSymbol>>> getDocumentSymbols({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Requests workspace symbols
+  Future<Either<LspFailure, List<WorkspaceSymbol>>> getWorkspaceSymbols({
+    required SessionId sessionId,
+    required String query,
+  });
+
+  /// Prepares call hierarchy at position
+  Future<Either<LspFailure, CallHierarchyItem?>> prepareCallHierarchy({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+  });
+
+  /// Gets incoming calls for a call hierarchy item
+  Future<Either<LspFailure, List<CallHierarchyIncomingCall>>> getIncomingCalls({
+    required SessionId sessionId,
+    required CallHierarchyItem item,
+  });
+
+  /// Gets outgoing calls for a call hierarchy item
+  Future<Either<LspFailure, List<CallHierarchyOutgoingCall>>> getOutgoingCalls({
+    required SessionId sessionId,
+    required CallHierarchyItem item,
+  });
+
+  /// Prepares type hierarchy at position
+  Future<Either<LspFailure, TypeHierarchyItem?>> prepareTypeHierarchy({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required CursorPosition position,
+  });
+
+  /// Gets supertypes for a type hierarchy item
+  Future<Either<LspFailure, List<TypeHierarchyItem>>> getSupertypes({
+    required SessionId sessionId,
+    required TypeHierarchyItem item,
+  });
+
+  /// Gets subtypes for a type hierarchy item
+  Future<Either<LspFailure, List<TypeHierarchyItem>>> getSubtypes({
+    required SessionId sessionId,
+    required TypeHierarchyItem item,
+  });
+
+  /// Gets code lenses for a document
+  Future<Either<LspFailure, List<CodeLens>>> getCodeLenses({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Resolves a code lens (fetches additional data)
+  Future<Either<LspFailure, CodeLens>> resolveCodeLens({
+    required SessionId sessionId,
+    required CodeLens codeLens,
+  });
+
+  /// Gets semantic tokens for a document
+  Future<Either<LspFailure, SemanticTokens>> getSemanticTokens({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Gets semantic tokens delta (incremental update)
+  Future<Either<LspFailure, SemanticTokensDelta>> getSemanticTokensDelta({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required String previousResultId,
+  });
+
+  /// Gets inlay hints for a document range
+  Future<Either<LspFailure, List<InlayHint>>> getInlayHints({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+    required TextSelection range,
+  });
+
+  /// Resolves an inlay hint (fetches additional data)
+  Future<Either<LspFailure, InlayHint>> resolveInlayHint({
+    required SessionId sessionId,
+    required InlayHint hint,
+  });
+
+  /// Gets folding ranges for a document
+  Future<Either<LspFailure, List<FoldingRange>>> getFoldingRanges({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Gets document links for a document
+  Future<Either<LspFailure, List<DocumentLink>>> getDocumentLinks({
+    required SessionId sessionId,
+    required DocumentUri documentUri,
+  });
+
+  /// Resolves a document link (fetches target URI)
+  Future<Either<LspFailure, DocumentLink>> resolveDocumentLink({
+    required SessionId sessionId,
+    required DocumentLink link,
   });
 
   // ============================================================
@@ -115,18 +267,6 @@ abstract class ILspClientRepository {
 
   /// Stream of LSP server status changes
   Stream<LspServerStatus> get onStatusChanged;
-}
-
-/// Represents a location in a document
-@immutable
-class Location {
-  final DocumentUri uri;
-  final TextSelection range;
-
-  const Location({
-    required this.uri,
-    required this.range,
-  });
 }
 
 /// Diagnostic update event

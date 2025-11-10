@@ -6,3 +6,6 @@ library editor_ffi;
 
 export 'src/repository/native_editor_repository.dart';
 export 'src/ffi/native_bindings.dart';
+
+// Dependency Injection
+export 'src/di/editor_ffi_module.dart';
