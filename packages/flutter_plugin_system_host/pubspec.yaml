@@ -1,0 +1,43 @@
+name: flutter_plugin_system_host
+description: Plugin host runtime for Flutter - manages plugin lifecycle, host functions, messaging, security, and discovery. Provides the runtime environment for executing plugins.
+version: 0.1.0
+homepage: https://github.com/777genius/multi_editor_flutter
+repository: https://github.com/777genius/multi_editor_flutter/tree/main/packages/flutter_plugin_system_host
+issue_tracker: https://github.com/777genius/multi_editor_flutter/issues
+
+environment:
+  sdk: ^3.8.0
+
+resolution: workspace
+
+topics:
+  - plugin-system
+  - plugin-host
+  - runtime
+  - lifecycle-management
+  - extensibility
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core abstractions
+  flutter_plugin_system_core:
+    path: ../flutter_plugin_system_core
+
+  # Utilities
+  meta: ^1.12.0
+  collection: ^1.18.0
+
+  # Reactive programming
+  rxdart: ^0.28.0
+
+  # Async utilities
+  async: ^2.11.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.0
+  test: ^1.25.0
+  flutter_lints: ^5.0.0
