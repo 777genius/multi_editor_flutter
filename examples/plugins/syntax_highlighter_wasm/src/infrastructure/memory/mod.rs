@@ -5,4 +5,4 @@
 
 pub mod allocator;
 
-pub use allocator::{alloc, dealloc};
+pub use allocator::{alloc, dealloc, serialize_and_pack};

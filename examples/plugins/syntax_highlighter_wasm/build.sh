@@ -10,21 +10,21 @@ if ! command -v cargo &> /dev/null; then
     exit 1
 fi
 
-# Check if wasm32 target is installed
-if ! rustup target list | grep -q "wasm32-unknown-unknown (installed)"; then
-    echo "📦 Installing wasm32-unknown-unknown target..."
-    rustup target add wasm32-unknown-unknown
+# Check if wasm32-wasip1 target is installed (WASI support for Syntect)
+if ! rustup target list | grep -q "wasm32-wasip1 (installed)"; then
+    echo "📦 Installing wasm32-wasip1 target..."
+    rustup target add wasm32-wasip1
 fi
 
-# Build for WASM
-echo "🔨 Compiling to WebAssembly..."
-cargo build --target wasm32-unknown-unknown --release
+# Build for WASM with WASI support
+echo "🔨 Compiling to WebAssembly (WASI)..."
+cargo build --target wasm32-wasip1 --release
 
 # Copy output
 OUTPUT_DIR="build"
 mkdir -p "$OUTPUT_DIR"
 
-WASM_FILE="target/wasm32-unknown-unknown/release/syntax_highlighter_wasm.wasm"
+WASM_FILE="target/wasm32-wasip1/release/syntax_highlighter_wasm.wasm"
 if [ -f "$WASM_FILE" ]; then
     cp "$WASM_FILE" "$OUTPUT_DIR/"
 
@@ -38,7 +38,7 @@ if [ -f "$WASM_FILE" ]; then
     echo "📐 Architecture Summary:"
     echo "   - Domain Layer: Pure business logic"
     echo "   - Application Layer: Use cases"
-    echo "   - Infrastructure Layer: Tree-sitter integration"
+    echo "   - Infrastructure Layer: Syntect integration (TextMate grammars)"
     echo "   - Presentation Layer: WASM exports"
     echo ""
 

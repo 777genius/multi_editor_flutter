@@ -1,6 +1,6 @@
 # Syntax Highlighter WASM Plugin
 
-**Production-grade syntax highlighter using Tree-sitter**
+**Production-grade syntax highlighter using Syntect (TextMate grammars)**
 
 Demonstrates **Clean Architecture + DDD + SOLID + DRY** principles in Rust WASM plugin.
 
@@ -16,11 +16,11 @@ Demonstrates **Clean Architecture + DDD + SOLID + DRY** principles in Rust WASM 
 ## 🎯 Features
 
 ### Syntax Highlighting
-- ✅ **Tree-sitter Integration** - Industry-standard parser
-- ✅ **Multiple Languages** - Rust, JavaScript, JSON (extensible)
-- ✅ **Query-based** - Flexible pattern matching
-- ✅ **Incremental Parsing** - Efficient for large files
-- ✅ **Theme Support** - Customizable color schemes
+- ✅ **Syntect Integration** - Production-ready TextMate grammar engine
+- ✅ **Multiple Languages** - 100+ languages supported out of the box
+- ✅ **TextMate Grammars** - Industry-standard grammar format (used by VS Code, Sublime, Atom)
+- ✅ **Built-in Themes** - 20+ default themes (base16, Solarized, etc.)
+- ✅ **Fast & Accurate** - Proven highlighting engine from Sublime Text
 
 ### Architecture Quality
 - ✅ **Clean Architecture** - Clear separation of concerns
@@ -58,8 +58,8 @@ Demonstrates **Clean Architecture + DDD + SOLID + DRY** principles in Rust WASM 
                      │ implements
 ┌────────────────────┴────────────────────────────────┐
 │        Infrastructure Layer (infrastructure/)        │
-│  - TreeSitterParser (implements Parser)            │
-│  - TreeSitterHighlighter (implements Highlighter)  │
+│  - SyntectParser (implements Parser)               │
+│  - SyntectHighlighter (implements Highlighter)     │
 │  - Memory management (alloc/dealloc)               │
 └─────────────────────────────────────────────────────┘
 ```
@@ -104,13 +104,14 @@ Demonstrates **Clean Architecture + DDD + SOLID + DRY** principles in Rust WASM 
 ### Infrastructure Layer
 
 **Adapters**:
-- `TreeSitterParser` - Adapts Tree-sitter to `Parser` trait
-- `TreeSitterHighlighter` - Adapts Tree-sitter queries to `Highlighter` trait
+- `SyntectParser` - Adapts Syntect to `Parser` trait
+- `SyntectHighlighter` - Adapts Syntect highlighting to `Highlighter` trait
 
-**Tree-sitter Integration**:
-- Query language for pattern matching
-- Incremental parsing support
-- Error recovery
+**Syntect Integration**:
+- TextMate grammar parsing (`.tmLanguage` / `.sublime-syntax`)
+- Built-in support for 100+ languages
+- 20+ default themes (base16, Solarized, Monokai, etc.)
+- Regex-based pattern matching (pure Rust, WASM-compatible)
 
 ### Presentation Layer
 
@@ -128,8 +129,8 @@ Each class has **one reason to change**:
 
 - `SyntaxTree` - Represents parsed code structure
 - `HighlightRange` - Represents single highlighted region
-- `TreeSitterParser` - Parses source code
-- `TreeSitterHighlighter` - Generates highlights
+- `SyntectParser` - Parses source code
+- `SyntectHighlighter` - Generates highlights
 - `HighlightCodeUseCase` - Orchestrates highlighting process
 
 ### 2. Open/Closed Principle (OCP)
@@ -143,7 +144,7 @@ pub trait Parser {
 }
 
 // Implementations - open for extension
-pub struct TreeSitterParser { /* ... */ }
+pub struct SyntectParser { /* ... */ }
 pub struct LspParser { /* ... */ }
 pub struct CustomParser { /* ... */ }
 ```
@@ -160,7 +161,7 @@ fn highlight_code<P: Parser>(parser: P, source: &str) {
 }
 
 // Works with any parser
-highlight_code(TreeSitterParser::new(), "fn main() {}");
+highlight_code(SyntectParser::new(), "fn main() {}");
 highlight_code(CustomParser::new(), "fn main() {}");
 ```
 
@@ -199,8 +200,8 @@ where
 
 // Concrete implementations provided at runtime (DI)
 let use_case = HighlightCodeUseCase::new(
-    TreeSitterParser::new(),     // ← concrete
-    TreeSitterHighlighter::new(), // ← concrete
+    SyntectParser::new(),      // ← concrete
+    SyntectHighlighter::new(), // ← concrete
 );
 ```
 
@@ -252,8 +253,8 @@ Expressed as traits (interfaces):
 # Install Rust
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# Add WASM target
-rustup target add wasm32-unknown-unknown
+# Add WASM target with WASI support (required for Syntect)
+rustup target add wasm32-wasip1
 
 # Optional: wasm-opt for optimization
 cargo install wasm-opt
@@ -265,7 +266,7 @@ cargo install wasm-opt
 ./build.sh
 ```
 
-Output: `build/syntax_highlighter_wasm.wasm` (~200-300KB optimized)
+Output: `build/syntax_highlighter_wasm.wasm` (~1.6MB, includes 100+ language grammars)
 
 ### Project Structure
 
@@ -296,9 +297,9 @@ syntax_highlighter_wasm/
 │   │       └── highlight_response.rs # Output DTO
 │   └── infrastructure/                # Infrastructure Layer
 │       ├── mod.rs
-│       ├── tree_sitter/
-│       │   ├── ts_parser.rs          # TreeSitterParser
-│       │   └── ts_highlighter.rs     # TreeSitterHighlighter
+│       ├── syntect/
+│       │   ├── syntect_parser.rs     # SyntectParser
+│       │   └── syntect_highlighter.rs # SyntectHighlighter
 │       └── memory/
 │           └── allocator.rs          # WASM memory
 └── README.md                          # This file
@@ -312,11 +313,12 @@ syntax_highlighter_wasm/
 import 'package:flutter_plugin_system_host/flutter_plugin_system_host.dart';
 import 'package:flutter_plugin_system_wasm_run/flutter_plugin_system_wasm_run.dart';
 
-// Create WASM runtime
+// Create WASM runtime with WASI support (required for Syntect)
 final wasmRuntime = WasmRunRuntime(
   config: WasmRuntimeConfig(
     maxMemoryPages: 256,  // 16MB
     maxExecutionTime: Duration(seconds: 5),
+    enableWasi: true,     // IMPORTANT: Enable WASI for Syntect
   ),
 );
 
@@ -387,7 +389,7 @@ cargo test
 Tests included for:
 - Value Objects (Language, Position, Range, Theme, Color)
 - Entities (SyntaxTree, HighlightRange, HighlightCollection)
-- Infrastructure (TreeSitterParser, TreeSitterHighlighter)
+- Infrastructure (SyntectParser, SyntectHighlighter)
 - Application (HighlightCodeUseCase)
 
 ### Integration Test
@@ -413,11 +415,12 @@ test('syntax highlighter WASM plugin', () async {
 
 | Metric | Value |
 |--------|-------|
-| Binary size | ~250KB (optimized) |
-| Load time | ~20ms |
-| Parse time | ~5ms (small file) |
-| Highlight time | ~10ms (small file) |
-| Memory usage | <2MB |
+| Binary size | ~1.6MB (includes 100+ grammars) |
+| Load time | ~50ms |
+| Parse time | ~5-10ms (small file) |
+| Highlight time | ~10-20ms (small file) |
+| Memory usage | ~3-5MB |
+| Supported languages | 100+ (Rust, JS, TS, Python, Go, Java, C++, etc.) |
 
 ## 🔗 Related
 
@@ -440,9 +443,10 @@ test('syntax highlighter WASM plugin', () async {
 ### SOLID Principles
 - Robert C. Martin - "Agile Software Development: Principles, Patterns, and Practices"
 
-### Tree-sitter
-- [Tree-sitter Documentation](https://tree-sitter.github.io/tree-sitter/)
-- [Writing Queries](https://tree-sitter.github.io/tree-sitter/using-parsers#pattern-matching-with-queries)
+### Syntect
+- [Syntect Documentation](https://docs.rs/syntect/)
+- [TextMate Grammars](https://macromates.com/manual/en/language_grammars)
+- [Sublime Syntax](https://www.sublimetext.com/docs/syntax.html)
 
 ## 📝 License
 

@@ -9,4 +9,4 @@ pub mod memory;
 
 // Re-export for convenience
 pub use syntect::{SyntectParser, SyntectHighlighter};
-pub use memory::{alloc, dealloc};
+pub use memory::{alloc, dealloc, serialize_and_pack};

@@ -9,5 +9,5 @@
 pub mod parser;
 pub mod highlighter;
 
-pub use parser::Parser;
+pub use parser::{Parser, ParserStatistics};
 pub use highlighter::Highlighter;

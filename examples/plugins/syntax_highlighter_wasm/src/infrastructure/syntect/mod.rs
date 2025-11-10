@@ -1,10 +1,10 @@
-// Infrastructure Layer - Tree-sitter Integration
+// Infrastructure Layer - Syntect Integration
 //
-// Implements domain services using Tree-sitter library.
-// Adapter pattern: adapts Tree-sitter API to domain interfaces.
+// Implements domain services using Syntect library (TextMate grammars).
+// Adapter pattern: adapts Syntect API to domain interfaces.
 
-pub mod ts_parser;
-pub mod ts_highlighter;
+pub mod syntect_parser;
+pub mod syntect_highlighter;
 
-pub use ts_parser::TreeSitterParser;
-pub use ts_highlighter::TreeSitterHighlighter;
+pub use syntect_parser::SyntectParser;
+pub use syntect_highlighter::SyntectHighlighter;

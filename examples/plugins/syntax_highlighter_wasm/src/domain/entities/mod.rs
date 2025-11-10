@@ -7,4 +7,4 @@ pub mod syntax_tree;
 pub mod highlight_range;
 
 pub use syntax_tree::SyntaxTree;
-pub use highlight_range::HighlightRange;
+pub use highlight_range::{HighlightRange, HighlightCollection};

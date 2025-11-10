@@ -15,7 +15,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Syntect for syntax highlighting (TextMate grammars)
-syntect = { version = "5.2", default-features = false, features = ["parsing", "default-syntaxes", "default-themes"] }
+# Use regex-fancy for WASM compatibility (pure Rust, no C dependencies)
+syntect = { version = "5.2", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "regex-fancy"] }
 
 [profile.release]
 opt-level = "z"     # Optimize for size (WASM binary)

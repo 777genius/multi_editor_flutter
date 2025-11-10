@@ -1,4 +1,5 @@
-use crate::domain::{Parser, ParserStatistics, SyntaxTree, Language};
+use crate::domain::{Parser, SyntaxTree, Language};
+use crate::domain::services::ParserStatistics;
 use syntect::parsing::SyntaxSet;
 
 /// Syntect Parser Adapter

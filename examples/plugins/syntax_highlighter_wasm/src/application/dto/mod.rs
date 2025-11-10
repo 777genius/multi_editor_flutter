@@ -7,4 +7,4 @@ pub mod parse_request;
 pub mod highlight_response;
 
 pub use parse_request::ParseRequest;
-pub use highlight_response::{HighlightResponse, HighlightRangeDto};
+pub use highlight_response::{HighlightResponse, HighlightRangeDto, ResponseStatistics};

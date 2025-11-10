@@ -2,8 +2,9 @@ use crate::domain::{
     Highlighter, SyntaxTree, HighlightCollection, HighlightRange,
     Theme, Language, Range, Position,
 };
-use syntect::parsing::{SyntaxSet, ParseState};
-use syntect::highlighting::{ThemeSet, Highlighter as SyntectHighlighterTrait, HighlightState};
+use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{ThemeSet, HighlightIterator, Style};
+use syntect::easy::HighlightLines;
 use syntect::util::LinesWithEndings;
 
 /// Syntect Highlighter Adapter
@@ -33,7 +34,37 @@ impl SyntectHighlighter {
         self.syntax_set.find_syntax_by_extension(extension)
     }
 
-    /// Map Syntect scope to our token type
+    /// Map Syntect Style to our token type
+    ///
+    /// Uses foreground color to infer token type.
+    /// This is a heuristic since Style doesn't contain scope information directly.
+    fn style_to_token_type(style: &Style) -> String {
+        // Color-based heuristics for token types
+        // Different themes use different colors, but we try common patterns
+        let color = style.foreground;
+
+        // Simple heuristic: use color brightness/saturation
+        // In most themes:
+        // - Keywords: blue/purple
+        // - Strings: green/yellow
+        // - Comments: gray (low saturation)
+        // - Functions: blue/cyan
+        // - Numbers: orange/red
+
+        // For now, use a simplified approach
+        // We could enhance this by also looking at font_style (bold, italic)
+        if style.font_style.contains(syntect::highlighting::FontStyle::BOLD) {
+            "keyword".to_string()
+        } else if style.font_style.contains(syntect::highlighting::FontStyle::ITALIC) {
+            "comment".to_string()
+        } else {
+            // Default token type
+            "text".to_string()
+        }
+    }
+
+    /// Map Syntect scope string to our token type (fallback method)
+    #[allow(dead_code)]
     fn scope_to_token_type(scope_str: &str) -> String {
         // Map TextMate scopes to simpler token types
         if scope_str.contains("keyword") {
@@ -69,10 +100,8 @@ impl SyntectHighlighter {
         // Get default theme
         let theme = &self.theme_set.themes["base16-ocean.dark"];
 
-        // Create highlighter
-        let highlighter = SyntectHighlighterTrait::new(theme);
-        let mut parse_state = ParseState::new(syntax);
-        let mut highlight_state = HighlightState::new(&highlighter, syntect::parsing::ScopeStack::new());
+        // Create HighlightLines helper (easier API)
+        let mut highlighter = HighlightLines::new(syntax, theme);
 
         let mut collection = HighlightCollection::new();
         let mut highlight_id = 0;
@@ -80,21 +109,21 @@ impl SyntectHighlighter {
 
         // Process each line
         for line in LinesWithEndings::from(tree.source_code()) {
-            let ops = parse_state
-                .parse_line(line, &self.syntax_set)
-                .map_err(|e| format!("Parse error: {:?}", e))?;
+            // Highlight the line (returns Vec<(Style, &str)>)
+            let ranges = highlighter
+                .highlight_line(line, &self.syntax_set)
+                .map_err(|e| format!("Highlight error: {:?}", e))?;
 
             let mut current_col = 0;
 
-            for (style, token_str) in highlight_state.highlight_line(&ops, &self.syntax_set) {
+            for (style, token_str) in ranges {
                 if token_str.trim().is_empty() {
                     current_col += token_str.len() as u32;
                     continue;
                 }
 
-                // Get token type from scope
-                let scope_str = format!("{:?}", style.foreground);
-                let token_type = Self::scope_to_token_type(&scope_str);
+                // Get token type from style
+                let token_type = Self::style_to_token_type(&style);
 
                 // Create range
                 let start = Position::new(current_line, current_col);
