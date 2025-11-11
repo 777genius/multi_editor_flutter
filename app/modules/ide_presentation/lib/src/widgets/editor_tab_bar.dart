@@ -227,7 +227,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
     required bool isHovered,
   }) {
     return Tooltip(
-      message: tab.documentUri,
+      message: tab.documentUri.path,
       waitDuration: const Duration(milliseconds: 500),
       child: MouseRegion(
         onEnter: (_) => setState(() => _hoveredTabIndex = index),

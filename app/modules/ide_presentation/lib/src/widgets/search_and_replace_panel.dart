@@ -470,7 +470,17 @@ class _SearchAndReplacePanelState extends State<SearchAndReplacePanel> {
           label: '.*',
           tooltip: 'Use Regular Expression',
           isActive: _useRegex,
-          onPressed: () => setState(() => _useRegex = !_useRegex),
+          onPressed: () {
+            setState(() {
+              _useRegex = !_useRegex;
+              // Clear regex error when toggling off regex mode
+              if (!_useRegex) {
+                _regexError = null;
+              }
+            });
+            // Re-run search with new mode
+            _performSearch();
+          },
         ),
 
         const SizedBox(width: 16),

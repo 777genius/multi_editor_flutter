@@ -145,22 +145,38 @@ class _SettingsDialogState extends State<SettingsDialog>
       isValid = false;
     }
 
-    // Validate connection timeout
-    if (_connectionTimeout <= 0) {
+    // Validate connection timeout - check if text is valid number
+    final connectionTimeoutText = _connectionTimeoutController.text.trim();
+    final parsedConnectionTimeout = int.tryParse(connectionTimeoutText);
+    if (connectionTimeoutText.isEmpty || parsedConnectionTimeout == null) {
+      setState(() => _connectionTimeoutError = 'Must be a valid number');
+      isValid = false;
+    } else if (parsedConnectionTimeout <= 0) {
       setState(() => _connectionTimeoutError = 'Must be greater than 0');
       isValid = false;
-    } else if (_connectionTimeout > 300) {
+    } else if (parsedConnectionTimeout > 300) {
       setState(() => _connectionTimeoutError = 'Cannot exceed 300 seconds');
       isValid = false;
+    } else {
+      // Update value if valid
+      _connectionTimeout = parsedConnectionTimeout;
     }
 
-    // Validate request timeout
-    if (_requestTimeout <= 0) {
+    // Validate request timeout - check if text is valid number
+    final requestTimeoutText = _requestTimeoutController.text.trim();
+    final parsedRequestTimeout = int.tryParse(requestTimeoutText);
+    if (requestTimeoutText.isEmpty || parsedRequestTimeout == null) {
+      setState(() => _requestTimeoutError = 'Must be a valid number');
+      isValid = false;
+    } else if (parsedRequestTimeout <= 0) {
       setState(() => _requestTimeoutError = 'Must be greater than 0');
       isValid = false;
-    } else if (_requestTimeout > 600) {
+    } else if (parsedRequestTimeout > 600) {
       setState(() => _requestTimeoutError = 'Cannot exceed 600 seconds');
       isValid = false;
+    } else {
+      // Update value if valid
+      _requestTimeout = parsedRequestTimeout;
     }
 
     return isValid;

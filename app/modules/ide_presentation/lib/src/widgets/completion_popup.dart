@@ -108,21 +108,25 @@ class _CompletionPopupState extends State<CompletionPopup> {
 
   void _scrollToSelected() {
     if (!_scrollController.hasClients) return;
+    if (widget.completions.items.isEmpty) return;
 
     final itemHeight = 40.0;
     final selectedPosition = _selectedIndex * itemHeight;
     final visibleHeight = _scrollController.position.viewportDimension;
 
     if (selectedPosition < _scrollController.offset) {
+      // Scroll up - ensure not negative
       _scrollController.animateTo(
-        selectedPosition,
+        selectedPosition.clamp(0.0, double.infinity),
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
       );
     } else if (selectedPosition + itemHeight >
         _scrollController.offset + visibleHeight) {
+      // Scroll down - ensure target is not negative
+      final targetScroll = selectedPosition + itemHeight - visibleHeight;
       _scrollController.animateTo(
-        selectedPosition + itemHeight - visibleHeight,
+        targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
       );

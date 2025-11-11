@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:lsp_domain/lsp_domain.dart';
 
 /// DiagnosticsPanel
@@ -60,17 +59,32 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final errors = widget.diagnostics
+    // Calculate filtered counts for each severity
+    final filteredErrors = widget.diagnostics
+        .where((d) => d.severity == DiagnosticSeverity.error && _showErrors)
+        .length;
+    final filteredWarnings = widget.diagnostics
+        .where((d) => d.severity == DiagnosticSeverity.warning && _showWarnings)
+        .length;
+    final filteredInfos = widget.diagnostics
+        .where((d) =>
+            (d.severity == DiagnosticSeverity.information ||
+                d.severity == DiagnosticSeverity.hint) &&
+            _showInfos)
+        .length;
+
+    // Total counts for showing in header when filter is off
+    final totalErrors = widget.diagnostics
         .where((d) => d.severity == DiagnosticSeverity.error)
-        .toList();
-    final warnings = widget.diagnostics
+        .length;
+    final totalWarnings = widget.diagnostics
         .where((d) => d.severity == DiagnosticSeverity.warning)
-        .toList();
-    final infos = widget.diagnostics
+        .length;
+    final totalInfos = widget.diagnostics
         .where((d) =>
             d.severity == DiagnosticSeverity.information ||
             d.severity == DiagnosticSeverity.hint)
-        .toList();
+        .length;
 
     // Apply filters
     final filteredDiagnostics = widget.diagnostics.where((d) {
@@ -119,7 +133,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
       child: Column(
         children: [
           // Header
-          _buildHeader(errors.length, warnings.length, infos.length),
+          _buildHeader(
+            totalErrors,
+            totalWarnings,
+            totalInfos,
+            filteredErrors,
+            filteredWarnings,
+            filteredInfos,
+          ),
 
           // Diagnostic list
           Expanded(
@@ -137,7 +158,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
     );
   }
 
-  Widget _buildHeader(int errorCount, int warningCount, int infoCount) {
+  Widget _buildHeader(
+    int totalErrors,
+    int totalWarnings,
+    int totalInfos,
+    int filteredErrors,
+    int filteredWarnings,
+    int filteredInfos,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
@@ -166,14 +194,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
           const SizedBox(width: 24),
 
           // Error filter toggle
-          if (errorCount > 0) ...[
+          if (totalErrors > 0) ...[
             FilterChip(
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.error, size: 14, color: Color(0xFFF48771)),
                   const SizedBox(width: 4),
-                  Text('$errorCount', style: const TextStyle(fontSize: 12)),
+                  Text('$filteredErrors', style: const TextStyle(fontSize: 12)),
                 ],
               ),
               selected: _showErrors,
@@ -189,14 +217,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
           ],
 
           // Warning filter toggle
-          if (warningCount > 0) ...[
+          if (totalWarnings > 0) ...[
             FilterChip(
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.warning, size: 14, color: Color(0xFFCCA700)),
                   const SizedBox(width: 4),
-                  Text('$warningCount', style: const TextStyle(fontSize: 12)),
+                  Text('$filteredWarnings', style: const TextStyle(fontSize: 12)),
                 ],
               ),
               selected: _showWarnings,
@@ -212,14 +240,14 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
           ],
 
           // Info filter toggle
-          if (infoCount > 0) ...[
+          if (totalInfos > 0) ...[
             FilterChip(
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.info, size: 14, color: Color(0xFF75BEFF)),
                   const SizedBox(width: 4),
-                  Text('$infoCount', style: const TextStyle(fontSize: 12)),
+                  Text('$filteredInfos', style: const TextStyle(fontSize: 12)),
                 ],
               ),
               selected: _showInfos,
@@ -274,56 +302,6 @@ class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
               ),
             ],
           ),
-
-          // Clear all button
-          if (widget.diagnostics.isNotEmpty)
-            Tooltip(
-              message: 'Clear All Problems',
-              child: TextButton.icon(
-                icon: const Icon(Icons.clear_all, size: 14),
-                label: const Text('Clear All'),
-                style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFCCCCCC),
-                  textStyle: const TextStyle(fontSize: 11),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Clear All Problems'),
-                      content: Text(
-                        'Are you sure you want to clear all ${widget.diagnostics.length} diagnostic(s)?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('CANCEL'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            // This would need to be implemented via callback
-                            // For now, just show feedback
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Diagnostics cleared (requires LSP integration)'),
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFF48771),
-                          ),
-                          child: const Text('CLEAR ALL'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-
-          const SizedBox(width: 8),
 
           // Close button
           if (widget.onClose != null)

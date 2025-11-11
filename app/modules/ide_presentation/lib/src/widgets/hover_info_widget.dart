@@ -48,27 +48,15 @@ class HoverInfoWidget extends StatelessWidget {
     const maxHeight = 300.0;
     const margin = 16.0;
 
-    // Calculate position with screen boundary checks
-    double left = position.dx;
-    double top = position.dy;
-
-    // Check right boundary
-    if (left + maxWidth > screenSize.width - margin) {
-      left = screenSize.width - maxWidth - margin;
-    }
-    // Check left boundary
-    if (left < margin) {
-      left = margin;
-    }
-
-    // Check bottom boundary
-    if (top + maxHeight > screenSize.height - margin) {
-      top = screenSize.height - maxHeight - margin;
-    }
-    // Check top boundary
-    if (top < margin) {
-      top = margin;
-    }
+    // Calculate position with screen boundary checks using clamp
+    final left = position.dx.clamp(
+      margin,
+      screenSize.width - maxWidth - margin,
+    );
+    final top = position.dy.clamp(
+      margin,
+      screenSize.height - maxHeight - margin,
+    );
 
     return Positioned(
       left: left,
