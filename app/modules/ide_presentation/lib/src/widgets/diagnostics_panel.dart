@@ -30,7 +30,7 @@ import 'package:lsp_domain/lsp_domain.dart';
 ///   },
 /// )
 /// ```
-class DiagnosticsPanel extends StatelessWidget {
+class DiagnosticsPanel extends StatefulWidget {
   final List<Diagnostic> diagnostics;
   final void Function(Diagnostic)? onDiagnosticTap;
   final VoidCallback? onClose;
@@ -43,18 +43,37 @@ class DiagnosticsPanel extends StatelessWidget {
   });
 
   @override
+  State<DiagnosticsPanel> createState() => _DiagnosticsPanelState();
+}
+
+class _DiagnosticsPanelState extends State<DiagnosticsPanel> {
+  bool _showErrors = true;
+  bool _showWarnings = true;
+  bool _showInfos = true;
+
+  @override
   Widget build(BuildContext context) {
-    final errors = diagnostics
+    final errors = widget.diagnostics
         .where((d) => d.severity == DiagnosticSeverity.error)
         .toList();
-    final warnings = diagnostics
+    final warnings = widget.diagnostics
         .where((d) => d.severity == DiagnosticSeverity.warning)
         .toList();
-    final infos = diagnostics
+    final infos = widget.diagnostics
         .where((d) =>
             d.severity == DiagnosticSeverity.information ||
             d.severity == DiagnosticSeverity.hint)
         .toList();
+
+    // Apply filters
+    final filteredDiagnostics = widget.diagnostics.where((d) {
+      if (d.severity == DiagnosticSeverity.error && !_showErrors) return false;
+      if (d.severity == DiagnosticSeverity.warning && !_showWarnings) return false;
+      if ((d.severity == DiagnosticSeverity.information ||
+              d.severity == DiagnosticSeverity.hint) &&
+          !_showInfos) return false;
+      return true;
+    }).toList();
 
     final screenHeight = MediaQuery.of(context).size.height;
     final panelHeight = (screenHeight * 0.3).clamp(150.0, 400.0);
@@ -74,12 +93,12 @@ class DiagnosticsPanel extends StatelessWidget {
 
           // Diagnostic list
           Expanded(
-            child: diagnostics.isEmpty
+            child: filteredDiagnostics.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-                    itemCount: diagnostics.length,
+                    itemCount: filteredDiagnostics.length,
                     itemBuilder: (context, index) {
-                      return _buildDiagnosticItem(diagnostics[index]);
+                      return _buildDiagnosticItem(filteredDiagnostics[index]);
                     },
                   ),
           ),
@@ -116,46 +135,82 @@ class DiagnosticsPanel extends StatelessWidget {
           ),
           const SizedBox(width: 24),
 
-          // Error count
+          // Error filter toggle
           if (errorCount > 0) ...[
-            const Icon(Icons.error, size: 14, color: Color(0xFFF48771)),
-            const SizedBox(width: 4),
-            Text(
-              '$errorCount',
-              style: const TextStyle(color: Color(0xFFF48771), fontSize: 12),
+            FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error, size: 14, color: Color(0xFFF48771)),
+                  const SizedBox(width: 4),
+                  Text('$errorCount', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+              selected: _showErrors,
+              onSelected: (value) => setState(() => _showErrors = value),
+              backgroundColor: const Color(0xFF3E3E42),
+              selectedColor: const Color(0xFF5A1F1F),
+              checkmarkColor: const Color(0xFFF48771),
+              side: BorderSide.none,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
           ],
 
-          // Warning count
+          // Warning filter toggle
           if (warningCount > 0) ...[
-            const Icon(Icons.warning, size: 14, color: Color(0xFFCCA700)),
-            const SizedBox(width: 4),
-            Text(
-              '$warningCount',
-              style: const TextStyle(color: Color(0xFFCCA700), fontSize: 12),
+            FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.warning, size: 14, color: Color(0xFFCCA700)),
+                  const SizedBox(width: 4),
+                  Text('$warningCount', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+              selected: _showWarnings,
+              onSelected: (value) => setState(() => _showWarnings = value),
+              backgroundColor: const Color(0xFF3E3E42),
+              selectedColor: const Color(0xFF4A3C1F),
+              checkmarkColor: const Color(0xFFCCA700),
+              side: BorderSide.none,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
           ],
 
-          // Info count
+          // Info filter toggle
           if (infoCount > 0) ...[
-            const Icon(Icons.info, size: 14, color: Color(0xFF75BEFF)),
-            const SizedBox(width: 4),
-            Text(
-              '$infoCount',
-              style: const TextStyle(color: Color(0xFF75BEFF), fontSize: 12),
+            FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info, size: 14, color: Color(0xFF75BEFF)),
+                  const SizedBox(width: 4),
+                  Text('$infoCount', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+              selected: _showInfos,
+              onSelected: (value) => setState(() => _showInfos = value),
+              backgroundColor: const Color(0xFF3E3E42),
+              selectedColor: const Color(0xFF1F3A4A),
+              checkmarkColor: const Color(0xFF75BEFF),
+              side: BorderSide.none,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ],
 
           const Spacer(),
 
           // Close button
-          if (onClose != null)
+          if (widget.onClose != null)
             IconButton(
               icon: const Icon(Icons.close, size: 16),
               color: const Color(0xFFCCCCCC),
-              onPressed: onClose,
+              onPressed: widget.onClose,
               tooltip: 'Close Problems Panel',
             ),
         ],
@@ -191,7 +246,7 @@ class DiagnosticsPanel extends StatelessWidget {
     final color = _getDiagnosticColor(diagnostic.severity);
 
     return InkWell(
-      onTap: () => onDiagnosticTap?.call(diagnostic),
+      onTap: () => widget.onDiagnosticTap?.call(diagnostic),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: const BoxDecoration(

@@ -226,15 +226,18 @@ class _EditorTabBarState extends State<EditorTabBar> {
     required bool isActive,
     required bool isHovered,
   }) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hoveredTabIndex = index),
-      onExit: (_) => setState(() => _hoveredTabIndex = null),
-      child: GestureDetector(
-        onTap: () => widget.onTabSelected?.call(index),
-        onSecondaryTapDown: (details) {
-          _showTabContextMenu(context, index, details.globalPosition);
-        },
-        child: Container(
+    return Tooltip(
+      message: tab.documentUri,
+      waitDuration: const Duration(milliseconds: 500),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hoveredTabIndex = index),
+        onExit: (_) => setState(() => _hoveredTabIndex = null),
+        child: GestureDetector(
+          onTap: () => widget.onTabSelected?.call(index),
+          onSecondaryTapDown: (details) {
+            _showTabContextMenu(context, index, details.globalPosition);
+          },
+          child: Container(
           constraints: const BoxConstraints(minWidth: 80, maxWidth: 200),
           decoration: BoxDecoration(
             color: isActive
@@ -311,6 +314,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
               const SizedBox(width: 8),
             ],
           ),
+        ),
         ),
       ),
     );

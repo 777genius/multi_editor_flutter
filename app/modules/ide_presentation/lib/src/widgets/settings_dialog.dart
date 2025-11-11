@@ -104,6 +104,29 @@ class _SettingsDialogState extends State<SettingsDialog>
     });
   }
 
+  void _resetToDefaults() {
+    setState(() {
+      // Reset to default values
+      _fontSize = 14.0;
+      _showLineNumbers = true;
+      _wordWrap = false;
+      _theme = 'dark';
+      _lspBridgeUrl = 'ws://localhost:9999';
+      _connectionTimeout = 10;
+      _requestTimeout = 30;
+
+      // Update controllers
+      _lspBridgeUrlController.text = _lspBridgeUrl;
+      _connectionTimeoutController.text = _connectionTimeout.toString();
+      _requestTimeoutController.text = _requestTimeout.toString();
+
+      // Clear errors
+      _urlError = null;
+      _connectionTimeoutError = null;
+      _requestTimeoutError = null;
+    });
+  }
+
   bool _validateSettings() {
     setState(() {
       _urlError = null;
@@ -470,8 +493,20 @@ class _SettingsDialogState extends State<SettingsDialog>
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          // Reset to defaults button on the left
+          TextButton.icon(
+            onPressed: _resetToDefaults,
+            icon: const Icon(Icons.restore, size: 18),
+            label: const Text('Reset to Defaults'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange[400],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Cancel and Save on the right
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text(

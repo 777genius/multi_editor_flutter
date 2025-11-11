@@ -661,17 +661,20 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
     final name = path.basename(entityPath);
     final isSelected = _selectedPath == entityPath;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          if (isDirectory) {
-            _toggleDirectory(entityPath);
-          }
-          _selectPath(entityPath);
-        },
-        onSecondaryTapDown: (details) {
-          _showContextMenu(context, entityPath, details.globalPosition);
+    return Tooltip(
+      message: entityPath,
+      waitDuration: const Duration(milliseconds: 500),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () {
+            if (isDirectory) {
+              _toggleDirectory(entityPath);
+            }
+            _selectPath(entityPath);
+          },
+          onSecondaryTapDown: (details) {
+            _showContextMenu(context, entityPath, details.globalPosition);
         },
         child: Container(
           padding: EdgeInsets.only(
@@ -711,6 +714,7 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
