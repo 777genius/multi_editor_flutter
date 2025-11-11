@@ -283,7 +283,7 @@ class MyApp {
 
 ## 🏗️ Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │              Dart Plugin (Flutter UI)                   │
 │  ┌──────────────────────────────────────────────────┐   │
@@ -542,7 +542,7 @@ git push origin feature/my-feature
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-```
+```text
 MIT License - Copyright (c) 2025 777genius/multi_editor_flutter
 ```
 

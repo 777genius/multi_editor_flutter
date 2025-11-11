@@ -171,13 +171,34 @@ class SymbolNavigatorPlugin extends BaseEditorPlugin with StatefulPlugin {
 
   /// Detect language from file extension
   String _detectLanguage(String filename) {
-    final ext = filename.split('.').last.toLowerCase();
+    // Handle edge cases
+    if (filename.isEmpty) return 'unknown';
+
+    // Handle dotfiles without extension (e.g., .bashrc, .gitignore)
+    if (filename.startsWith('.') && !filename.substring(1).contains('.')) {
+      return 'unknown';
+    }
+
+    // Extract extension, handling files without extensions
+    final parts = filename.split('.');
+    if (parts.length < 2) {
+      // No extension (e.g., "Makefile", "README")
+      return 'unknown';
+    }
+
+    final ext = parts.last.toLowerCase();
+
+    // Return unknown for empty extensions
+    if (ext.isEmpty) return 'unknown';
+
     switch (ext) {
       case 'dart':
         return 'dart';
       case 'js':
+      case 'jsx':
         return 'javascript';
       case 'ts':
+      case 'tsx':
         return 'typescript';
       case 'py':
         return 'python';
@@ -194,6 +215,7 @@ class SymbolNavigatorPlugin extends BaseEditorPlugin with StatefulPlugin {
   List<CodeSymbol> _parseMockSymbols(String content) {
     // Simple regex-based mock parser for Dart
     final symbols = <CodeSymbol>[];
+    final lines = content.split('\n');
 
     // Parse classes
     final classRegex = RegExp(r'class\s+(\w+)');
@@ -201,16 +223,24 @@ class SymbolNavigatorPlugin extends BaseEditorPlugin with StatefulPlugin {
 
     for (final match in matches) {
       final name = match.group(1)!;
-      final line = content.substring(0, match.start).split('\n').length - 1;
+
+      // Calculate line number
+      final textBeforeMatch = content.substring(0, match.start);
+      final lineNumber = textBeforeMatch.split('\n').length - 1;
+
+      // Calculate column position within the line
+      final lineStart = textBeforeMatch.lastIndexOf('\n') + 1;
+      final startColumn = match.start - lineStart;
+      final endColumn = match.end - lineStart;
 
       symbols.add(CodeSymbol(
         name: name,
         kind: const SymbolKind.classDeclaration(),
         location: SymbolLocation(
-          startLine: line,
-          startColumn: match.start,
-          endLine: line,
-          endColumn: match.end,
+          startLine: lineNumber,
+          startColumn: startColumn,
+          endLine: lineNumber,
+          endColumn: endColumn,
           startOffset: match.start,
           endOffset: match.end,
         ),

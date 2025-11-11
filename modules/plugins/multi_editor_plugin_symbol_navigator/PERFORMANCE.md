@@ -202,7 +202,7 @@ benchstat before.txt after.txt
 
 ### Benchmark Results Format
 
-```
+```text
 BenchmarkParseDartSmall-8        1000000    1234 ns/op    512 B/op    8 allocs/op
 BenchmarkParseDartLarge-8          10000  123456 ns/op   5120 B/op   80 allocs/op
 ```

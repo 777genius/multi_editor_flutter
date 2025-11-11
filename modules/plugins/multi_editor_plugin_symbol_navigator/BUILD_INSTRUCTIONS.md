@@ -49,7 +49,7 @@ This creates `build/symbol_navigator.wasm`.
 make install
 ```
 
-This copies the WASM file to `modules/plugins/multi_editor_plugin_symbol_navigator/wasm/`.
+This copies the WASM file to the plugin directory (accessible at runtime as `packages/multi_editor_plugin_symbol_navigator/wasm/`).
 
 ## Step 3: Register Plugin
 
@@ -98,7 +98,7 @@ await wasmRuntime.loadPlugin(wasmPath);
 1. **Modify Dart models** → Run `build_runner build`
 2. **Modify Go parser** → Run `make build && make install`
 3. **Test changes** → Run tests or launch app
-4. **Commit** → Commit both Dart and generated files
+4. **Commit** → Commit source files only (generated `.freezed.dart` and `.g.dart` files are gitignored and regenerated on build)
 
 ## Performance Notes
 

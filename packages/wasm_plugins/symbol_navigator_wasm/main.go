@@ -3,32 +3,54 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"unsafe"
 
 	"github.com/vmihailenco/msgpack/v5"
 
-	"github.com/777genius/multi_editor_flutter/symbol_navigator_wasm/parser"
+	"github.com/777genius/multi_editor_flutter/packages/wasm_plugins/symbol_navigator_wasm/parser"
 )
 
 // ============================================================================
 // WASM Memory Management
 // ============================================================================
 
+var (
+	// Global registry to pin allocated memory and prevent GC collection
+	allocRegistry = make(map[uint32][]byte)
+	allocMutex    sync.Mutex
+	nextAllocID   uint32 = 1
+)
+
 // Allocate memory that can be accessed from the host
+// Returns a stable pointer that won't be garbage collected
 //
 //export alloc
 func alloc(size uint32) uint32 {
+	allocMutex.Lock()
+	defer allocMutex.Unlock()
+
 	// Allocate a byte slice of the requested size
 	buf := make([]byte, size)
-	// Return pointer to the first byte
-	return uint32(uintptr(unsafe.Pointer(&buf[0])))
+
+	// Get pointer to the first byte
+	ptr := uint32(uintptr(unsafe.Pointer(&buf[0])))
+
+	// Store in registry to prevent GC collection
+	allocRegistry[ptr] = buf
+
+	return ptr
 }
 
-// Free memory (no-op in Go with GC, but kept for API consistency)
+// Free memory by removing from registry (allows GC to collect)
 //
 //export dealloc
 func dealloc(ptr uint32) {
-	// Go's GC handles this, but we keep the export for API compatibility
+	allocMutex.Lock()
+	defer allocMutex.Unlock()
+
+	// Remove from registry to allow GC
+	delete(allocRegistry, ptr)
 }
 
 // ============================================================================
@@ -156,6 +178,7 @@ func readMemory(ptr uint32, length uint32) []byte {
 // Pack result as (ptr, len) in uint64
 // Format: upper 32 bits = pointer, lower 32 bits = length
 // Returns 0 on error (with error logged internally)
+// Pins the data in memory to prevent GC collection
 func packResult(data []byte, err error) uint64 {
 	if err != nil {
 		// In production, log this error properly
@@ -167,9 +190,16 @@ func packResult(data []byte, err error) uint64 {
 		return 0
 	}
 
+	allocMutex.Lock()
+	defer allocMutex.Unlock()
+
 	// Get pointer to data
 	ptr := uint32(uintptr(unsafe.Pointer(&data[0])))
 	length := uint32(len(data))
+
+	// Store in registry to prevent GC collection
+	// The host is responsible for calling dealloc() when done with this data
+	allocRegistry[ptr] = data
 
 	// Pack into uint64: (ptr << 32) | length
 	return (uint64(ptr) << 32) | uint64(length)

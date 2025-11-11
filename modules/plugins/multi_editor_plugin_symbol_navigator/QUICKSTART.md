@@ -137,7 +137,7 @@ stats.forEach((kind, count) {
 
 ## 📊 Output Example
 
-```
+```text
 File: my_widget.dart
 Language: dart
 Total symbols: 3

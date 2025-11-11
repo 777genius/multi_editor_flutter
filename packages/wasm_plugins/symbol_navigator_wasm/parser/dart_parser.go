@@ -381,40 +381,46 @@ func (p *DartParser) getColumnNumber(offset int, line int) int {
 // Helper: Find matching closing brace
 func (p *DartParser) findMatchingBrace(openPos int) int {
 	depth := 0
-	inString := false
-	inComment := false
 
 	for i := openPos; i < len(p.content); i++ {
-		ch := p.content[i]
+		// Skip strings (with proper escape handling)
+		if i < len(p.content)-1 {
+			// Check for raw strings (r"..." or r'...')
+			if p.content[i] == 'r' && (p.content[i+1] == '"' || p.content[i+1] == '\'') {
+				i = p.skipRawString(i)
+				continue
+			}
+			// Check for triple-quoted strings (""" or ''')
+			if i < len(p.content)-2 {
+				if p.content[i:i+3] == `"""` || p.content[i:i+3] == "'''" {
+					i = p.skipTripleQuotedString(i)
+					continue
+				}
+			}
+		}
 
-		// Handle strings
-		if ch == '"' || ch == '\'' {
-			inString = !inString
+		// Check for regular strings (with escape handling)
+		if p.content[i] == '"' || p.content[i] == '\'' {
+			i = p.skipString(i)
 			continue
 		}
 
-		if inString {
-			continue
-		}
-
-		// Handle comments
+		// Skip line comments (//)
 		if i < len(p.content)-1 && p.content[i:i+2] == "//" {
-			inComment = true
-			continue
-		}
-		if ch == '\n' {
-			inComment = false
+			i = p.skipLineComment(i)
 			continue
 		}
 
-		if inComment {
+		// Skip block comments (/* */)
+		if i < len(p.content)-1 && p.content[i:i+2] == "/*" {
+			i = p.skipBlockComment(i)
 			continue
 		}
 
 		// Track braces
-		if ch == '{' {
+		if p.content[i] == '{' {
 			depth++
-		} else if ch == '}' {
+		} else if p.content[i] == '}' {
 			depth--
 			if depth == 0 {
 				return i
@@ -425,11 +431,77 @@ func (p *DartParser) findMatchingBrace(openPos int) int {
 	return -1
 }
 
+// Helper: Skip string literal with escape handling
+func (p *DartParser) skipString(start int) int {
+	quote := p.content[start]
+	i := start + 1
+
+	for i < len(p.content) {
+		if p.content[i] == '\\' {
+			// Skip escaped character
+			i += 2
+			continue
+		}
+		if p.content[i] == quote {
+			return i
+		}
+		i++
+	}
+	return i
+}
+
+// Helper: Skip raw string literal (no escape processing)
+func (p *DartParser) skipRawString(start int) int {
+	// start points to 'r', next char is the quote
+	quote := p.content[start+1]
+	i := start + 2
+
+	for i < len(p.content) {
+		if p.content[i] == quote {
+			return i
+		}
+		i++
+	}
+	return i
+}
+
+// Helper: Skip triple-quoted string literal
+func (p *DartParser) skipTripleQuotedString(start int) int {
+	quote := p.content[start : start+3]
+	i := start + 3
+
+	for i < len(p.content)-2 {
+		if p.content[i:i+3] == quote {
+			return i + 2
+		}
+		i++
+	}
+	return i
+}
+
+// Helper: Skip line comment
+func (p *DartParser) skipLineComment(start int) int {
+	i := start + 2
+	for i < len(p.content) && p.content[i] != '\n' {
+		i++
+	}
+	return i
+}
+
+// Helper: Skip block comment
+func (p *DartParser) skipBlockComment(start int) int {
+	i := start + 2
+	for i < len(p.content)-1 {
+		if p.content[i:i+2] == "*/" {
+			return i + 1
+		}
+		i++
+	}
+	return i
+}
+
 // Helper: Check if offset is inside a class definition
 func (p *DartParser) isInsideClass(offset int) bool {
-	// Count opening and closing braces before this offset
-	// If we're inside braces after a class declaration, return true
-
 	// Find last class declaration before offset
 	classRegex := regexp.MustCompile(`class\s+\w+`)
 	matches := classRegex.FindAllStringIndex(p.content[:offset], -1)
@@ -440,11 +512,26 @@ func (p *DartParser) isInsideClass(offset int) bool {
 
 	lastClassPos := matches[len(matches)-1][0]
 
-	// Check if offset is between class declaration and its closing brace
-	bodyStart := strings.Index(p.content[lastClassPos:offset], "{")
-	if bodyStart == -1 {
+	// Find the opening brace of the class
+	bodyStartRel := strings.Index(p.content[lastClassPos:], "{")
+	if bodyStartRel == -1 {
 		return false
 	}
 
-	return true
+	bodyStart := lastClassPos + bodyStartRel
+
+	// Check if offset is after the opening brace
+	if offset <= bodyStart {
+		return false
+	}
+
+	// Find the matching closing brace
+	bodyEnd := p.findMatchingBrace(bodyStart)
+	if bodyEnd == -1 {
+		// No closing brace found, assume we're inside
+		return true
+	}
+
+	// Verify offset is before the closing brace
+	return offset < bodyEnd
 }

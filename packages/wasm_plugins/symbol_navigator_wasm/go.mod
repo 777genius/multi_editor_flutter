@@ -1,4 +1,4 @@
-module github.com/777genius/multi_editor_flutter/symbol_navigator_wasm
+module github.com/777genius/multi_editor_flutter/packages/wasm_plugins/symbol_navigator_wasm
 
 go 1.21
 

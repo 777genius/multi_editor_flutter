@@ -47,7 +47,7 @@ cd ../../../modules/plugins/multi_editor_plugin_symbol_navigator
 
 ### Clean Architecture
 
-```
+```text
 Presentation → Domain ← Infrastructure
 ```
 
@@ -107,7 +107,7 @@ cd packages/wasm_plugins/symbol_navigator_wasm
 ### 4. Commit
 
 Follow conventional commits:
-```
+```text
 feat: add JavaScript parser support
 fix: correct symbol location for nested classes
 docs: update README with new examples

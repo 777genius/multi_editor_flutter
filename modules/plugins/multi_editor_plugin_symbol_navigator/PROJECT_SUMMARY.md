@@ -32,7 +32,7 @@
 
 ## 📦 Project Structure
 
-```
+```text
 Symbol Navigator Plugin
 ├─ Dart Plugin (13 files, ~2500 lines)
 │  ├─ lib/
@@ -160,7 +160,7 @@ Symbol Navigator Plugin
 ## 🚀 Performance Benchmarks
 
 ### **Current (Regex-based)**
-```
+```text
 Parse 100 lines:    0.5-1ms
 Parse 1K lines:     5-10ms
 Parse 10K lines:    50-100ms
@@ -171,7 +171,7 @@ Accuracy:           ~90%
 ```
 
 ### **Target (Tree-sitter)**
-```
+```text
 Parse 100 lines:    0.05-0.1ms   (10x faster)
 Parse 1K lines:     0.5-1ms      (10x faster)
 Parse 10K lines:    5-10ms       (10x faster)
