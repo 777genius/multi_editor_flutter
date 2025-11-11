@@ -96,6 +96,10 @@ class PluginMessageBus {
     for (final handlers in _handlers.values) {
       handlers.removeWhere((h) => h.pluginId == pluginId);
     }
+
+    // Close and remove the plugin's stream controller to prevent memory leak
+    final stream = _pluginStreams.remove(pluginId);
+    stream?.close();
   }
 
   /// Publish a message to subscribers

@@ -918,7 +918,7 @@ class PluginManager {
     _activatedPlugins.clear();
     _subscriptions.clear();
     _pluginStatus.clear();
-    _eventDispatcher.dispose();
+    await _eventDispatcher.dispose();
     _registry.dispose();
     _messageBus.dispose();
   }

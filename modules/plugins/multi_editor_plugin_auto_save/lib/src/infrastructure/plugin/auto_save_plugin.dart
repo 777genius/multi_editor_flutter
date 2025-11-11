@@ -18,6 +18,7 @@ class AutoSavePlugin extends BaseEditorPlugin
   final Map<String, String> _unsavedContent = {};
   final Map<String, DateTime> _lastContentChangeTime = {};
   TriggerSaveUseCase? _triggerSaveUseCase;
+  bool _disposed = false;
 
   /// Minimum time between content change tracking for same file
   static const _contentChangeThrottle = Duration(milliseconds: 500);
@@ -62,6 +63,7 @@ class AutoSavePlugin extends BaseEditorPlugin
 
   @override
   Future<void> onDispose() async {
+    _disposed = true;
     _stopTimer();
     disposeStateful();
   }
@@ -107,6 +109,9 @@ class AutoSavePlugin extends BaseEditorPlugin
   }
 
   Future<void> _saveAll() async {
+    // Guard: Don't save if plugin is disposed
+    if (_disposed) return;
+
     if (_unsavedContent.isEmpty) return;
 
     await safeExecuteAsync('Auto-save all files', () async {

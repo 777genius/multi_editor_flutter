@@ -703,7 +703,7 @@ class PluginManager {
     }
 
     // Dispose event dispatcher
-    _eventDispatcher.dispose();
+    await _eventDispatcher.dispose();
 
     // Dispose error tracker
     await _errorTracker.dispose();

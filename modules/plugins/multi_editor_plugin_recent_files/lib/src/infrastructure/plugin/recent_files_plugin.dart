@@ -14,6 +14,7 @@ import '../../domain/value_objects/recent_file_entry.dart';
 class RecentFilesPlugin extends BaseEditorPlugin with StatefulPlugin {
   RecentFilesList _recentFiles = RecentFilesList.create(maxEntries: 10);
   Timer? _stateUpdateDebounce;
+  bool _disposed = false;
 
   /// Delay before updating state (debouncing)
   static const _stateUpdateDelay = Duration(milliseconds: 200);
@@ -42,6 +43,7 @@ class RecentFilesPlugin extends BaseEditorPlugin with StatefulPlugin {
 
   @override
   Future<void> onDispose() async {
+    _disposed = true;
     _stateUpdateDebounce?.cancel();
     _stateUpdateDebounce = null;
     disposeStateful();
@@ -51,6 +53,9 @@ class RecentFilesPlugin extends BaseEditorPlugin with StatefulPlugin {
   void _scheduleStateUpdate() {
     _stateUpdateDebounce?.cancel();
     _stateUpdateDebounce = Timer(_stateUpdateDelay, () {
+      // Guard: Don't update state if plugin is disposed
+      if (_disposed) return;
+
       setState('recentFiles', _recentFiles);
 
       // Update UI descriptor in PluginUIService
