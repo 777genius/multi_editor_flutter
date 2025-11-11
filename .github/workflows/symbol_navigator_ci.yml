@@ -1,0 +1,170 @@
+name: Symbol Navigator - CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'modules/plugins/multi_editor_plugin_symbol_navigator/**'
+      - 'packages/wasm_plugins/symbol_navigator_wasm/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'modules/plugins/multi_editor_plugin_symbol_navigator/**'
+      - 'packages/wasm_plugins/symbol_navigator_wasm/**'
+
+jobs:
+  dart-tests:
+    name: Dart Tests & Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+
+    - name: Get dependencies
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: flutter pub get
+
+    - name: Verify formatting
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: dart format --output=none --set-exit-if-changed .
+
+    - name: Analyze code
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: flutter analyze --fatal-infos
+
+    - name: Generate code
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: flutter pub run build_runner build --delete-conflicting-outputs
+
+    - name: Run tests
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: flutter test --coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./modules/plugins/multi_editor_plugin_symbol_navigator/coverage/lcov.info
+        flags: dart
+        name: dart-coverage
+
+  go-tests:
+    name: Go Tests & Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Get dependencies
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: go mod download
+
+    - name: Verify formatting
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: |
+        gofmt -l . | grep . && exit 1 || exit 0
+
+    - name: Run go vet
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: go vet ./...
+
+    - name: Run tests
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./packages/wasm_plugins/symbol_navigator_wasm/coverage.out
+        flags: go
+        name: go-coverage
+
+    - name: Build WASM
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: |
+        GOOS=wasip1 GOARCH=wasm go build -o build/symbol_navigator.wasm .
+
+    - name: Upload WASM artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: symbol_navigator.wasm
+        path: packages/wasm_plugins/symbol_navigator_wasm/build/symbol_navigator.wasm
+
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run benchmarks
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: |
+        go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: packages/wasm_plugins/symbol_navigator_wasm/benchmark.txt
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [dart-tests, go-tests]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+
+    - name: Setup Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Build WASM
+      working-directory: packages/wasm_plugins/symbol_navigator_wasm
+      run: |
+        go mod download
+        GOOS=wasip1 GOARCH=wasm go build -o ../../../modules/plugins/multi_editor_plugin_symbol_navigator/wasm/symbol_navigator.wasm .
+
+    - name: Run integration tests
+      working-directory: modules/plugins/multi_editor_plugin_symbol_navigator
+      run: |
+        flutter pub get
+        flutter pub run build_runner build --delete-conflicting-outputs
+        flutter test test/*integration*
+
+  lint:
+    name: Additional Linting
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: latest
+        working-directory: packages/wasm_plugins/symbol_navigator_wasm
+        args: --timeout=5m
