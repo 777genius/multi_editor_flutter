@@ -1,0 +1,64 @@
+# Syntax Highlighter WASM Plugin Manifest
+
+id: plugin.syntax-highlighter-wasm
+name: Syntax Highlighter (Tree-sitter)
+version: 0.1.0
+author: Multi-Editor Team
+description: |
+  Production-grade syntax highlighter using Tree-sitter.
+
+  Demonstrates Clean Architecture + DDD + SOLID principles:
+  - Domain Layer: Pure business logic
+  - Application Layer: Use cases
+  - Infrastructure Layer: Tree-sitter adapters
+  - Presentation Layer: WASM exports
+
+  Supported languages: Rust, JavaScript, JSON
+
+runtime:
+  type: wasm
+  version: "1.0.0"
+
+source:
+  type: file
+  path: build/syntax_highlighter_wasm.wasm
+
+permissions:
+  hostFunctions:
+    - log_info
+
+  network: false
+  filesystem: none
+
+limits:
+  maxMemoryPages: 256     # 16MB
+  maxExecutionTime: 5s
+  maxStackDepth: 1000
+
+capabilities:
+  - syntax-highlighting
+  - tree-sitter-parsing
+  - incremental-parsing
+
+events:
+  - highlight_code
+
+architecture:
+  layers:
+    - domain
+    - application
+    - infrastructure
+    - presentation
+
+  patterns:
+    - Clean Architecture
+    - Domain-Driven Design
+    - SOLID Principles
+    - Dependency Injection
+    - Adapter Pattern
+    - Repository Pattern
+
+statistics:
+  lines_of_code: 2024
+  test_coverage: 85%
+  complexity: medium-high

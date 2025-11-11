@@ -1,0 +1,72 @@
+# File Icons WASM Plugin Manifest
+#
+# This manifest is used by the Flutter host to load the plugin.
+# The WASM binary provides its own manifest via plugin_get_manifest(),
+# but this file helps with discovery and validation.
+
+id: plugin.file-icons-wasm
+name: File Icons (WASM)
+version: 0.1.0
+author: Multi-Editor Team
+description: |
+  Provides file icons based on file extension.
+
+  Demonstrates Rust → WASM plugin integration with:
+  - Linear Memory Pattern for data exchange
+  - MessagePack serialization
+  - Zero-copy memory management
+  - Minimal WASM binary size
+
+runtime:
+  type: wasm
+  version: "1.0.0"
+
+# WASM binary location
+source:
+  type: file
+  path: build/file_icons_wasm.wasm
+
+# Required host functions
+permissions:
+  hostFunctions:
+    - log_info
+
+  # No network or filesystem access needed
+  network: false
+  filesystem: none
+
+# Resource limits
+limits:
+  maxMemoryPages: 16      # 1MB max memory
+  maxExecutionTime: 100ms # Fast icon lookup
+  maxStackDepth: 100
+
+# Plugin capabilities
+capabilities:
+  - file-icons
+  - extension-mapping
+
+# Events this plugin handles
+events:
+  - get_icon
+
+# Example usage
+examples:
+  - language: dart
+    code: |
+      // Load plugin
+      final plugin = await pluginManager.loadPlugin(
+        pluginId: 'plugin.file-icons-wasm',
+        source: PluginSource.file(path: 'plugins/file_icons_wasm.wasm'),
+        runtime: wasmRuntime,
+      );
+
+      // Get icon for .rs file
+      final response = await plugin.handleEvent(
+        PluginEvent(
+          type: 'get_icon',
+          data: {'extension': 'rs'},
+        ),
+      );
+
+      print(response.data['icon']); // "devicon-rust-plain"

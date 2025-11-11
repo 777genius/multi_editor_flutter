@@ -1,0 +1,31 @@
+name: flutter_plugin_system_core
+description: Universal plugin system abstractions for Flutter - runtime-agnostic contracts and models. Core foundation for building extensible plugin systems with Clean Architecture principles.
+version: 0.1.0
+homepage: https://github.com/777genius/multi_editor_flutter
+repository: https://github.com/777genius/multi_editor_flutter/tree/main/packages/flutter_plugin_system_core
+issue_tracker: https://github.com/777genius/multi_editor_flutter/issues
+
+environment:
+  sdk: ^3.8.0
+
+resolution: workspace
+
+topics:
+  - plugin-system
+  - clean-architecture
+  - ddd
+  - solid
+  - extensibility
+
+dependencies:
+  # Minimal dependencies - only annotations and meta
+  meta: ^1.12.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  test: ^1.25.0
+  freezed: ^2.5.0
+  json_serializable: ^6.8.0
+  build_runner: ^2.4.12
+  flutter_lints: ^6.0.0

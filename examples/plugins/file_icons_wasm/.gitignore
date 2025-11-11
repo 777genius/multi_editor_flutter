@@ -1,0 +1,13 @@
+# Rust
+/target/
+Cargo.lock
+
+# Build output
+/build/
+*.wasm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

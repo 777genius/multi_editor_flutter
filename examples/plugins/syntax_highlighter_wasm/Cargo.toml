@@ -1,0 +1,29 @@
+[package]
+name = "syntax_highlighter_wasm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Multi-Editor Team"]
+description = "Production-grade syntax highlighter using Syntect (Clean Architecture + DDD)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Serialization - MessagePack for binary efficiency
+rmp-serde = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Syntect for syntax highlighting (TextMate grammars)
+# Use regex-fancy for WASM compatibility (pure Rust, no C dependencies)
+syntect = { version = "5.2", default-features = false, features = ["parsing", "default-syntaxes", "default-themes", "regex-fancy"] }
+
+[profile.release]
+opt-level = "z"     # Optimize for size (WASM binary)
+lto = true          # Link-time optimization
+codegen-units = 1   # Better optimization (slower compile)
+panic = "abort"     # Smaller binary (no unwinding)
+strip = true        # Strip debug symbols
+
+[profile.dev]
+opt-level = 1       # Some optimization for dev
