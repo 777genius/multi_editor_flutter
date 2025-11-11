@@ -1,8 +1,14 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"time"
+)
+
+var (
+	// ErrUnsupportedLanguage is returned when the language is not supported
+	ErrUnsupportedLanguage = errors.New("unsupported language")
 )
 
 // ParseSymbols parses source code and extracts symbols
@@ -26,7 +32,7 @@ func ParseSymbols(content string, language string) ([]Symbol, time.Duration, err
 	case LangRust:
 		symbols, err = parseRust(content)
 	default:
-		return nil, 0, fmt.Errorf("unsupported language: %s", language)
+		return nil, 0, fmt.Errorf("%w: %s", ErrUnsupportedLanguage, language)
 	}
 
 	duration := time.Since(start)
