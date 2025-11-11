@@ -1,5 +1,17 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+// ============================================================================
+// ⚠️ IMPORTANT: REGENERATE AFTER CHANGES
+// ============================================================================
+// After modifying this file, run:
+//   cd packages/flutter_plugin_system_core
+//   flutter pub run build_runner build --delete-conflicting-outputs
+//
+// This will regenerate:
+//   - plugin_event.freezed.dart (freezed code generation)
+//   - plugin_event.g.dart (json_serializable code generation)
+// ============================================================================
+
 part 'plugin_event.freezed.dart';
 part 'plugin_event.g.dart';
 

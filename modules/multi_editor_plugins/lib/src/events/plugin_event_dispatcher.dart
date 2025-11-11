@@ -245,14 +245,19 @@ class PluginEventDispatcher {
     return _handlers.keys.toList();
   }
 
-  void dispose() {
+  /// Dispose event dispatcher and cleanup all resources
+  ///
+  /// Cancels all subscriptions and disposes all handlers.
+  /// This method is async to ensure all subscriptions are properly cancelled.
+  Future<void> dispose() async {
     // Dispose all handler timers
     for (final handlers in _handlers.values) {
       for (final handler in handlers) {
         handler.dispose();
       }
     }
-    unsubscribeAll();
+    // Wait for all subscriptions to be cancelled to avoid memory leaks
+    await unsubscribeAll();
     _handlers.clear();
   }
 }

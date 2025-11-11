@@ -30,9 +30,9 @@ class EditorController extends ValueNotifier<EditorState> {
 
           _eventBus.publish(EditorEvent.fileOpened(file: file));
 
-          // Cancel previous subscription and wait for it to complete
-          // to avoid race conditions
-          await _fileWatchSubscription?.cancel();
+          // Cancel previous subscription asynchronously
+          // Note: We don't await here because fold callback cannot be async
+          _fileWatchSubscription?.cancel();
           _fileWatchSubscription = _fileRepository.watch(fileId).listen((
             watchResult,
           ) {
