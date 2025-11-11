@@ -5,7 +5,13 @@ class FilePath {
   final String value;
 
   static const int maxLength = 4096;
-  static final RegExp _validPattern = RegExp(r'^[a-zA-Z0-9._/\-]+$');
+
+  // Reject only known invalid characters (null bytes and control characters)
+  // This allows Unicode, spaces, and other valid filename characters
+  static final RegExp _invalidCharsPattern = RegExp(r'[\x00-\x1F\x7F]');
+
+  // Platform-specific invalid characters (Windows is most restrictive)
+  static final RegExp _platformInvalidCharsPattern = RegExp(r'[<>:"|?*]');
 
   FilePath._(this.value);
 
@@ -32,11 +38,25 @@ class FilePath {
       );
     }
 
-    if (!_validPattern.hasMatch(trimmed)) {
+    // Check for control characters and null bytes
+    if (_invalidCharsPattern.hasMatch(trimmed)) {
       return Left(
         DomainFailure.validationError(
           field: 'filePath',
-          reason: 'File path contains invalid characters',
+          reason: 'File path contains invalid control characters',
+          value: input,
+        ),
+      );
+    }
+
+    // Check for platform-specific invalid characters
+    // Note: Windows paths like C:\ need special handling in calling code
+    final pathWithoutDrive = trimmed.replaceFirst(RegExp(r'^[A-Za-z]:\\'), '');
+    if (_platformInvalidCharsPattern.hasMatch(pathWithoutDrive)) {
+      return Left(
+        DomainFailure.validationError(
+          field: 'filePath',
+          reason: 'File path contains invalid characters: < > : " | ? *',
           value: input,
         ),
       );
@@ -84,8 +104,31 @@ class FilePath {
 
   bool get isRoot => value == '/' || value.isEmpty;
 
+  /// Get parent directory path
+  ///
+  /// Returns the parent directory of this path.
+  ///
+  /// **Important:** For root paths, this returns itself (root has no parent).
+  /// Callers should check [isRoot] before calling if they need different behavior.
+  ///
+  /// Examples:
+  /// - "/foo/bar/file.txt" → "/foo/bar"
+  /// - "/foo/bar" → "/foo"
+  /// - "/foo" → "/"
+  /// - "/" → "/" (root returns itself)
+  ///
+  /// To avoid infinite loops when traversing up the tree:
+  /// ```dart
+  /// var current = filePath;
+  /// while (!current.isRoot) {
+  ///   print(current);
+  ///   current = current.parent;
+  /// }
+  /// ```
   FilePath get parent {
-    if (isRoot) return this;
+    if (isRoot) {
+      return this; // Root has no parent, return itself
+    }
     final dir = directory;
     return FilePath._(dir);
   }

@@ -209,10 +209,11 @@ class WasmPluginAdapter implements IPlugin {
       final ptr = (packed >> 32) & 0xFFFFFFFF;
       final len = packed & 0xFFFFFFFF;
 
-      // Validate pointer and length
-      if (ptr < 0 || len < 0) {
+      // Validate packed result
+      // Check for null pointer (0,0) or invalid sentinel values
+      if (packed == 0 || packed == 0xFFFFFFFFFFFFFFFF) {
         throw WasmPluginException(
-          'Invalid manifest pointer/length: ptr=$ptr, len=$len (packed=$packed)',
+          'Invalid manifest pointer: packed=$packed (likely indicates plugin error)',
           pluginId: manifest.id,
         );
       }

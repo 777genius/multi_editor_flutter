@@ -5,6 +5,22 @@ import 'wasm_run_memory.dart';
 import 'wasm_run_module.dart';
 import 'wasm_run_instance.dart';
 
+// ============================================================================
+// ⚠️ WARNING: INCOMPLETE IMPLEMENTATION
+// ============================================================================
+//
+// This is a STUB implementation of the WASM runtime.
+// WASM plugins WILL NOT WORK until this is completed.
+//
+// TODO: Complete integration with wasm_run package
+// TODO: Implement actual WASM module loading and instantiation
+// TODO: Replace all Object() placeholders with real wasm_run types
+// TODO: Implement fuel metering and resource limits
+// TODO: Add comprehensive error handling
+//
+// Status: NOT PRODUCTION READY
+// ============================================================================
+
 /// WasmRun runtime implementation
 ///
 /// Implements IWasmRuntime interface using wasm_run package.

@@ -41,7 +41,10 @@ class PluginEvent with _$PluginEvent {
     required String type,
 
     /// Target plugin ID
-    required String targetPluginId,
+    ///
+    /// If null, this is a broadcast event sent to all plugins.
+    /// If specified, event is sent to specific plugin only.
+    String? targetPluginId,
 
     /// Event payload (custom data)
     @Default({}) Map<String, dynamic> data,
@@ -67,7 +70,7 @@ class PluginEvent with _$PluginEvent {
   /// Create event with current timestamp
   factory PluginEvent.now({
     required String type,
-    required String targetPluginId,
+    String? targetPluginId,
     Map<String, dynamic> data = const {},
     String? sourcePluginId,
     int priority = 0,

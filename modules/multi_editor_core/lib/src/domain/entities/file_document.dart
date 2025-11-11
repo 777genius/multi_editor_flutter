@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'file_document.freezed.dart';
@@ -35,9 +36,30 @@ sealed class FileDocument with _$FileDocument {
 
   bool get isEmpty => content.trim().isEmpty;
 
-  int get sizeInBytes => content.length;
+  /// Get size in bytes (UTF-8 encoded)
+  ///
+  /// Note: String.length returns code units (UTF-16), not bytes.
+  /// This method correctly calculates the UTF-8 byte size.
+  int get sizeInBytes => utf8.encode(content).length;
 
+  /// Get file extension
+  ///
+  /// Returns empty string for:
+  /// - Files with no extension (e.g., "README")
+  /// - Dotfiles without extension (e.g., ".gitignore", ".bashrc")
+  ///
+  /// Examples:
+  /// - "main.dart" → "dart"
+  /// - "archive.tar.gz" → "gz"
+  /// - ".gitignore" → ""
+  /// - ".zshrc" → ""
+  /// - "README" → ""
   String get extension {
+    // Handle dotfiles (files starting with . and no other dots)
+    if (name.startsWith('.') && !name.substring(1).contains('.')) {
+      return ''; // Dotfile without extension
+    }
+
     final parts = name.split('.');
     return parts.length > 1 ? parts.last : '';
   }

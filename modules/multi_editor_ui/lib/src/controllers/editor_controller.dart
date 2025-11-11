@@ -30,18 +30,29 @@ class EditorController extends ValueNotifier<EditorState> {
 
           _eventBus.publish(EditorEvent.fileOpened(file: file));
 
-          _fileWatchSubscription?.cancel();
+          // Cancel previous subscription and wait for it to complete
+          // to avoid race conditions
+          await _fileWatchSubscription?.cancel();
           _fileWatchSubscription = _fileRepository.watch(fileId).listen((
             watchResult,
           ) {
             watchResult.fold(
               (failure) {
-                // Log error but don't update state
+                // Log error but don't update state to avoid disrupting user work
+                if (kDebugMode) {
+                  debugPrint(
+                    'EditorController: File watch error for $fileId: ${failure.displayMessage}',
+                  );
+                }
               },
               (updatedFile) {
-                value.mapOrNull(
+                // Only update if still in loaded state and not dirty
+                // Read current state atomically to avoid race conditions
+                final currentState = value;
+                currentState.mapOrNull(
                   loaded: (state) {
-                    if (!state.isDirty) {
+                    // Only update if file hasn't been modified by user
+                    if (!state.isDirty && state.file.id == fileId) {
                       value = state.copyWith(file: updatedFile);
                     }
                   },

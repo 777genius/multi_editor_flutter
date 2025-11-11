@@ -157,9 +157,17 @@ class WasmMemoryBridge {
       final resultLen = packedResult & 0xFFFFFFFF;
 
       // Validate unpacked values
-      if (resultPtr < 0 || resultLen < 0) {
+      // Check for null pointer (0,0) or invalid sentinel values
+      if (packedResult == 0 || packedResult == 0xFFFFFFFFFFFFFFFF) {
         throw PluginCommunicationException(
-          'Invalid packed result from WASM: ptr=$resultPtr, len=$resultLen (packed=$packedResult)',
+          'Invalid packed result from WASM: packed=$packedResult (likely indicates plugin error)',
+        );
+      }
+
+      // Sanity check: result should be reasonable size (max 100MB)
+      if (resultLen > 100 * 1024 * 1024) {
+        throw PluginCommunicationException(
+          'Result too large: $resultLen bytes (max 100MB). ptr=$resultPtr, packed=$packedResult',
         );
       }
 
@@ -239,9 +247,17 @@ class WasmMemoryBridge {
       final resultLen = packedResult & 0xFFFFFFFF;
 
       // Validate unpacked values
-      if (resultPtr < 0 || resultLen < 0) {
+      // Check for null pointer (0,0) or invalid sentinel values
+      if (packedResult == 0 || packedResult == 0xFFFFFFFFFFFFFFFF) {
         throw WasmMemoryException(
-          'Invalid packed result from WASM: ptr=$resultPtr, len=$resultLen (packed=$packedResult)',
+          'Invalid packed result from WASM: packed=$packedResult (likely indicates plugin error)',
+        );
+      }
+
+      // Sanity check: result should be reasonable size (max 100MB)
+      if (resultLen > 100 * 1024 * 1024) {
+        throw WasmMemoryException(
+          'Result too large: $resultLen bytes (max 100MB). ptr=$resultPtr, packed=$packedResult',
         );
       }
 
