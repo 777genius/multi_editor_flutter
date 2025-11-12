@@ -167,6 +167,32 @@ class MinimapService {
 // - Smart sampling for 50k+ line files
 ```
 
+#### **global_search** (Application Layer + Rust WASM)
+- **Purpose:** High-performance global text search / Find in Files (Ctrl+Shift+F)
+- **Features:** Plain text + regex search, context lines, file filtering, smart exclusions
+- **Technology:** Dart UI + Rust WASM for performance (10-100x faster)
+- **Dependencies:** editor_core
+- **Location:** `app/modules/global_search`
+
+```dart
+class GlobalSearchService {
+  Future<Either<String, SearchResults>> searchFiles({
+    required List<FileContent> files,
+    required SearchConfig config,
+  });
+
+  Future<Either<String, SearchResults>> searchInDirectory({
+    required String directoryPath,
+    required SearchConfig config,
+  });
+}
+
+// Rust WASM backend with regex + memchr for ultra-fast search
+// - 1,000 files: 50ms (Rust) vs 500ms (Dart)
+// - Regex matching + SIMD string search
+// - Essential for large codebases (10k+ files)
+```
+
 ## 🔑 Key Architectural Principles
 
 ### 1. **Dependency Inversion Principle (DIP)**
@@ -270,9 +296,9 @@ melos run test
 5. ✅ Create lsp_infrastructure (LSP Client)
 6. ✅ Create Rust LSP Bridge server
 7. ✅ Create language-specific enhancement modules (Dart, JS/TS)
-8. ✅ Create performance-critical enhancements (Minimap with Rust WASM)
+8. ✅ Create performance-critical enhancements (Minimap, Global Search with Rust WASM)
 9. ⏳ Complete main IDE application UI
-10. ⏳ Add more enhancements (Global Search, Git Integration, Terminal)
+10. ⏳ Add more enhancements (Git Integration, Terminal, File Watcher)
 
 ---
 

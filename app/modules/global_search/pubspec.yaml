@@ -1,0 +1,26 @@
+name: global_search
+description: High-performance global text search across entire project with Rust WASM backend
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Domain layers
+  editor_core:
+    path: ../editor_core
+
+  # Functional programming
+  dartz: ^0.10.1
+
+  # Utilities
+  path: ^1.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
