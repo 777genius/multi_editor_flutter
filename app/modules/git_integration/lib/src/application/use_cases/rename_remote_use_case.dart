@@ -5,29 +5,32 @@ import '../../domain/value_objects/repository_path.dart';
 import '../../domain/value_objects/remote_name.dart';
 import '../../domain/failures/git_failures.dart';
 
-/// Use case for removing remotes
+/// Use case for renaming remotes
 @injectable
-class RemoveRemoteUseCase {
+class RenameRemoteUseCase {
   final IGitRepository _repository;
 
-  RemoveRemoteUseCase(this._repository);
+  RenameRemoteUseCase(this._repository);
 
-  /// Remove a remote (git remote remove)
+  /// Rename a remote (git remote rename)
   ///
   /// This will:
-  /// 1. Validate remote name
-  /// 2. Check remote exists
-  /// 3. Remove the remote configuration
-  /// 4. Clean up remote tracking branches
+  /// 1. Validate both old and new remote names
+  /// 2. Check old remote exists
+  /// 3. Check new remote doesn't already exist
+  /// 4. Rename the remote configuration
+  /// 5. Update all remote-tracking branches
   ///
   /// Parameters:
   /// - path: Repository path
-  /// - name: Remote name to remove
+  /// - oldName: Current remote name
+  /// - newName: New remote name
   ///
   /// Returns: Unit on success or GitFailure
   Future<Either<GitFailure, Unit>> call({
     required RepositoryPath path,
-    required String name,
+    required String oldName,
+    required String newName,
   }) async {
     // Check if repository exists
     final exists = await path.exists();
@@ -37,10 +40,13 @@ class RemoveRemoteUseCase {
       );
     }
 
-    // Validate and create remote name
-    final RemoteName remoteName;
+    // Validate both names
+    final RemoteName oldRemoteName;
+    final RemoteName newRemoteName;
+
     try {
-      remoteName = RemoteName.create(name);
+      oldRemoteName = RemoteName.create(oldName);
+      newRemoteName = RemoteName.create(newName);
     } catch (e) {
       return left(
         GitFailure.unknown(
@@ -50,16 +56,17 @@ class RemoveRemoteUseCase {
       );
     }
 
-    // Warn if trying to remove 'origin'
-    if (name == 'origin') {
+    // Warn if renaming 'origin'
+    if (oldName == 'origin') {
       // Note: In UI, should show confirmation dialog
-      // "Are you sure you want to remove the 'origin' remote?"
+      // "Are you sure you want to rename the 'origin' remote?"
     }
 
     // Delegate to repository
-    return _repository.removeRemote(
+    return _repository.renameRemote(
       path: path,
-      name: remoteName,
+      oldName: oldRemoteName,
+      newName: newRemoteName,
     );
   }
 }

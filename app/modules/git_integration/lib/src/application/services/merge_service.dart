@@ -152,8 +152,11 @@ class MergeService {
       strategy: strategy,
     );
 
-    // Update conflict cache
-    _removeConflictFromCache(path, filePath);
+    // Update conflict cache only on success
+    result.fold(
+      (_) => null, // Keep cache on failure
+      (_) => _removeConflictFromCache(path, filePath),
+    );
 
     return result;
   }
@@ -170,8 +173,11 @@ class MergeService {
       resolvedContent: resolvedContent,
     );
 
-    // Update conflict cache
-    _removeConflictFromCache(path, filePath);
+    // Update conflict cache only on success
+    result.fold(
+      (_) => null, // Keep cache on failure
+      (_) => _removeConflictFromCache(path, filePath),
+    );
 
     return result;
   }
@@ -186,8 +192,11 @@ class MergeService {
       filePath: filePath,
     );
 
-    // Update conflict cache
-    _removeConflictFromCache(path, filePath);
+    // Update conflict cache only on success
+    result.fold(
+      (_) => null, // Keep cache on failure
+      (_) => _removeConflictFromCache(path, filePath),
+    );
 
     return result;
   }
@@ -350,14 +359,19 @@ class MergeService {
   /// Resolve all conflicts with strategy
   ///
   /// Applies the same strategy to all conflicted files.
-  Future<Map<String, Either<GitFailure, Unit>>> resolveAllWithStrategy({
+  ///
+  /// Returns:
+  /// - Right(Map) with per-file resolution results on success
+  /// - Left(GitFailure) if unable to get conflicts list
+  Future<Either<GitFailure, Map<String, Either<GitFailure, Unit>>>>
+      resolveAllWithStrategy({
     required RepositoryPath path,
     required ConflictResolutionStrategy strategy,
   }) async {
     final conflictsResult = await getConflicts(path: path);
 
     return await conflictsResult.fold(
-      (_) async => {},
+      (failure) async => left(failure), // Propagate the failure
       (conflicts) async {
         final results = <String, Either<GitFailure, Unit>>{};
 
@@ -370,7 +384,7 @@ class MergeService {
           results[conflict.filePath] = result;
         }
 
-        return results;
+        return right(results);
       },
     );
   }

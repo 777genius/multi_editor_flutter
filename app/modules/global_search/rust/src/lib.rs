@@ -104,7 +104,7 @@ pub fn search_files(
         .map_err(|e| JsValue::from_str(&format!("Failed to parse config: {}", e)))?;
 
     // Perform search
-    let results = search_files_internal(&files, &config);
+    let results = search_files_internal(&files, &config)?;
 
     let duration_ms = (js_sys::Date::now() - start) as u64;
     let results_with_duration = SearchResults {
@@ -121,7 +121,7 @@ pub fn search_files(
 fn search_files_internal(
     files: &[FileContent],
     config: &SearchConfig,
-) -> SearchResults {
+) -> Result<SearchResults, JsValue> {
     let mut all_matches = Vec::new();
     let mut files_with_matches = 0;
     let exclude_paths_set: HashSet<_> = config.exclude_paths.iter().collect();
@@ -137,13 +137,12 @@ fn search_files_internal(
         };
         match Regex::new(&pattern) {
             Ok(r) => Some(r),
-            Err(_) => return SearchResults {
-                matches: vec![],
-                total_matches: 0,
-                files_searched: 0,
-                files_with_matches: 0,
-                duration_ms: 0,
-            },
+            Err(e) => {
+                return Err(JsValue::from_str(&format!(
+                    "Invalid regex pattern: {}",
+                    e
+                )))
+            }
         }
     } else {
         None
@@ -171,13 +170,13 @@ fn search_files_internal(
         }
     }
 
-    SearchResults {
+    Ok(SearchResults {
         total_matches: all_matches.len(),
         matches: all_matches,
         files_searched: files.len(),
         files_with_matches,
         duration_ms: 0, // Will be set by caller
-    }
+    })
 }
 
 /// Search within a single file
@@ -406,5 +405,43 @@ mod tests {
             &HashSet::new(),
             &HashSet::new(),
         ));
+    }
+
+    #[test]
+    fn test_invalid_regex_returns_error() {
+        let files = vec![FileContent {
+            path: "test.txt".to_string(),
+            content: "test content".to_string(),
+        }];
+
+        let config = SearchConfig {
+            pattern: "[invalid(".to_string(), // Invalid regex pattern
+            use_regex: true,
+            case_insensitive: false,
+            ..Default::default()
+        };
+
+        let result = search_files_internal(&files, &config);
+        assert!(result.is_err(), "Expected error for invalid regex pattern");
+    }
+
+    #[test]
+    fn test_valid_regex_returns_ok() {
+        let files = vec![FileContent {
+            path: "test.txt".to_string(),
+            content: "test123".to_string(),
+        }];
+
+        let config = SearchConfig {
+            pattern: r"test\d+".to_string(),
+            use_regex: true,
+            case_insensitive: false,
+            ..Default::default()
+        };
+
+        let result = search_files_internal(&files, &config);
+        assert!(result.is_ok(), "Expected success for valid regex pattern");
+        let results = result.unwrap();
+        assert_eq!(results.total_matches, 1);
     }
 }
