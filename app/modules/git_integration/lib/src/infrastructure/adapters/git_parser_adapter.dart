@@ -59,37 +59,49 @@ class GitParserAdapter {
       } else if (line.startsWith('# branch.upstream ')) {
         upstreamBranch = line.substring(18);
       } else if (line.startsWith('# branch.ab ')) {
+        // Parse ahead/behind counts
         final parts = line.substring(12).split(' ');
-        ahead = int.parse(parts[0].substring(1)); // Remove '+'
-        behind = int.parse(parts[1].substring(1)); // Remove '-'
+        if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+          try {
+            // Remove '+' and '-' prefix and parse
+            ahead = int.parse(parts[0].substring(1));
+            behind = int.parse(parts[1].substring(1));
+          } catch (e) {
+            // Invalid format, skip
+          }
+        }
       } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
         // Regular file change
         final parts = line.split(' ');
-        final xy = parts[1];
-        final path = parts.length > 8 ? parts[8] : '';
 
-        // Parse status codes
-        final stagedStatus = xy[0];
-        final unstagedStatus = xy[1];
+        // Validate format before accessing parts
+        if (parts.length > 8 && parts[1].length >= 2) {
+          final xy = parts[1];
+          final path = parts[8];
 
-        // Create file change for staged
-        if (stagedStatus != '.') {
-          final status = FileStatus.fromGitStatusCode(stagedStatus);
-          stagedChanges.add(FileChange(
-            filePath: path,
-            status: status,
-            isStaged: true,
-          ));
-        }
+          // Parse status codes
+          final stagedStatus = xy[0];
+          final unstagedStatus = xy[1];
 
-        // Create file change for unstaged
-        if (unstagedStatus != '.') {
-          final status = FileStatus.fromGitStatusCode(unstagedStatus);
-          changes.add(FileChange(
-            filePath: path,
-            status: status,
-            isStaged: false,
-          ));
+          // Create file change for staged
+          if (stagedStatus != '.') {
+            final status = FileStatus.fromGitStatusCode(stagedStatus);
+            stagedChanges.add(FileChange(
+              filePath: path,
+              status: status,
+              isStaged: true,
+            ));
+          }
+
+          // Create file change for unstaged
+          if (unstagedStatus != '.') {
+            final status = FileStatus.fromGitStatusCode(unstagedStatus);
+            changes.add(FileChange(
+              filePath: path,
+              status: status,
+              isStaged: false,
+            ));
+          }
         }
       } else if (line.startsWith('? ')) {
         // Untracked file

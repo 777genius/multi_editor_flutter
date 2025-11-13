@@ -76,6 +76,10 @@ class NpmCommands {
     String? workingDirectory,
     Duration? timeout,
   }) async {
+    // Note: Process.run() does not support killing on timeout
+    // We throw TimeoutException but process continues running in background
+    // This is acceptable for npm/yarn commands as they will eventually complete
+    // For long-running commands, consider using Process.start() instead
     return Process.run(
       executable,
       arguments,
