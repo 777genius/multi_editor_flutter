@@ -77,7 +77,9 @@ class GitParserAdapter {
         // Validate format before accessing parts
         if (parts.length > 8 && parts[1].length >= 2) {
           final xy = parts[1];
-          final path = parts[8];
+          // CRITICAL: Path is the last field and may contain spaces
+          // Join all parts from index 8 onwards to reconstruct full path
+          final path = parts.sublist(8).join(' ');
 
           // Parse status codes
           final stagedStatus = xy[0];
@@ -122,7 +124,9 @@ class GitParserAdapter {
       } else if (line.startsWith('u ')) {
         // Unmerged file (conflict)
         final parts = line.split(' ');
-        final path = parts.length > 10 ? parts[10] : '';
+        // CRITICAL: Path is the last field and may contain spaces
+        // Join all parts from index 10 onwards to reconstruct full path
+        final path = parts.length > 10 ? parts.sublist(10).join(' ') : '';
         changes.add(FileChange(
           filePath: path,
           status: const FileStatus.conflicted(),
