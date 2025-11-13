@@ -1,0 +1,48 @@
+name: git_integration
+description: Git integration module with visual diff, blame, and merge conflict resolution
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Functional programming
+  dartz: ^0.10.1
+  fpdart: ^1.1.0
+
+  # Code generation
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Dependency injection
+  injectable: ^2.5.0
+  get_it: ^8.0.2
+
+  # Other dependencies
+  uuid: ^4.5.1
+  path: ^1.9.0
+  glob: ^2.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Code generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  injectable_generator: ^2.6.2
+
+  # Linting
+  flutter_lints: ^5.0.0
+
+  # Testing
+  mockito: ^5.4.4
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
