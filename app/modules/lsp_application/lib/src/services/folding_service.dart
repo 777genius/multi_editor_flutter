@@ -45,6 +45,9 @@ class FoldingService {
   /// Cache of folding ranges by document URI
   final Map<DocumentUri, List<FoldingRange>> _rangesCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Folded state by document URI (set of folded range start lines)
   final Map<DocumentUri, Set<int>> _foldedState = {};
 
@@ -73,6 +76,9 @@ class FoldingService {
       return right(_rangesCache[documentUri]!);
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearFoldingRanges()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -90,8 +96,11 @@ class FoldingService {
           final sortedRanges = List<FoldingRange>.from(ranges);
           sortedRanges.sort((a, b) => a.startLine.compareTo(b.startLine));
 
-          // Update cache
-          _rangesCache[documentUri] = sortedRanges;
+          // CRITICAL: Only update cache if generation hasn't changed
+          if (generation == _cacheGeneration) {
+            // Update cache
+            _rangesCache[documentUri] = sortedRanges;
+          }
 
           // Emit update event
           _foldingController.add(FoldingUpdate(
@@ -305,6 +314,8 @@ class FoldingService {
   void clearFoldingRanges({required DocumentUri documentUri}) {
     _rangesCache.remove(documentUri);
     _foldedState.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _foldingController.add(FoldingUpdate(
       documentUri: documentUri,
@@ -317,6 +328,8 @@ class FoldingService {
   void clearAllFoldingRanges() {
     _rangesCache.clear();
     _foldedState.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Stream of folding updates.

@@ -43,6 +43,9 @@ class SemanticTokensService {
   /// Cache of semantic tokens by document URI
   final Map<DocumentUri, SemanticTokens> _tokensCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Stream controller for token updates
   final _tokensController = StreamController<SemanticTokensUpdate>.broadcast();
 
@@ -76,6 +79,9 @@ class SemanticTokensService {
       return right(_tokensCache[documentUri]!);
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearSemanticTokens()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -89,8 +95,11 @@ class SemanticTokensService {
         );
 
         return tokensResult.map((tokens) {
-          // Update cache
-          _tokensCache[documentUri] = tokens;
+          // CRITICAL: Only update cache if generation hasn't changed
+          if (generation == _cacheGeneration) {
+            // Update cache
+            _tokensCache[documentUri] = tokens;
+          }
 
           // Emit update event
           _tokensController.add(SemanticTokensUpdate(
@@ -188,6 +197,8 @@ class SemanticTokensService {
   /// - [documentUri]: Document URI
   void clearSemanticTokens({required DocumentUri documentUri}) {
     _tokensCache.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _tokensController.add(SemanticTokensUpdate(
       documentUri: documentUri,
@@ -199,6 +210,8 @@ class SemanticTokensService {
   /// Clears all semantic tokens.
   void clearAllSemanticTokens() {
     _tokensCache.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Enables or disables semantic tokens globally.
