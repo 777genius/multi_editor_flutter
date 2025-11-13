@@ -31,6 +31,9 @@ class RequestManager {
   /// Pending requests waiting for responses
   final Map<dynamic, Completer<JsonRpcResponse>> _pendingRequests = {};
 
+  /// Timers for pending requests (for cancellation)
+  final Map<dynamic, Timer> _requestTimers = {};
+
   /// Default timeout for requests
   final Duration _defaultTimeout;
 
@@ -97,9 +100,10 @@ class RequestManager {
 
     // Setup timeout
     final timeoutDuration = timeout ?? _defaultTimeout;
-    Timer(timeoutDuration, () {
+    final timer = Timer(timeoutDuration, () {
       if (!completer.isCompleted) {
         _pendingRequests.remove(id);
+        _requestTimers.remove(id);
         completer.completeError(
           TimeoutException(
             'Request timed out after ${timeoutDuration.inSeconds}s',
@@ -108,6 +112,9 @@ class RequestManager {
         );
       }
     });
+
+    // Store timer for cancellation
+    _requestTimers[id] = timer;
 
     return completer.future;
   }
@@ -123,6 +130,10 @@ class RequestManager {
   /// Returns: true if request was found and completed
   bool handleResponse(JsonRpcResponse response) {
     final completer = _pendingRequests.remove(response.id);
+    final timer = _requestTimers.remove(response.id);
+
+    // Cancel the timeout timer
+    timer?.cancel();
 
     if (completer != null) {
       if (!completer.isCompleted) {
@@ -142,6 +153,10 @@ class RequestManager {
   /// Returns: true if request was found and cancelled
   bool cancelRequest(dynamic id) {
     final completer = _pendingRequests.remove(id);
+    final timer = _requestTimers.remove(id);
+
+    // Cancel the timeout timer
+    timer?.cancel();
 
     if (completer != null && !completer.isCompleted) {
       completer.completeError(
@@ -157,6 +172,13 @@ class RequestManager {
   ///
   /// Should be called when closing the connection.
   void cancelAllRequests() {
+    // Cancel all timeout timers
+    for (final timer in _requestTimers.values) {
+      timer.cancel();
+    }
+    _requestTimers.clear();
+
+    // Complete all pending requests with error
     for (final completer in _pendingRequests.values) {
       if (!completer.isCompleted) {
         completer.completeError(

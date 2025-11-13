@@ -44,10 +44,12 @@ class _NpmCommandsPanelState extends State<NpmCommandsPanel> {
 
   Future<void> _autoDetectPackageManager() async {
     final detected = await _npmCommands.detectPackageManager();
-    setState(() {
-      _selectedPackageManager = detected;
-      _npmCommands.setPackageManager(detected);
-    });
+    if (mounted) {
+      setState(() {
+        _selectedPackageManager = detected;
+        _npmCommands.setPackageManager(detected);
+      });
+    }
   }
 
   Future<void> _loadAvailableScripts() async {
@@ -55,12 +57,14 @@ class _NpmCommandsPanelState extends State<NpmCommandsPanel> {
     result.fold(
       (_) {}, // Ignore error
       (scripts) {
-        setState(() {
-          _availableScripts = scripts;
-          if (scripts.isNotEmpty) {
-            _selectedScript = scripts.first;
-          }
-        });
+        if (mounted) {
+          setState(() {
+            _availableScripts = scripts;
+            if (scripts.isNotEmpty) {
+              _selectedScript = scripts.first;
+            }
+          });
+        }
       },
     );
   }
@@ -69,25 +73,31 @@ class _NpmCommandsPanelState extends State<NpmCommandsPanel> {
     Future<Either<String, String>> Function() command,
     String commandName,
   ) async {
-    setState(() {
-      _isRunning = true;
-      _output = 'Executing $commandName...\n';
-    });
+    if (mounted) {
+      setState(() {
+        _isRunning = true;
+        _output = 'Executing $commandName...\n';
+      });
+    }
 
     final result = await command();
 
     result.fold(
       (error) {
-        setState(() {
-          _output += '\n❌ Error:\n$error';
-          _isRunning = false;
-        });
+        if (mounted) {
+          setState(() {
+            _output += '\n❌ Error:\n$error';
+            _isRunning = false;
+          });
+        }
       },
       (output) {
-        setState(() {
-          _output += '\n✅ Success:\n$output';
-          _isRunning = false;
-        });
+        if (mounted) {
+          setState(() {
+            _output += '\n✅ Success:\n$output';
+            _isRunning = false;
+          });
+        }
       },
     );
   }

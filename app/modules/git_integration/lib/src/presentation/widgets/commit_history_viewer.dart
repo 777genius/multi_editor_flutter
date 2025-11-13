@@ -40,6 +40,7 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
     _scrollController.dispose();
     _searchController.dispose();
     _searchDebouncer.dispose();
+    _scrollThrottler.dispose();
     super.dispose();
   }
 
