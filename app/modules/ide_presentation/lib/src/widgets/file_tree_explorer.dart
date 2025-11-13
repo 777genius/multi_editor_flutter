@@ -140,14 +140,18 @@ class _FileTreeExplorerState extends State<FileTreeExplorer> {
     }
   }
 
-  void _toggleDirectory(String dirPath) {
+  Future<void> _toggleDirectory(String dirPath) async {
     setState(() {
       _expandedDirs[dirPath] = !(_expandedDirs[dirPath] ?? false);
     });
 
     // Load directory contents after setState
+    // CRITICAL: Must await and rebuild UI to show contents
     if (_expandedDirs[dirPath]! && !_dirContents.containsKey(dirPath)) {
-      _loadDirectoryContents(dirPath);
+      await _loadDirectoryContents(dirPath);
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
