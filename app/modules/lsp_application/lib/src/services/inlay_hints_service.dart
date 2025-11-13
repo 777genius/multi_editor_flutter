@@ -46,6 +46,9 @@ class InlayHintsService {
   /// Cache of inlay hints by document URI and range
   final Map<DocumentUri, Map<TextSelection, List<InlayHint>>> _hintsCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Stream controller for inlay hint updates
   final _hintsController = StreamController<InlayHintsUpdate>.broadcast();
 
@@ -94,6 +97,9 @@ class InlayHintsService {
       }
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearInlayHints()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -108,8 +114,12 @@ class InlayHintsService {
         );
 
         return hintsResult.map((hints) {
-          // Cache UNFILTERED hints - filter applied on retrieval
-          _updateCache(documentUri, range, hints);
+          // CRITICAL: Only update cache if generation hasn't changed
+          // If cache was cleared while we were fetching, generation will be different
+          if (generation == _cacheGeneration) {
+            // Cache UNFILTERED hints - filter applied on retrieval
+            _updateCache(documentUri, range, hints);
+          }
 
           // Apply filter for return
           final filteredHints = _filterHints(hints);
@@ -192,6 +202,8 @@ class InlayHintsService {
   /// - [documentUri]: Document URI
   void clearInlayHints({required DocumentUri documentUri}) {
     _hintsCache.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _hintsController.add(InlayHintsUpdate(
       documentUri: documentUri,
@@ -206,6 +218,8 @@ class InlayHintsService {
   /// Clears all inlay hints.
   void clearAllInlayHints() {
     _hintsCache.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Enables or disables inlay hints globally.
