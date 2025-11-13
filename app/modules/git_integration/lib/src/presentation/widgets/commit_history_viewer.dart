@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../domain/entities/git_commit.dart';
 import '../providers/git_state_provider.dart';
+import '../utils/git_ui_utils.dart';
 
 /// Commit history viewer widget
 ///
@@ -22,6 +23,8 @@ class CommitHistoryViewer extends ConsumerStatefulWidget {
 class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  final _searchDebouncer = Debouncer(milliseconds: 300);
+  final _scrollThrottler = Throttler(milliseconds: 200);
   String _searchQuery = '';
 
   @override
@@ -33,8 +36,10 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _searchController.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
   }
 
@@ -43,11 +48,14 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.9) {
-      // Load more when near bottom
-      ref.read(commitHistoryNotifierProvider.notifier).loadMore();
-    }
+    // Throttle scroll listener to prevent excessive calls
+    _scrollThrottler.run(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.9) {
+        // Load more when near bottom (90%)
+        ref.read(commitHistoryNotifierProvider.notifier).loadMore();
+      }
+    });
   }
 
   @override
@@ -121,8 +129,13 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
           border: const OutlineInputBorder(),
         ),
         onChanged: (value) {
-          setState(() {
-            _searchQuery = value;
+          // Debounce search to avoid excessive rebuilds
+          _searchDebouncer.run(() {
+            if (mounted) {
+              setState(() {
+                _searchQuery = value;
+              });
+            }
           });
         },
       ),
@@ -240,12 +253,13 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: _getAuthorColor(commit.author.name),
+          backgroundColor: GitUIUtils.getAuthorColor(commit.author.name),
           child: Text(
-            commit.author.initials,
-            style: const TextStyle(
+            GitUIUtils.getAuthorInitials(commit.author.name),
+            style: TextStyle(
               fontSize: 10,
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -386,11 +400,6 @@ class _CommitHistoryViewerState extends ConsumerState<CommitHistoryViewer> {
         .toList();
   }
 
-  Color _getAuthorColor(String author) {
-    final hash = author.hashCode;
-    final hue = (hash % 360).toDouble();
-    return HSLColor.fromAHSL(1.0, hue, 0.6, 0.5).toColor();
-  }
 
   void _showCommitDetails(GitCommit commit) {
     showModalBottomSheet(
@@ -549,10 +558,13 @@ class CommitDetailsView extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: _getAuthorColor(commit.author.name),
+            backgroundColor: GitUIUtils.getAuthorColor(commit.author.name),
             child: Text(
-              commit.author.initials,
-              style: const TextStyle(color: Colors.white),
+              GitUIUtils.getAuthorInitials(commit.author.name),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -644,10 +656,9 @@ class CommitDetailsView extends StatelessWidget {
           if (copyable)
             IconButton(
               icon: const Icon(Icons.copy, size: 16),
-              onPressed: () {
-                // TODO: Copy to clipboard
-              },
+              onPressed: () => GitUIUtils.copyToClipboard(context, value),
               visualDensity: VisualDensity.compact,
+              tooltip: 'Copy',
             ),
         ],
       ),
@@ -666,14 +677,14 @@ class CommitDetailsView extends StatelessWidget {
               icon: Icons.add,
               count: commit.insertions,
               label: 'Additions',
-              color: Colors.green,
+              color: GitUIUtils.getAdditionColor(context),
             ),
             _buildStat(
               context,
               icon: Icons.remove,
               count: commit.deletions,
               label: 'Deletions',
-              color: Colors.red,
+              color: GitUIUtils.getDeletionColor(context),
             ),
             _buildStat(
               context,
@@ -714,9 +725,4 @@ class CommitDetailsView extends StatelessWidget {
     );
   }
 
-  Color _getAuthorColor(String author) {
-    final hash = author.hashCode;
-    final hue = (hash % 360).toDouble();
-    return HSLColor.fromAHSL(1.0, hue, 0.6, 0.5).toColor();
-  }
 }

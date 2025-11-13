@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/git_branch.dart';
 import '../providers/git_state_provider.dart';
+import '../utils/git_ui_utils.dart';
 
 /// Branch selector widget
 ///
@@ -24,12 +25,14 @@ class BranchSelector extends ConsumerStatefulWidget {
 
 class _BranchSelectorState extends ConsumerState<BranchSelector> {
   final _searchController = TextEditingController();
+  final _searchDebouncer = Debouncer(milliseconds: 300);
   bool _showRemoteBranches = true;
   String _searchQuery = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
   }
 
@@ -144,8 +147,13 @@ class _BranchSelectorState extends ConsumerState<BranchSelector> {
                 border: const OutlineInputBorder(),
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
+                // Debounce search to avoid excessive rebuilds
+                _searchDebouncer.run(() {
+                  if (mounted) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  }
                 });
               },
             ),
@@ -342,7 +350,11 @@ class _BranchSelectorState extends ConsumerState<BranchSelector> {
         _deleteBranch(branch.name.value);
         break;
       case 'copy':
-        // TODO: Copy branch name to clipboard
+        GitUIUtils.copyToClipboard(
+          context,
+          branch.name.value,
+          successMessage: 'Branch name copied',
+        );
         break;
     }
   }
@@ -353,7 +365,44 @@ class _BranchSelectorState extends ConsumerState<BranchSelector> {
   }
 
   void _mergeBranch(String branchName) {
-    // TODO: Show merge confirmation dialog
+    final gitState = ref.read(gitRepositoryNotifierProvider);
+    final currentBranch =
+        gitState.repository?.currentBranch?.toNullable()?.name.value ??
+            'current branch';
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Merge Branch'),
+        content: Text(
+          'Merge "$branchName" into "$currentBranch"?\n\n'
+          'This will combine the changes from both branches.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              // Note: Merge operation would be implemented in GitRepositoryNotifier
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Merge not yet implemented for "$branchName"'),
+                  action: SnackBarAction(
+                    label: 'Dismiss',
+                    onPressed: () {},
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.merge, size: 18),
+            child: const Text('Merge'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _deleteBranch(String branchName) {
