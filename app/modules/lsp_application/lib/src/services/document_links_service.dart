@@ -54,6 +54,9 @@ class DocumentLinksService {
   /// Cache of document links by document URI
   final Map<DocumentUri, List<DocumentLink>> _linksCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Stream controller for link updates
   final _linksController = StreamController<DocumentLinksUpdate>.broadcast();
 
@@ -87,6 +90,9 @@ class DocumentLinksService {
       return right(_linksCache[documentUri]!);
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearDocumentLinks()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -100,14 +106,17 @@ class DocumentLinksService {
         );
 
         return linksResult.map((links) {
-          // Update cache
-          _linksCache[documentUri] = links;
+          // CRITICAL: Only update cache if generation hasn't changed
+          if (generation == _cacheGeneration) {
+            // Update cache
+            _linksCache[documentUri] = links;
 
-          // Emit update event
-          _linksController.add(DocumentLinksUpdate(
-            documentUri: documentUri,
-            links: links,
-          ));
+            // Emit update event
+            _linksController.add(DocumentLinksUpdate(
+              documentUri: documentUri,
+              links: links,
+            ));
+          }
 
           return links;
         });
@@ -236,6 +245,8 @@ class DocumentLinksService {
   /// - [documentUri]: Document URI
   void clearDocumentLinks({required DocumentUri documentUri}) {
     _linksCache.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _linksController.add(DocumentLinksUpdate(
       documentUri: documentUri,
@@ -246,6 +257,8 @@ class DocumentLinksService {
   /// Clears all document links.
   void clearAllDocumentLinks() {
     _linksCache.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Enables or disables document links globally.

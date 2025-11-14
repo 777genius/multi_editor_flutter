@@ -86,10 +86,43 @@ class FileService {
         await directory.create(recursive: true);
       }
 
-      // Write content
-      await file.writeAsString(content);
+      // CRITICAL: Use atomic write to prevent data loss
+      // Write to temp file first, then atomically rename
+      // This prevents file corruption if process crashes during write
+      final tempFile = File('$filePath.tmp.${DateTime.now().millisecondsSinceEpoch}');
 
-      return right(unit);
+      try {
+        // Write content to temp file
+        await tempFile.writeAsString(content, flush: true);
+
+        // CRITICAL: Atomic overwrite with cross-platform compatibility
+        // On POSIX: rename is atomic and replaces the target
+        // On Windows: rename fails if target exists
+        // Strategy: try atomic rename first, fallback to delete+rename on Windows
+        try {
+          await tempFile.rename(filePath);
+        } on FileSystemException catch (e) {
+          // On Windows, if rename failed because target exists, delete and retry
+          if (await file.exists()) {
+            await file.delete();
+            await tempFile.rename(filePath);
+          } else {
+            rethrow;
+          }
+        }
+
+        return right(unit);
+      } catch (e) {
+        // Clean up temp file if operation fails
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+        rethrow;
+      }
     } on FileSystemException catch (e) {
       return left(EditorFailure.operationFailed(
         operation: 'writeFile',

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:dartz/dartz.dart';
 import '../../domain/failures/git_failures.dart';
@@ -27,19 +28,28 @@ class GitCommandResult {
 /// This provides a clean interface for running git commands and
 /// handling their output. All git operations go through this adapter.
 class GitCommandAdapter {
+  /// Default timeout for most git commands (30 seconds)
+  static const Duration defaultTimeout = Duration(seconds: 30);
+
+  /// Extended timeout for long-running commands like clone, fetch, push (5 minutes)
+  static const Duration extendedTimeout = Duration(minutes: 5);
+
   /// Execute a git command
   ///
   /// Parameters:
   /// - args: Git command arguments (e.g., ['status', '--porcelain'])
   /// - workingDirectory: Repository path
   /// - environment: Additional environment variables
+  /// - timeout: Command timeout (defaults to 30 seconds, use extendedTimeout for clone/fetch/push)
   ///
   /// Returns: GitCommandResult or GitFailure
   Future<Either<GitFailure, GitCommandResult>> execute({
     required List<String> args,
     required String workingDirectory,
     Map<String, String>? environment,
+    Duration? timeout,
   }) async {
+    Process? process;
     try {
       // Prepare environment
       final env = <String, String>{
@@ -48,7 +58,7 @@ class GitCommandAdapter {
       };
 
       // Execute git command
-      final process = await Process.start(
+      process = await Process.start(
         'git',
         args,
         workingDirectory: workingDirectory,
@@ -65,10 +75,28 @@ class GitCommandAdapter {
           .transform(utf8.decoder)
           .fold<String>('', (previous, element) => previous + element);
 
-      // Wait for completion
-      final exitCode = await process.exitCode;
-      final stdout = await stdoutFuture;
-      final stderr = await stderrFuture;
+      // Wait for completion with timeout (applies to ALL operations)
+      final timeoutDuration = timeout ?? defaultTimeout;
+
+      final results = await Future.wait([
+        process.exitCode.then((code) => code),
+        stdoutFuture,
+        stderrFuture,
+      ]).timeout(
+        timeoutDuration,
+        onTimeout: () {
+          // Kill the process on timeout
+          process?.kill(ProcessSignal.sigterm);
+          throw TimeoutException(
+            'Git command timed out after ${timeoutDuration.inSeconds}s',
+            timeoutDuration,
+          );
+        },
+      );
+
+      final exitCode = results[0] as int;
+      final stdout = results[1] as String;
+      final stderr = results[2] as String;
 
       final result = GitCommandResult(
         exitCode: exitCode,
@@ -82,7 +110,18 @@ class GitCommandAdapter {
       }
 
       return right(result);
+    } on TimeoutException catch (e) {
+      // Ensure process is killed
+      process?.kill(ProcessSignal.sigkill);
+      return left(
+        GitFailure.commandFailed(
+          command: 'git ${args.join(' ')}',
+          exitCode: -1,
+          stderr: 'Command timed out: ${e.message}',
+        ),
+      );
     } on ProcessException catch (e, stackTrace) {
+      // Process failed to start - no need to kill
       return left(
         GitFailure.commandFailed(
           command: 'git ${args.join(' ')}',
@@ -91,6 +130,9 @@ class GitCommandAdapter {
         ),
       );
     } catch (e, stackTrace) {
+      // Unexpected error - ensure process is killed
+      // This handles UTF-8 decode errors, Future.wait errors, etc.
+      process?.kill(ProcessSignal.sigkill);
       return left(
         GitFailure.unknown(
           message: 'Failed to execute git command: ${e.toString()}',
@@ -108,11 +150,13 @@ class GitCommandAdapter {
     required List<String> args,
     required String workingDirectory,
     Map<String, String>? environment,
+    Duration? timeout,
   }) async {
     final result = await execute(
       args: args,
       workingDirectory: workingDirectory,
       environment: environment,
+      timeout: timeout,
     );
 
     return result.map((r) => r.stdout);

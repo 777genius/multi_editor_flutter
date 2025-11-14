@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:get_it/get_it.dart';
@@ -104,27 +106,17 @@ class _IdeScreenState extends State<IdeScreen> {
 
   @override
   void dispose() {
-    // Dispose stores (prevent memory leaks)
-    try {
-      _editorStore.dispose();
-    } catch (e) {
-      debugPrint('Error disposing editor store: $e');
-    }
+    // CRITICAL: DO NOT dispose singleton stores from GetIt
+    // Stores are registered as singletons and shared across app
+    // Disposing them here would break the app if screen is reopened
+    // The stores will be disposed when the app terminates
 
-    try {
-      _lspStore.dispose();
-    } catch (e) {
-      debugPrint('Error disposing LSP store: $e');
-    }
+    // NOTE: Only dispose non-singleton resources owned by this widget
+    // In this case, there are none - all resources are singletons
 
-    // Dispose Repository which holds Rust FFI handle
-    // This is important to prevent memory leaks
-    try {
-      final repo = GetIt.I<ICodeEditorRepository>();
-      repo.dispose();
-    } catch (e) {
-      debugPrint('Error disposing editor repository: $e');
-    }
+    // IMPORTANT: Also DO NOT dispose the editor repository
+    // It's a singleton and disposing it would break other parts of the app
+    // The repository is automatically disposed when GetIt is reset
 
     super.dispose();
   }
@@ -625,6 +617,41 @@ class _IdeScreenState extends State<IdeScreen> {
       // For now, save as "untitled.txt"
       // In real implementation, show dialog to enter filename
       _currentFilePath = '$directory/untitled.txt';
+
+      // CRITICAL: Check if file exists before overwriting
+      final file = File(_currentFilePath!);
+      if (await file.exists()) {
+        // Ask user for confirmation
+        if (!mounted) return; // Widget disposed before showing dialog
+
+        final shouldOverwrite = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('File already exists'),
+            content: Text('Do you want to overwrite $_currentFilePath?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Overwrite'),
+              ),
+            ],
+          ),
+        );
+
+        // CRITICAL: Check mounted after async operation (showDialog)
+        // Widget may have been disposed while dialog was open
+        if (!mounted) return;
+
+        if (shouldOverwrite != true) {
+          // User cancelled, reset path
+          _currentFilePath = null;
+          return;
+        }
+      }
     }
 
     // Save file using FileService

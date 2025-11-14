@@ -360,8 +360,13 @@ abstract class _EditorStore with Store {
         // Presentation layer will continue working with local content
       },
       (_) {
-        // Successfully synced - update undo/redo state
-        canUndo = true;
+        // CRITICAL: Check hasDocument again after async gap
+        // Document could have been closed while async operation was running
+        // If we set canUndo=true on a closed document, it would overwrite
+        // the canUndo=false that was set in closeDocument()
+        if (hasDocument) {
+          canUndo = true;
+        }
       },
     );
   }

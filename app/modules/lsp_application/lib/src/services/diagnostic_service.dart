@@ -35,6 +35,9 @@ class DiagnosticService {
   /// Cache of diagnostics by document URI
   final Map<DocumentUri, List<Diagnostic>> _diagnosticsCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Stream controller for diagnostic updates
   final _diagnosticsController = StreamController<DiagnosticUpdate>.broadcast();
 
@@ -66,6 +69,9 @@ class DiagnosticService {
       return right(_diagnosticsCache[documentUri]!);
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearDiagnostics()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -79,14 +85,18 @@ class DiagnosticService {
         );
 
         return diagnosticsResult.map((diagnostics) {
-          // Update cache
-          _diagnosticsCache[documentUri] = diagnostics;
+          // CRITICAL: Only update cache if generation hasn't changed
+          // If cache was cleared while we were fetching, generation will be different
+          // This prevents writing stale data after cache clear
+          if (generation == _cacheGeneration) {
+            _diagnosticsCache[documentUri] = diagnostics;
 
-          // Emit update event
-          _diagnosticsController.add(DiagnosticUpdate(
-            documentUri: documentUri,
-            diagnostics: diagnostics,
-          ));
+            // Emit update event
+            _diagnosticsController.add(DiagnosticUpdate(
+              documentUri: documentUri,
+              diagnostics: diagnostics,
+            ));
+          }
 
           return diagnostics;
         });
@@ -184,6 +194,8 @@ class DiagnosticService {
   /// - [documentUri]: Document URI
   void clearDiagnostics({required DocumentUri documentUri}) {
     _diagnosticsCache.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _diagnosticsController.add(DiagnosticUpdate(
       documentUri: documentUri,
@@ -194,6 +206,8 @@ class DiagnosticService {
   /// Clears all diagnostics.
   void clearAllDiagnostics() {
     _diagnosticsCache.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Stream of diagnostic updates.

@@ -12,6 +12,7 @@ class DiffWasmLoader {
   static bool _isInitialized = false;
   static bool _isLoading = false;
   static Completer<void>? _loadingCompleter;
+  static html.ScriptElement? _wasmScript;
 
   DiffWasmLoader._();
 
@@ -64,8 +65,15 @@ class DiffWasmLoader {
 
   /// Load WASM module from assets
   Future<void> _loadWasmModule() async {
+    // CRITICAL: Clean up old script element if it exists (from previous failed attempt)
+    // This prevents memory leak when retrying after failure
+    if (_wasmScript != null) {
+      _wasmScript!.remove();
+      _wasmScript = null;
+    }
+
     // Create script element to load WASM
-    final script = html.ScriptElement()
+    _wasmScript = html.ScriptElement()
       ..type = 'module'
       ..innerHtml = '''
         import init, { myers_diff, diff_stats } from './assets/wasm/git_diff_wasm.js';
@@ -87,7 +95,7 @@ class DiffWasmLoader {
         }
       ''';
 
-    html.document.body?.append(script);
+    html.document.body?.append(_wasmScript!);
 
     // Wait for WASM to load (with timeout)
     final startTime = DateTime.now();

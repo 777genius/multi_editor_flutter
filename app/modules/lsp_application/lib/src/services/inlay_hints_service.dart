@@ -46,6 +46,9 @@ class InlayHintsService {
   /// Cache of inlay hints by document URI and range
   final Map<DocumentUri, Map<TextSelection, List<InlayHint>>> _hintsCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Stream controller for inlay hint updates
   final _hintsController = StreamController<InlayHintsUpdate>.broadcast();
 
@@ -88,9 +91,14 @@ class InlayHintsService {
     if (!forceRefresh) {
       final cached = _getCachedHints(documentUri, range);
       if (cached != null) {
-        return right(cached);
+        // IMPORTANT: Always apply filter when returning from cache
+        // This ensures settings changes (show/hide type hints) take effect immediately
+        return right(_filterHints(cached));
       }
     }
+
+    // Capture generation BEFORE awaiting - prevents race with clearInlayHints()
+    final generation = _cacheGeneration;
 
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
@@ -106,11 +114,15 @@ class InlayHintsService {
         );
 
         return hintsResult.map((hints) {
-          // Filter hints based on settings
-          final filteredHints = _filterHints(hints);
+          // CRITICAL: Only update cache if generation hasn't changed
+          // If cache was cleared while we were fetching, generation will be different
+          if (generation == _cacheGeneration) {
+            // Cache UNFILTERED hints - filter applied on retrieval
+            _updateCache(documentUri, range, hints);
+          }
 
-          // Update cache
-          _updateCache(documentUri, range, filteredHints);
+          // Apply filter for return
+          final filteredHints = _filterHints(hints);
 
           // Emit update event
           _hintsController.add(InlayHintsUpdate(
@@ -190,6 +202,8 @@ class InlayHintsService {
   /// - [documentUri]: Document URI
   void clearInlayHints({required DocumentUri documentUri}) {
     _hintsCache.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _hintsController.add(InlayHintsUpdate(
       documentUri: documentUri,
@@ -204,6 +218,8 @@ class InlayHintsService {
   /// Clears all inlay hints.
   void clearAllInlayHints() {
     _hintsCache.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Enables or disables inlay hints globally.
@@ -216,15 +232,23 @@ class InlayHintsService {
   }
 
   /// Enables or disables type hints.
+  ///
+  /// Settings change takes effect immediately because filter is always
+  /// applied when returning hints from cache (see getInlayHints line 93).
   void setShowTypeHints(bool show) {
+    if (_showTypeHints == show) return; // No change
     _showTypeHints = show;
-    _refreshAllCachedHints();
+    // No need to clear cache or send events - filter applied on retrieval
   }
 
   /// Enables or disables parameter hints.
+  ///
+  /// Settings change takes effect immediately because filter is always
+  /// applied when returning hints from cache (see getInlayHints line 93).
   void setShowParameterHints(bool show) {
+    if (_showParameterHints == show) return; // No change
     _showParameterHints = show;
-    _refreshAllCachedHints();
+    // No need to clear cache or send events - filter applied on retrieval
   }
 
   /// Checks if inlay hints are enabled.
@@ -289,25 +313,6 @@ class InlayHintsService {
   ) {
     _hintsCache.putIfAbsent(uri, () => {});
     _hintsCache[uri]![range] = hints;
-  }
-
-  /// Refreshes all cached hints (when settings change).
-  void _refreshAllCachedHints() {
-    final documents = _hintsCache.keys.toList();
-    for (final doc in documents) {
-      final ranges = _hintsCache[doc]?.keys.toList() ?? [];
-      for (final range in ranges) {
-        final hints = _hintsCache[doc]![range]!;
-        final filtered = _filterHints(hints);
-        _hintsCache[doc]![range] = filtered;
-
-        _hintsController.add(InlayHintsUpdate(
-          documentUri: doc,
-          range: range,
-          hints: filtered,
-        ));
-      }
-    }
   }
 
   /// Disposes the service.

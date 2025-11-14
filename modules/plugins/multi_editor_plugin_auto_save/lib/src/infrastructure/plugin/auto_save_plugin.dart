@@ -115,7 +115,11 @@ class AutoSavePlugin extends BaseEditorPlugin
     if (_unsavedContent.isEmpty) return;
 
     await safeExecuteAsync('Auto-save all files', () async {
-      for (final entry in _unsavedContent.entries) {
+      // CRITICAL: Iterate over a copy of entries to avoid ConcurrentModificationError
+      // We're removing items from _unsavedContent during iteration, which would cause:
+      // "ConcurrentModificationError: Concurrent modification during iteration"
+      // Creating a list copy ensures the iteration is safe
+      for (final entry in _unsavedContent.entries.toList()) {
         final task = SaveTask.create(fileId: entry.key, content: entry.value);
 
         try {

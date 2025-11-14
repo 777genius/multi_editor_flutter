@@ -24,6 +24,7 @@ import '../use_cases/fetch_changes_use_case.dart';
 import '../use_cases/get_commit_history_use_case.dart';
 import '../use_cases/add_remote_use_case.dart';
 import '../use_cases/remove_remote_use_case.dart';
+import '../use_cases/rename_remote_use_case.dart';
 
 /// Main Git service that orchestrates git operations
 ///
@@ -50,6 +51,7 @@ class GitService {
   final GetCommitHistoryUseCase _getCommitHistoryUseCase;
   final AddRemoteUseCase _addRemoteUseCase;
   final RemoveRemoteUseCase _removeRemoteUseCase;
+  final RenameRemoteUseCase _renameRemoteUseCase;
 
   // Cache of repository states (path -> GitRepository)
   final Map<String, GitRepository> _repositoryCache = {};
@@ -73,6 +75,7 @@ class GitService {
     this._getCommitHistoryUseCase,
     this._addRemoteUseCase,
     this._removeRemoteUseCase,
+    this._renameRemoteUseCase,
   );
 
   // ============================================================================
@@ -477,7 +480,7 @@ class GitService {
     required String newName,
   }) async {
     return _executeOperation(path, () async {
-      final result = await _removeRemoteUseCase.rename(
+      final result = await _renameRemoteUseCase(
         path: path,
         oldName: oldName,
         newName: newName,
@@ -526,11 +529,13 @@ class GitService {
     final future = operation();
     _operationQueue[key] = future.then((_) => null);
 
-    final result = await future;
-
-    // Clean up queue
-    _operationQueue.remove(key);
-
-    return result;
+    try {
+      final result = await future;
+      return result;
+    } finally {
+      // CRITICAL: Always clean up queue, even on error
+      // Without this, queue entry leaks on error and blocks all future operations
+      _operationQueue.remove(key);
+    }
   }
 }

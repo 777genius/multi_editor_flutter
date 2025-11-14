@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:dartz/dartz.dart';
 import 'package:path/path.dart' as path;
@@ -16,7 +17,66 @@ import 'package:path/path.dart' as path;
 class PubCommands {
   final String _projectRoot;
 
-  PubCommands({required String projectRoot}) : _projectRoot = projectRoot;
+  PubCommands({required String projectRoot})
+      : _projectRoot = _validateProjectRoot(projectRoot);
+
+  /// Default timeout for pub operations (2 minutes)
+  static const Duration _defaultTimeout = Duration(minutes: 2);
+
+  /// Validates project root path to prevent path traversal attacks
+  static String _validateProjectRoot(String projectRoot) {
+    if (projectRoot.isEmpty) {
+      throw ArgumentError('Project root cannot be empty');
+    }
+    // Normalize path to prevent path traversal
+    final normalized = path.normalize(projectRoot);
+    if (normalized.contains('..')) {
+      throw ArgumentError('Project root cannot contain parent directory references');
+    }
+    return normalized;
+  }
+
+  /// Validates package name to prevent command injection
+  static void _validatePackageName(String packageName) {
+    if (packageName.isEmpty) {
+      throw ArgumentError('Package name cannot be empty');
+    }
+    // Dart package names should only contain alphanumeric, hyphens, underscores
+    final validPattern = RegExp(r'^[a-zA-Z0-9_\-]+$');
+    if (!validPattern.hasMatch(packageName)) {
+      throw ArgumentError(
+        'Invalid package name: $packageName. Only alphanumeric characters, -, and _ are allowed',
+      );
+    }
+    // Prevent shell metacharacters
+    const dangerousChars = [';', '&', '|', '`', '\$', '(', ')', '<', '>', '\n', '\r'];
+    for (final char in dangerousChars) {
+      if (packageName.contains(char)) {
+        throw ArgumentError('Package name cannot contain shell metacharacters');
+      }
+    }
+  }
+
+  /// Runs a process with timeout to prevent hanging
+  Future<ProcessResult> _runWithTimeout(
+    String executable,
+    List<String> arguments, {
+    String? workingDirectory,
+    Duration? timeout,
+  }) async {
+    return Process.run(
+      executable,
+      arguments,
+      workingDirectory: workingDirectory,
+    ).timeout(
+      timeout ?? _defaultTimeout,
+      onTimeout: () {
+        throw TimeoutException(
+          'Command "$executable ${arguments.join(' ')}" timed out after ${timeout ?? _defaultTimeout}',
+        );
+      },
+    );
+  }
 
   /// Gets the path to pubspec.yaml
   String get pubspecPath => path.join(_projectRoot, 'pubspec.yaml');
@@ -39,7 +99,7 @@ class PubCommands {
 
     try {
       final command = useFlutter ? 'flutter' : 'dart';
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         ['pub', 'get'],
         workingDirectory: _projectRoot,
@@ -69,7 +129,7 @@ class PubCommands {
 
     try {
       final command = useFlutter ? 'flutter' : 'dart';
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         ['pub', 'upgrade'],
         workingDirectory: _projectRoot,
@@ -99,7 +159,7 @@ class PubCommands {
 
     try {
       final command = useFlutter ? 'flutter' : 'dart';
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         ['pub', 'outdated', '--json'],
         workingDirectory: _projectRoot,
@@ -132,6 +192,13 @@ class PubCommands {
     bool isDev = false,
     bool useFlutter = false,
   }) async {
+    // Validate package name for security
+    try {
+      _validatePackageName(packageName);
+    } catch (e) {
+      return left(e.toString());
+    }
+
     if (!await isValidDartProject()) {
       return left('Not a valid Dart/Flutter project');
     }
@@ -147,7 +214,7 @@ class PubCommands {
       final packageSpec = version != null ? '$packageName:$version' : packageName;
       args.add(packageSpec);
 
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         args,
         workingDirectory: _projectRoot,
@@ -176,13 +243,20 @@ class PubCommands {
     required String packageName,
     bool useFlutter = false,
   }) async {
+    // Validate package name for security
+    try {
+      _validatePackageName(packageName);
+    } catch (e) {
+      return left(e.toString());
+    }
+
     if (!await isValidDartProject()) {
       return left('Not a valid Dart/Flutter project');
     }
 
     try {
       final command = useFlutter ? 'flutter' : 'dart';
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         ['pub', 'remove', packageName],
         workingDirectory: _projectRoot,
@@ -210,7 +284,7 @@ class PubCommands {
 
     try {
       final command = useFlutter ? 'flutter' : 'dart';
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         command,
         ['analyze'],
         workingDirectory: _projectRoot,
@@ -243,7 +317,7 @@ class PubCommands {
       }
       args.add('.');
 
-      final result = await Process.run(
+      final result = await _runWithTimeout(
         'dart',
         args,
         workingDirectory: _projectRoot,
@@ -266,7 +340,11 @@ class PubCommands {
   /// - Left(error) on failure
   Future<Either<String, String>> getDartVersion() async {
     try {
-      final result = await Process.run('dart', ['--version']);
+      final result = await _runWithTimeout(
+        'dart',
+        ['--version'],
+        timeout: const Duration(seconds: 10),
+      );
       return right(result.stderr.toString()); // dart --version outputs to stderr
     } catch (e) {
       return left('Failed to get Dart version: $e');
@@ -280,7 +358,11 @@ class PubCommands {
   /// - Left(error) on failure
   Future<Either<String, String>> getFlutterVersion() async {
     try {
-      final result = await Process.run('flutter', ['--version']);
+      final result = await _runWithTimeout(
+        'flutter',
+        ['--version'],
+        timeout: const Duration(seconds: 10),
+      );
       if (result.exitCode == 0) {
         return right(result.stdout.toString());
       } else {

@@ -226,9 +226,14 @@ class PermissionSystem {
         .where((p) => p.filesystemAccess != FilesystemAccessLevel.none)
         .length;
 
+    // CRITICAL: Check for division by zero when no permissions registered
+    final avgHostFunctions = _permissions.isEmpty
+        ? 0.0
+        : totalHostFunctions / _permissions.length;
+
     return {
       'total_plugins': _permissions.length,
-      'avg_host_functions': totalHostFunctions / _permissions.length,
+      'avg_host_functions': avgHostFunctions,
       'plugins_with_network': pluginsWithNetwork,
       'plugins_with_filesystem': pluginsWithFilesystem,
     };

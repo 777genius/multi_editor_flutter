@@ -4,6 +4,12 @@ import 'package:lsp_domain/lsp_domain.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'lsp_session_service.dart';
+import 'diagnostic_service.dart';
+import 'code_lens_service.dart';
+import 'document_links_service.dart';
+import 'inlay_hints_service.dart';
+import 'folding_service.dart';
+import 'semantic_tokens_service.dart';
 
 /// Application Service: Synchronizes editor state with LSP server.
 ///
@@ -41,6 +47,12 @@ class EditorSyncService {
   final ICodeEditorRepository _editorRepository;
   final ILspClientRepository _lspRepository;
   final LspSessionService _sessionService;
+  final DiagnosticService _diagnosticService;
+  final CodeLensService _codeLensService;
+  final DocumentLinksService _documentLinksService;
+  final InlayHintsService _inlayHintsService;
+  final FoldingService _foldingService;
+  final SemanticTokensService _semanticTokensService;
 
   /// Debounce duration for content changes
   /// Prevents flooding LSP server with every keystroke
@@ -57,10 +69,22 @@ class EditorSyncService {
     required ICodeEditorRepository editorRepository,
     required ILspClientRepository lspRepository,
     required LspSessionService sessionService,
+    required DiagnosticService diagnosticService,
+    required CodeLensService codeLensService,
+    required DocumentLinksService documentLinksService,
+    required InlayHintsService inlayHintsService,
+    required FoldingService foldingService,
+    required SemanticTokensService semanticTokensService,
     Duration debounceDuration = const Duration(milliseconds: 300),
   })  : _editorRepository = editorRepository,
         _lspRepository = lspRepository,
         _sessionService = sessionService,
+        _diagnosticService = diagnosticService,
+        _codeLensService = codeLensService,
+        _documentLinksService = documentLinksService,
+        _inlayHintsService = inlayHintsService,
+        _foldingService = foldingService,
+        _semanticTokensService = semanticTokensService,
         _debounceDuration = debounceDuration;
 
   /// Starts synchronizing editor with LSP server.
@@ -166,17 +190,28 @@ class EditorSyncService {
 
   /// Handles content change event.
   ///
-  /// Notifies LSP server about the new content.
+  /// Notifies LSP server about the new content and invalidates all LSP caches.
   Future<void> _handleContentChange(String content) async {
     if (_currentSession == null || _currentDocumentUri == null) {
       return;
     }
 
+    // Notify LSP server about the change
     await _lspRepository.notifyDocumentChanged(
       sessionId: _currentSession!.id,
       documentUri: _currentDocumentUri!,
       content: content,
     );
+
+    // CRITICAL: Invalidate all LSP caches for this document
+    // Without this, cached data (diagnostics, code lenses, etc.) becomes stale
+    // after edits and shows incorrect information in the UI
+    _diagnosticService.clearDiagnostics(documentUri: _currentDocumentUri!);
+    _codeLensService.clearCodeLenses(documentUri: _currentDocumentUri!);
+    _documentLinksService.clearDocumentLinks(documentUri: _currentDocumentUri!);
+    _inlayHintsService.clearInlayHints(documentUri: _currentDocumentUri!);
+    _foldingService.clearFoldingRanges(documentUri: _currentDocumentUri!);
+    _semanticTokensService.clearSemanticTokens(documentUri: _currentDocumentUri!);
   }
 
   /// Sets up cursor position listener.

@@ -918,11 +918,27 @@ class GitCliRepository implements IGitRepository {
     required String filePath,
     required String content,
   }) async {
-    // Write content to file
+    // CRITICAL: Use atomic write to prevent data loss during conflict resolution
+    // If process crashes mid-write, file would be corrupted without atomic write
     final file = File('${path.path}/$filePath');
+    final tempFile = File('${file.path}.tmp.${DateTime.now().millisecondsSinceEpoch}');
+
     try {
-      await file.writeAsString(content);
+      // Write content to temp file with flush
+      await tempFile.writeAsString(content, flush: true);
+
+      // Atomic rename - prevents partial writes
+      await tempFile.rename(file.path);
     } catch (e) {
+      // Clean up temp file on error
+      try {
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      } catch (_) {
+        // Ignore cleanup errors
+      }
+
       return left(GitFailure.unknown(
         message: 'Failed to write file: ${e.toString()}',
         error: e,

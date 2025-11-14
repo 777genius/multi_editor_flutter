@@ -115,7 +115,8 @@ class _MinimapPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (data.lines.isEmpty) return;
+    // CRITICAL: Check for empty data AND zero totalLines to prevent division by zero
+    if (data.lines.isEmpty || data.totalLines == 0) return;
 
     final lineHeight = size.height / data.totalLines;
     final maxWidth = size.width - 4; // Leave margin
@@ -123,6 +124,7 @@ class _MinimapPainter extends CustomPainter {
     // Draw each line
     for (var i = 0; i < data.lines.length; i++) {
       final line = data.lines[i];
+      // CRITICAL: data.lines.length already checked as non-empty, safe to divide
       final y = i * lineHeight * (data.totalLines / data.lines.length);
 
       if (y >= size.height) break;
@@ -153,6 +155,10 @@ class _MinimapPainter extends CustomPainter {
       );
       return;
     }
+
+    // CRITICAL: Prevent division by zero if maxLength is 0
+    // If maxLength is 0, all lines have zero length, so draw nothing
+    if (data.maxLength == 0) return;
 
     // Calculate visual width based on line length and indent
     final indentWidth = (line.indent / data.maxLength) * maxWidth;

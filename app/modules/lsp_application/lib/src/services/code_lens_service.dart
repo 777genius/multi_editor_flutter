@@ -38,6 +38,9 @@ class CodeLensService {
   /// Cache of code lenses by document URI
   final Map<DocumentUri, List<CodeLens>> _codeLensCache = {};
 
+  /// Cache generation number - incremented on clear to invalidate in-flight requests
+  int _cacheGeneration = 0;
+
   /// Access order for LRU eviction (most recently accessed at end)
   final List<DocumentUri> _accessOrder = [];
 
@@ -79,6 +82,9 @@ class CodeLensService {
       return right(_codeLensCache[documentUri]!);
     }
 
+    // Capture generation BEFORE awaiting - prevents race with clearCodeLenses()
+    final generation = _cacheGeneration;
+
     // Get session
     final sessionResult = await _lspRepository.getSession(languageId);
 
@@ -92,8 +98,11 @@ class CodeLensService {
         );
 
         return codeLensesResult.map((codeLenses) {
-          // Update cache with LRU eviction
-          _addToCache(documentUri, codeLenses);
+          // CRITICAL: Only update cache if generation hasn't changed
+          if (generation == _cacheGeneration) {
+            // Update cache with LRU eviction
+            _addToCache(documentUri, codeLenses);
+          }
 
           // Emit update event
           _codeLensController.add(CodeLensUpdate(
@@ -208,6 +217,8 @@ class CodeLensService {
   void clearCodeLenses({required DocumentUri documentUri}) {
     _codeLensCache.remove(documentUri);
     _accessOrder.remove(documentUri);
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
 
     _codeLensController.add(CodeLensUpdate(
       documentUri: documentUri,
@@ -219,6 +230,8 @@ class CodeLensService {
   void clearAllCodeLenses() {
     _codeLensCache.clear();
     _accessOrder.clear();
+    // Increment generation to invalidate in-flight requests
+    _cacheGeneration++;
   }
 
   /// Enables or disables code lenses globally.

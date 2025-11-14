@@ -71,17 +71,29 @@ abstract class LspApplicationModule {
 
   /// Provides EditorSyncService (singleton).
   ///
-  /// Synchronizes editor state with LSP server.
+  /// Synchronizes editor state with LSP server and coordinates cache invalidation.
   @singleton
   EditorSyncService provideEditorSyncService(
     ICodeEditorRepository editorRepository,
     ILspClientRepository lspRepository,
     LspSessionService sessionService,
+    DiagnosticService diagnosticService,
+    CodeLensService codeLensService,
+    DocumentLinksService documentLinksService,
+    InlayHintsService inlayHintsService,
+    FoldingService foldingService,
+    SemanticTokensService semanticTokensService,
   ) {
     return EditorSyncService(
       editorRepository: editorRepository,
       lspRepository: lspRepository,
       sessionService: sessionService,
+      diagnosticService: diagnosticService,
+      codeLensService: codeLensService,
+      documentLinksService: documentLinksService,
+      inlayHintsService: inlayHintsService,
+      foldingService: foldingService,
+      semanticTokensService: semanticTokensService,
     );
   }
 
