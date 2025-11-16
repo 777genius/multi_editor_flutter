@@ -75,5 +75,18 @@ export 'src/infrastructure/adapters/git_command_adapter.dart';
 export 'src/infrastructure/adapters/git_parser_adapter.dart';
 export 'src/infrastructure/infrastructure_module.dart';
 
+// Presentation Layer - Providers
+export 'src/presentation/providers/git_state_provider.dart';
+
+// Presentation Layer - Widgets
+export 'src/presentation/widgets/git_panel.dart';
+export 'src/presentation/widgets/git_panel_enhanced.dart';
+export 'src/presentation/widgets/commit_dialog.dart';
+export 'src/presentation/widgets/branch_dialog.dart';
+export 'src/presentation/widgets/diff_viewer.dart';
+export 'src/presentation/widgets/merge_conflict_resolver.dart';
+export 'src/presentation/widgets/ssh_key_manager.dart';
+export 'src/presentation/widgets/conflict_resolution_dialog.dart';
+
 // Dependency Injection
 export 'src/injection.dart';

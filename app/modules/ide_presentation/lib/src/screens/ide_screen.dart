@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:editor_core/editor_core.dart';
 import 'package:lsp_domain/lsp_domain.dart';
@@ -582,26 +583,18 @@ class _IdeScreenState extends State<IdeScreen> {
   Widget _buildGitStatus() {
     return Consumer(
       builder: (context, ref, child) {
-        final gitState = ref.watch(gitStateProvider);
+        final gitState = ref.watch(gitRepositoryNotifierProvider);
+        final repository = gitState.repository;
 
-        if (gitState.repository == null) {
+        if (repository == null) {
           return const SizedBox.shrink();
         }
 
         // Count changes
-        int changeCount = 0;
-        if (gitState.status != null) {
-          changeCount = gitState.status!.modified.length +
-              gitState.status!.added.length +
-              gitState.status!.deleted.length +
-              gitState.status!.untracked.length;
-        }
+        final changeCount = repository.totalChangesCount;
 
         // Check for conflicts
-        bool hasConflicts = false;
-        if (gitState.mergeState != null && gitState.mergeState!.hasConflicts) {
-          hasConflicts = true;
-        }
+        final hasConflicts = repository.hasActiveConflict;
 
         return Row(
           children: [
@@ -617,7 +610,7 @@ class _IdeScreenState extends State<IdeScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    gitState.currentBranch ?? 'main',
+                    repository.getCurrentBranchDisplay(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
