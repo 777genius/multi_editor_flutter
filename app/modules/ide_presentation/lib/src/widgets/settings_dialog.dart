@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:git_integration/git_integration.dart';
 
 /// SettingsDialog
 ///
@@ -65,7 +66,7 @@ class _SettingsDialogState extends State<SettingsDialog>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
 
     // Initialize text controllers
     _lspBridgeUrlController = TextEditingController(text: _lspBridgeUrl);
@@ -224,6 +225,7 @@ class _SettingsDialogState extends State<SettingsDialog>
                 children: [
                   _buildEditorSettings(),
                   _buildLspSettings(),
+                  _buildGitSettings(),
                   _buildAbout(),
                 ],
               ),
@@ -285,6 +287,7 @@ class _SettingsDialogState extends State<SettingsDialog>
         tabs: const [
           Tab(text: 'Editor'),
           Tab(text: 'LSP'),
+          Tab(text: 'Git'),
           Tab(text: 'About'),
         ],
       ),
@@ -432,6 +435,174 @@ class _SettingsDialogState extends State<SettingsDialog>
             hint: '30',
             keyboardType: TextInputType.number,
             errorText: _requestTimeoutError,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGitSettings() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Git Settings',
+            style: TextStyle(
+              color: Color(0xFFCCCCCC),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // SSH Key Management
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF252526),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF3E3E42)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.vpn_key,
+                      color: Color(0xFF007ACC),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'SSH Key Management',
+                      style: TextStyle(
+                        color: Color(0xFFCCCCCC),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Manage SSH keys for secure Git authentication',
+                  style: TextStyle(
+                    color: Color(0xFF999999),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Navigate to SSH Key Manager
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SshKeyManager(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.manage_accounts),
+                  label: const Text('Manage SSH Keys'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007ACC),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Credential Management Info
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF252526),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF3E3E42)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.security,
+                      color: Color(0xFF4EC9B0),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Secure Credential Storage',
+                      style: TextStyle(
+                        color: Color(0xFFCCCCCC),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Credentials are encrypted using AES-256 and stored securely:\n'
+                  '• iOS: Keychain with first_unlock accessibility\n'
+                  '• Android: EncryptedSharedPreferences with Keystore\n'
+                  '• All platforms: Platform-specific secure storage',
+                  style: TextStyle(
+                    color: Color(0xFF999999),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Git Features Info
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E3A20),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0xFF4EC9B0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: Color(0xFF4EC9B0),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Available Git Features',
+                      style: TextStyle(
+                        color: Color(0xFFCCCCCC),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '✓ Visual merge conflict resolution\n'
+                  '✓ Three-way merge view (Current, Base, Incoming)\n'
+                  '✓ SSH key generation (ED25519, RSA, ECDSA)\n'
+                  '✓ Branch management and switching\n'
+                  '✓ Commit, push, pull, fetch, rebase\n'
+                  '✓ Secure credential storage',
+                  style: TextStyle(
+                    color: Color(0xFF4EC9B0),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

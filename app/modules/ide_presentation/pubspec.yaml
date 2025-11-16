@@ -18,15 +18,18 @@ dependencies:
     path: ../lsp_infrastructure
   editor_ffi:
     path: ../editor_ffi
+  git_integration:
+    path: ../git_integration
 
   # Flutter
   flutter:
     sdk: flutter
 
-  # State Management - MobX (reactive, observable) + Provider
+  # State Management - MobX (reactive, observable) + Provider + Riverpod
   mobx: ^2.4.0
   flutter_mobx: ^2.2.1+1
   provider: ^6.1.2
+  flutter_riverpod: ^2.6.1
 
   # Utilities
   dartz: ^0.10.1

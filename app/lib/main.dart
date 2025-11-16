@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ide_presentation/ide_presentation.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 
 /// Main entry point for Flutter IDE application
@@ -39,8 +40,8 @@ void main() async {
   // Setup system UI
   await _setupSystemUI();
 
-  // Run app
-  runApp(const FlutterIdeApp());
+  // Run app with Riverpod
+  runApp(const ProviderScope(child: FlutterIdeApp()));
 }
 
 /// FlutterIdeApp

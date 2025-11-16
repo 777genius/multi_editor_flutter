@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'package:editor_core/editor_core.dart';
 import 'package:lsp_domain/lsp_domain.dart';
+import 'package:git_integration/git_integration.dart';
 import '../stores/editor/editor_store.dart';
 import '../stores/lsp/lsp_store.dart';
 import '../widgets/editor_view.dart';
@@ -63,6 +65,8 @@ class IdeScreen extends StatefulWidget {
   State<IdeScreen> createState() => _IdeScreenState();
 }
 
+enum _SidebarTab { explorer, git }
+
 class _IdeScreenState extends State<IdeScreen> {
   late final EditorStore _editorStore;
   late final LspStore _lspStore;
@@ -71,6 +75,7 @@ class _IdeScreenState extends State<IdeScreen> {
 
   bool _showDiagnosticsPanel = false;
   String? _currentFilePath;
+  _SidebarTab _selectedTab = _SidebarTab.explorer;
 
   @override
   void initState() {
@@ -274,86 +279,175 @@ class _IdeScreenState extends State<IdeScreen> {
     );
   }
 
-  /// Builds the left sidebar (file explorer)
+  /// Builds the left sidebar (file explorer & git)
   Widget _buildSidebar() {
     return Container(
-      width: 250,
+      width: 300,
       color: const Color(0xFF252526),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sidebar header
+          // Tab bar
           Container(
-            padding: const EdgeInsets.all(16),
-            child: const Text(
-              'EXPLORER',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+            height: 48,
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Color(0xFF3E3E42)),
               ),
             ),
-          ),
-
-          // Quick actions
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Column(
+            child: Row(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.add, color: Colors.white, size: 16),
-                  title: const Text(
-                    'New File',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                  onTap: _handleNewFile,
-                  dense: true,
+                _buildSidebarTabButton(
+                  icon: Icons.folder_outlined,
+                  label: 'Explorer',
+                  isSelected: _selectedTab == _SidebarTab.explorer,
+                  onTap: () => setState(() => _selectedTab = _SidebarTab.explorer),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.folder_open, color: Colors.white, size: 16),
-                  title: const Text(
-                    'Open File',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                  onTap: _handleOpenFile,
-                  dense: true,
+                _buildSidebarTabButton(
+                  icon: Icons.source_outlined,
+                  label: 'Git',
+                  isSelected: _selectedTab == _SidebarTab.git,
+                  onTap: () => setState(() => _selectedTab = _SidebarTab.git),
                 ),
               ],
             ),
           ),
 
-          const Divider(color: Color(0xFF3E3E42)),
-
-          // File tree (placeholder)
+          // Tab content
           Expanded(
-            child: Observer(
-              builder: (_) {
-                if (_currentFilePath == null) {
-                  return const Center(
-                    child: Text(
-                      'No file opened',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
-                  );
-                }
-
-                return ListView(
-                  children: [
-                    _buildFileTreeItem(
-                      icon: Icons.insert_drive_file,
-                      name: _currentFilePath!.split('/').last,
-                      isSelected: true,
-                      onTap: () {},
-                    ),
-                  ],
-                );
-              },
-            ),
+            child: _selectedTab == _SidebarTab.explorer
+                ? _buildExplorerTab()
+                : _buildGitTab(),
           ),
         ],
       ),
     );
+  }
+
+  /// Builds a sidebar tab button
+  Widget _buildSidebarTabButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: isSelected ? const Color(0xFF007ACC) : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds explorer tab content
+  Widget _buildExplorerTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Container(
+          padding: const EdgeInsets.all(16),
+          child: const Text(
+            'EXPLORER',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+
+        // Quick actions
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.add, color: Colors.white, size: 16),
+                title: const Text(
+                  'New File',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
+                onTap: _handleNewFile,
+                dense: true,
+              ),
+              ListTile(
+                leading: const Icon(Icons.folder_open, color: Colors.white, size: 16),
+                title: const Text(
+                  'Open File',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
+                onTap: _handleOpenFile,
+                dense: true,
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(color: Color(0xFF3E3E42)),
+
+        // File tree (placeholder)
+        Expanded(
+          child: Observer(
+            builder: (_) {
+              if (_currentFilePath == null) {
+                return const Center(
+                  child: Text(
+                    'No file opened',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                );
+              }
+
+              return ListView(
+                children: [
+                  _buildFileTreeItem(
+                    icon: Icons.insert_drive_file,
+                    name: _currentFilePath!.split('/').last,
+                    isSelected: true,
+                    onTap: () {},
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds Git tab content
+  Widget _buildGitTab() {
+    return const GitPanelEnhanced();
   }
 
   /// Builds a file tree item
@@ -406,6 +500,9 @@ class _IdeScreenState extends State<IdeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
+              // Git status
+              _buildGitStatus(),
+
               // Language indicator
               if (_editorStore.languageId != null) ...[
                 const Icon(
@@ -477,6 +574,84 @@ class _IdeScreenState extends State<IdeScreen> {
               _buildLspStatus(),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  /// Builds Git status indicator
+  Widget _buildGitStatus() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final gitState = ref.watch(gitRepositoryNotifierProvider);
+        final repository = gitState.repository;
+
+        if (repository == null) {
+          return const SizedBox.shrink();
+        }
+
+        // Count changes
+        final changeCount = repository.totalChangesCount;
+
+        // Check for conflicts
+        final hasConflicts = repository.hasActiveConflict;
+
+        return Row(
+          children: [
+            // Git icon with branch
+            InkWell(
+              onTap: () => setState(() => _selectedTab = _SidebarTab.git),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.source_outlined,
+                    size: 14,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    repository.getCurrentBranchDisplay(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Change count
+            if (changeCount > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$changeCount',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+
+            // Conflict indicator
+            if (hasConflicts) ...[
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.warning,
+                size: 14,
+                color: Colors.orange,
+              ),
+            ],
+
+            const SizedBox(width: 16),
+          ],
         );
       },
     );
