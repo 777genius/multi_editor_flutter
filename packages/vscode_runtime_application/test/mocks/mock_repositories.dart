@@ -21,10 +21,16 @@ class MockRuntimeRepository implements IRuntimeRepository {
   }
 
   @override
-  Future<Either<DomainException, Option<RuntimeInstallation>>> getInstallation(
-    InstallationId id,
+  Future<Either<DomainException, Option<RuntimeInstallation>>> loadInstallation(
+    InstallationId installationId,
+    List<RuntimeModule> modules,
   ) async {
-    return right(optionOf(_installations[id]));
+    return right(optionOf(_installations[installationId]));
+  }
+
+  @override
+  Future<Either<DomainException, List<RuntimeInstallation>>> getInstallationHistory() async {
+    return right(_installations.values.toList());
   }
 
   @override
@@ -33,39 +39,43 @@ class MockRuntimeRepository implements IRuntimeRepository {
   }
 
   @override
-  Future<Either<DomainException, List<RuntimeModule>>> getAvailableModules() async {
-    // Return empty list by default, can be overridden in tests
-    return right([]);
+  Future<Either<DomainException, String>> getInstallationDirectory() async {
+    return right('/tmp/vscode_runtime');
   }
 
   @override
-  Future<Either<DomainException, Unit>> setInstalledVersion(RuntimeVersion version) async {
-    _installedVersion = version;
-    return right(unit);
+  Future<Either<DomainException, String>> getModuleDirectory(ModuleId moduleId) async {
+    return right('/tmp/vscode_runtime/modules/${moduleId.value}');
   }
 
   @override
-  Future<Either<DomainException, Unit>> setModuleInstalled(
-    ModuleId moduleId,
-    bool installed,
-  ) async {
-    if (installed) {
-      _installedModules[moduleId] = true;
+  Future<Either<DomainException, Unit>> deleteInstallation([
+    InstallationId? installationId,
+  ]) async {
+    if (installationId != null) {
+      _installations.remove(installationId);
     } else {
-      _installedModules.remove(moduleId);
+      _installations.clear();
     }
     return right(unit);
   }
 
   @override
-  Future<Either<DomainException, Unit>> removeModule(ModuleId moduleId) async {
-    _installedModules.remove(moduleId);
+  Future<Either<DomainException, Unit>> saveInstalledVersion(
+    RuntimeVersion version,
+  ) async {
+    _installedVersion = version;
     return right(unit);
   }
 
   @override
-  Future<Either<DomainException, List<RuntimeInstallation>>> getAllInstallations() async {
-    return right(_installations.values.toList());
+  Future<Either<DomainException, Option<RuntimeInstallation>>> getLatestInstallation() async {
+    if (_installations.isEmpty) {
+      return right(none());
+    }
+    final latest = _installations.values.reduce((a, b) =>
+        a.createdAt.isAfter(b.createdAt) ? a : b);
+    return right(some(latest));
   }
 
   // Helper methods for testing
@@ -87,35 +97,63 @@ class MockRuntimeRepository implements IRuntimeRepository {
 /// Mock implementation of IManifestRepository for testing
 class MockManifestRepository implements IManifestRepository {
   List<RuntimeModule> _modules = [];
-  RuntimeVersion? _latestVersion;
+  RuntimeManifest? _cachedManifest;
 
   @override
-  Future<Either<DomainException, List<RuntimeModule>>> getModules({
-    RuntimeVersion? version,
-  }) async {
+  Future<Either<DomainException, RuntimeManifest>> fetchManifest() async {
+    if (_modules.isEmpty) {
+      return left(DomainException('No modules configured'));
+    }
+
+    final manifest = RuntimeManifest(
+      version: RuntimeVersion.fromString('1.0.0'),
+      modules: _modules,
+      publishedAt: DateTime.now(),
+    );
+
+    _cachedManifest = manifest;
+    return right(manifest);
+  }
+
+  @override
+  Future<Either<DomainException, Option<RuntimeManifest>>> getCachedManifest() async {
+    return right(optionOf(_cachedManifest));
+  }
+
+  @override
+  Future<Either<DomainException, List<RuntimeModule>>> getModules([
+    PlatformIdentifier? platform,
+  ]) async {
+    if (platform != null) {
+      // Filter modules by platform
+      final filtered = _modules
+          .where((m) => m.isAvailableForPlatform(platform))
+          .toList();
+      return right(filtered);
+    }
     return right(_modules);
   }
 
   @override
-  Future<Either<DomainException, RuntimeVersion>> getLatestVersion() async {
-    if (_latestVersion == null) {
-      return left(DomainException('No latest version configured'));
-    }
-    return right(_latestVersion!);
-  }
-
-  @override
   Future<Either<DomainException, Option<RuntimeModule>>> getModule(
-    ModuleId moduleId, {
-    RuntimeVersion? version,
-  }) async {
+    ModuleId moduleId,
+  ) async {
     final module = _modules.where((m) => m.id == moduleId).firstOrNull;
     return right(optionOf(module));
   }
 
   @override
-  Future<Either<DomainException, Unit>> refreshManifest() async {
-    return right(unit);
+  Future<Either<DomainException, bool>> hasManifestUpdate() async {
+    // Simple mock - always return false
+    return right(false);
+  }
+
+  @override
+  Future<Either<DomainException, RuntimeVersion>> getManifestVersion() async {
+    if (_cachedManifest != null) {
+      return right(_cachedManifest!.version);
+    }
+    return right(RuntimeVersion.fromString('1.0.0'));
   }
 
   // Helper methods for testing
@@ -123,12 +161,12 @@ class MockManifestRepository implements IManifestRepository {
     _modules = modules;
   }
 
-  void mockLatestVersion(RuntimeVersion version) {
-    _latestVersion = version;
+  void mockModule(RuntimeModule module) {
+    _modules = [module];
   }
 
   void reset() {
     _modules = [];
-    _latestVersion = null;
+    _cachedManifest = null;
   }
 }

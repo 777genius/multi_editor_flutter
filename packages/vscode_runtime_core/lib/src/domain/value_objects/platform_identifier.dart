@@ -50,6 +50,9 @@ class PlatformIdentifier with _$PlatformIdentifier {
   /// Get identifier string
   String get identifier => '$os-$architecture';
 
+  /// Get human-readable display string
+  String toDisplayString() => identifier;
+
   /// Check if Windows
   bool get isWindows => os == 'windows';
 

@@ -68,7 +68,19 @@ class MockVerificationService implements IVerificationService {
   bool _shouldFail = false;
 
   @override
-  Future<Either<DomainException, Unit>> verify({
+  Future<Either<VerificationException, Unit>> verify({
+    required File file,
+    required SHA256Hash expectedHash,
+    required ByteSize expectedSize,
+  }) async {
+    if (_shouldFail) {
+      return left(VerificationException('Verification failed'));
+    }
+    return right(unit);
+  }
+
+  @override
+  Future<Either<VerificationException, Unit>> verifyHash({
     required File file,
     required SHA256Hash expectedHash,
   }) async {
@@ -79,12 +91,25 @@ class MockVerificationService implements IVerificationService {
   }
 
   @override
-  Future<Either<DomainException, Unit>> verifySize({
+  Future<Either<VerificationException, Unit>> verifySize({
     required File file,
     required ByteSize expectedSize,
   }) async {
     if (_shouldFail) {
       return left(VerificationException('Size mismatch'));
+    }
+    return right(unit);
+  }
+
+  @override
+  Future<Either<DomainException, SHA256Hash>> computeHash(File file) async {
+    return right(SHA256Hash.fromString('a' * 64));
+  }
+
+  @override
+  Future<Either<DomainException, Unit>> verifyFileReadable(File file) async {
+    if (_shouldFail) {
+      return left(DomainException('File not readable'));
     }
     return right(unit);
   }

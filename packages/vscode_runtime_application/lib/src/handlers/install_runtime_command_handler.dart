@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:vscode_runtime_core/vscode_runtime_core.dart';
 import '../base/command_handler.dart';
@@ -216,11 +215,9 @@ class InstallRuntimeCommandHandler
       current = current.markModuleDownloadStarted(module.id);
       onProgress?.call(module.id, 0.0);
 
-      final targetPath = '${downloadDir.path}/${artifact.url.filename}';
-
       final downloadResult = await _downloadService.download(
         url: artifact.url,
-        targetPath: targetPath,
+        expectedSize: artifact.size,
         onProgress: (downloaded, total) {
           final progress = downloaded.progressTo(total);
           onProgress?.call(module.id, progress * 0.6); // 60% for download
@@ -239,8 +236,6 @@ class InstallRuntimeCommandHandler
       onProgress?.call(module.id, 0.6);
 
       // 4. Verify integrity
-      current = current.markModuleVerified(module.id);
-
       final verifyResult = await _verificationService.verify(
         file: downloadedFile,
         expectedHash: artifact.hash,
