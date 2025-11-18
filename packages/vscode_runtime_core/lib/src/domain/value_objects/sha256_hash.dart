@@ -29,10 +29,13 @@ class SHA256Hash with _$SHA256Hash {
     return SHA256Hash(cleaned);
   }
 
-  /// Verify hash against byte data
-  bool matches(String otherHash) {
-    return value.toLowerCase() == otherHash.toLowerCase();
+  /// Verify hash against another SHA256Hash
+  bool matches(SHA256Hash other) {
+    return value.toLowerCase() == other.value.toLowerCase();
   }
+
+  /// Alias for truncated (for compatibility)
+  String truncate([int length = 8]) => truncated(length);
 
   /// Get first N characters (for display)
   String truncated([int length = 8]) {

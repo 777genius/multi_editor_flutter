@@ -36,6 +36,9 @@ class ByteSize with _$ByteSize implements Comparable<ByteSize> {
     return '$bytes B';
   }
 
+  /// Alias for formatted (for compatibility)
+  String toHumanReadable() => formatted;
+
   /// Compact format (no decimals for large sizes)
   String get compactFormatted {
     if (gb >= 1) return '${gb.toStringAsFixed(1)} GB';

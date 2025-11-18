@@ -21,6 +21,7 @@ export 'src/domain/value_objects/installation_id.dart';
 // Entities
 export 'src/domain/entities/platform_artifact.dart';
 export 'src/domain/entities/runtime_module.dart';
+export 'src/domain/entities/runtime_manifest.dart';
 
 // Aggregate Roots
 export 'src/domain/aggregates/runtime_installation.dart';

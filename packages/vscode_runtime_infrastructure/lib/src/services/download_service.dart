@@ -1,52 +1,80 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:dartz/dartz.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:path/path.dart' as path;
 import 'package:vscode_runtime_core/vscode_runtime_core.dart';
 
 /// Download Service Implementation
 /// Handles file downloads with progress tracking and cancellation
 class DownloadService implements IDownloadService {
-  final Dio _dio;
+  final dio.Dio _dio;
+  final String _downloadDir;
+  final Map<CancelToken, StreamController<DownloadProgress>> _progressControllers = {};
 
-  DownloadService({Dio? dio})
-      : _dio = dio ??
-            Dio(
-              BaseOptions(
+  DownloadService({
+    dio.Dio? dioClient,
+    String? downloadDir,
+  })  : _dio = dioClient ??
+            dio.Dio(
+              dio.BaseOptions(
                 connectTimeout: const Duration(seconds: 30),
                 receiveTimeout: const Duration(minutes: 10),
                 followRedirects: true,
                 maxRedirects: 5,
               ),
-            );
+            ),
+        _downloadDir = downloadDir ?? '/tmp/vscode_runtime_downloads';
 
   @override
   Future<Either<DomainException, File>> download({
     required DownloadUrl url,
-    required String targetPath,
-    void Function(ByteSize downloaded, ByteSize total)? onProgress,
+    required ByteSize expectedSize,
+    void Function(ByteSize received, ByteSize total)? onProgress,
     CancelToken? cancelToken,
   }) async {
     try {
+      // Generate target path from URL filename
+      final filename = url.filename;
+      final targetPath = path.join(_downloadDir, filename);
       final targetFile = File(targetPath);
 
-      // Ensure parent directory exists
-      await targetFile.parent.create(recursive: true);
+      // Ensure download directory exists
+      await Directory(_downloadDir).create(recursive: true);
+
+      // Map domain CancelToken to Dio CancelToken
+      dio.CancelToken? dioCancelToken;
+      if (cancelToken != null) {
+        dioCancelToken = dio.CancelToken();
+        // If domain token is cancelled, cancel dio token
+        if (cancelToken.isCancelled) {
+          dioCancelToken.cancel();
+        }
+      }
 
       // Download with progress tracking
       await _dio.download(
         url.value,
         targetPath,
         onReceiveProgress: (received, total) {
-          if (onProgress != null && total != -1) {
-            final downloadedSize = ByteSize(bytes: received);
-            final totalSize = ByteSize(bytes: total);
-            onProgress(downloadedSize, totalSize);
+          if (total != -1) {
+            final downloadedSize = ByteSize(received);
+            final totalSize = ByteSize(total);
+
+            // Call progress callback
+            onProgress?.call(downloadedSize, totalSize);
+
+            // Emit to stream if exists
+            if (cancelToken != null && _progressControllers.containsKey(cancelToken)) {
+              _progressControllers[cancelToken]?.add(
+                DownloadProgress.fromBytes(received, total),
+              );
+            }
           }
         },
-        cancelToken: cancelToken,
-        options: Options(
-          responseType: ResponseType.bytes,
+        cancelToken: dioCancelToken,
+        options: dio.Options(
+          responseType: dio.ResponseType.bytes,
           followRedirects: true,
         ),
       );
@@ -57,83 +85,65 @@ class DownloadService implements IDownloadService {
         );
       }
 
+      // Verify size matches expected
+      final actualSize = await targetFile.length();
+      if (actualSize != expectedSize.bytes) {
+        return left(
+          DomainException(
+            'Downloaded file size mismatch: expected ${expectedSize.bytes}, got $actualSize',
+          ),
+        );
+      }
+
       return right(targetFile);
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        return left(
-          const DomainException('Download cancelled'),
-        );
+    } on dio.DioException catch (e) {
+      if (e.type == dio.DioExceptionType.cancel) {
+        return left(const DomainException('Download cancelled'));
+      }
+      return left(
+        DomainException('Download failed: ${e.message}'),
+      );
+    } catch (e) {
+      return left(
+        DomainException('Download error: ${e.toString()}'),
+      );
+    }
+  }
+
+  @override
+  Future<Either<DomainException, Unit>> cancelDownload(CancelToken token) async {
+    try {
+      // Domain CancelToken doesn't have cancel method in current implementation
+      // Mark as cancelled
+      token.cancel();
+
+      // Close progress stream if exists
+      if (_progressControllers.containsKey(token)) {
+        await _progressControllers[token]?.close();
+        _progressControllers.remove(token);
       }
 
-      return left(
-        DomainException('Download failed: ${e.message ?? e.toString()}'),
-      );
+      return right(unit);
     } catch (e) {
       return left(
-        DomainException('Download failed: ${e.toString()}'),
+        DomainException('Failed to cancel download: ${e.toString()}'),
       );
     }
   }
 
   @override
-  Future<Either<DomainException, ByteSize>> getRemoteFileSize(
-    DownloadUrl url,
-  ) async {
-    try {
-      final response = await _dio.head(url.value);
-
-      final contentLength = response.headers.value('content-length');
-
-      if (contentLength == null) {
-        return left(
-          const DomainException('Could not determine file size'),
-        );
-      }
-
-      final bytes = int.parse(contentLength);
-      return right(ByteSize(bytes: bytes));
-    } on DioException catch (e) {
-      return left(
-        DomainException('Failed to get file size: ${e.message ?? e.toString()}'),
-      );
-    } catch (e) {
-      return left(
-        DomainException('Failed to get file size: ${e.toString()}'),
-      );
+  Stream<DownloadProgress> getProgressStream(CancelToken token) {
+    if (!_progressControllers.containsKey(token)) {
+      _progressControllers[token] = StreamController<DownloadProgress>.broadcast();
     }
+    return _progressControllers[token]!.stream;
   }
 
-  @override
-  Future<Either<DomainException, bool>> isUrlAccessible(
-    DownloadUrl url,
-  ) async {
-    try {
-      final response = await _dio.head(
-        url.value,
-        options: Options(
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
-
-      return right(response.statusCode != null && response.statusCode! < 400);
-    } on DioException catch (_) {
-      return right(false);
-    } catch (e) {
-      return left(
-        DomainException('Failed to check URL accessibility: ${e.toString()}'),
-      );
+  /// Cleanup progress controllers
+  void dispose() {
+    for (final controller in _progressControllers.values) {
+      controller.close();
     }
-  }
-
-  @override
-  CancelToken createCancelToken() {
-    return CancelToken();
-  }
-
-  @override
-  void cancelDownload(CancelToken token) {
-    if (!token.isCancelled) {
-      token.cancel('Download cancelled by user');
-    }
+    _progressControllers.clear();
   }
 }
