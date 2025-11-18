@@ -142,7 +142,7 @@ Legend:
 │                                                                 │
 │                    ┌──────────────────────┐                     │
 │                    │   Presentation       │                     │
-│                    │   (UI, BLoC, Pages)  │                     │
+│                    │   (UI, MobX, Pages)  │                     │
 │                    └──────────┬───────────┘                     │
 │                               │                                 │
 │                    ┌──────────▼───────────┐                     │
@@ -200,8 +200,8 @@ Dependency Flow: Outward → Inward (Always toward Domain)
 
 #### Presentation Layer
 - **UI Components** (Flutter Widgets)
-- **State Management** (BLoC/Cubit)
-- **View Models** (presentation logic)
+- **State Management** (MobX)
+- **Stores** (reactive state management)
 - **Dependency Injection** (composition root)
 
 ---
@@ -340,38 +340,24 @@ multi_editor_flutter/
 │   ├── vscode_runtime_presentation/            # Presentation Layer
 │   │   ├── lib/
 │   │   │   ├── src/
-│   │   │   │   ├── state/
-│   │   │   │   │   ├── installation/
-│   │   │   │   │   │   ├── installation_bloc.dart
-│   │   │   │   │   │   ├── installation_event.dart
-│   │   │   │   │   │   └── installation_state.dart
-│   │   │   │   │   ├── status/
-│   │   │   │   │   │   ├── runtime_status_cubit.dart
-│   │   │   │   │   │   └── runtime_status_state.dart
-│   │   │   │   │   └── trigger/
-│   │   │   │   │       ├── installation_trigger_cubit.dart
-│   │   │   │   │       └── trigger_state.dart
+│   │   │   │   ├── stores/
+│   │   │   │   │   ├── runtime_installation_store.dart
+│   │   │   │   │   ├── runtime_status_store.dart
+│   │   │   │   │   └── module_list_store.dart
 │   │   │   │   ├── widgets/
-│   │   │   │   │   ├── dialogs/
-│   │   │   │   │   │   ├── runtime_install_dialog.dart
-│   │   │   │   │   │   └── language_prompt_dialog.dart
-│   │   │   │   │   ├── indicators/
-│   │   │   │   │   │   ├── installation_progress_indicator.dart
-│   │   │   │   │   │   └── module_progress_tile.dart
-│   │   │   │   │   └── status/
-│   │   │   │   │       ├── runtime_status_badge.dart
-│   │   │   │   │       └── installation_status_card.dart
-│   │   │   │   ├── pages/
-│   │   │   │   │   ├── runtime_settings_page.dart
-│   │   │   │   │   └── installation_details_page.dart
-│   │   │   │   └── utils/
-│   │   │   │       ├── runtime_icons.dart
-│   │   │   │       └── size_formatter.dart
+│   │   │   │   │   ├── runtime_installation_dialog.dart
+│   │   │   │   │   ├── installation_progress_widget.dart
+│   │   │   │   │   ├── module_list_widget.dart
+│   │   │   │   │   ├── runtime_status_widget.dart
+│   │   │   │   │   └── platform_info_widget.dart
+│   │   │   │   └── di/
+│   │   │   │       └── injection.dart
 │   │   │   └── vscode_runtime_presentation.dart
 │   │   └── pubspec.yaml
 │   │       dependencies:
 │   │         - vscode_runtime_application
-│   │         - flutter_bloc
+│   │         - mobx
+│   │         - flutter_mobx
 │   │
 │   └── vscode_extension_core/                  # Extension Management Context
 │       └── [similar structure]
@@ -424,7 +410,7 @@ Infrastructure Layer:
 
 Presentation Layer:
   - vscode_runtime_application ✅
-  - flutter_bloc
+  - mobx + flutter_mobx
   ❌ NO infrastructure
   ❌ NO core (only through application)
 
@@ -1395,83 +1381,192 @@ class DownloadServiceImpl implements IDownloadService {
 
 ## 8. Presentation Layer
 
-### 8.1 BLoC Pattern
+### 8.1 MobX Pattern
 
 ```dart
-/// Event
-@freezed
-class InstallationEvent with _$InstallationEvent {
-  const factory InstallationEvent.install({
-    required List<ModuleId> moduleIds,
-  }) = _Install;
-
-  const factory InstallationEvent.cancel() = _Cancel;
-}
-
-/// State
-@freezed
-class InstallationState with _$InstallationState {
-  const factory InstallationState.initial() = _Initial;
-
-  const factory InstallationState.installing({
-    required ModuleId currentModule,
-    required double progress,
-  }) = _Installing;
-
-  const factory InstallationState.completed() = _Completed;
-
-  const factory InstallationState.failed({
-    required String error,
-  }) = _Failed;
-}
-
-/// BLoC
+/// Store for Runtime Installation
 @injectable
-class InstallationBloc extends Bloc<InstallationEvent, InstallationState> {
+class RuntimeInstallationStore = _RuntimeInstallationStore with _$RuntimeInstallationStore;
+
+abstract class _RuntimeInstallationStore with Store {
   final InstallRuntimeCommandHandler _installHandler;
+  final CancelInstallationCommandHandler _cancelHandler;
+  final GetInstallationProgressQueryHandler _progressHandler;
 
-  InstallationBloc(this._installHandler)
-      : super(const InstallationState.initial()) {
-    on<InstallationEvent>((event, emit) async {
-      await event.map(
-        install: (e) => _onInstall(e, emit),
-        cancel: (e) => _onCancel(e, emit),
+  _RuntimeInstallationStore(
+    this._installHandler,
+    this._cancelHandler,
+    this._progressHandler,
+  );
+
+  // Observables
+  @observable
+  InstallationId? currentInstallationId;
+
+  @observable
+  InstallationStatus status = InstallationStatus.pending;
+
+  @observable
+  double overallProgress = 0.0;
+
+  @observable
+  ModuleId? currentModule;
+
+  @observable
+  double currentModuleProgress = 0.0;
+
+  @observable
+  String? errorMessage;
+
+  @observable
+  int installedModuleCount = 0;
+
+  @observable
+  int totalModuleCount = 0;
+
+  // Computed Values
+  @computed
+  bool get isInstalling => status == InstallationStatus.inProgress;
+
+  @computed
+  bool get isCompleted => status == InstallationStatus.completed;
+
+  @computed
+  bool get hasFailed => status == InstallationStatus.failed;
+
+  @computed
+  bool get canCancel => isInstalling && currentInstallationId != null;
+
+  @computed
+  String get progressText {
+    if (totalModuleCount == 0) return 'Preparing...';
+    return '$installedModuleCount / $totalModuleCount modules';
+  }
+
+  @computed
+  String get statusMessage {
+    return status.map(
+      pending: (_) => 'Ready to install',
+      inProgress: (_) => 'Installing ${currentModule?.value ?? ""}...',
+      completed: (_) => 'Installation completed successfully',
+      failed: (_) => 'Installation failed: ${errorMessage ?? "Unknown error"}',
+      cancelled: (_) => 'Installation cancelled',
+    );
+  }
+
+  // Actions
+  @action
+  Future<void> install({
+    List<ModuleId> moduleIds = const [],
+    InstallationTrigger trigger = InstallationTrigger.manual,
+  }) async {
+    try {
+      status = InstallationStatus.inProgress;
+      errorMessage = null;
+      installedModuleCount = 0;
+      totalModuleCount = moduleIds.length;
+
+      final command = InstallRuntimeCommand(
+        moduleIds: moduleIds,
+        trigger: trigger,
+        onProgress: _handleProgress,
       );
-    });
+
+      final result = await _installHandler.handle(command);
+
+      result.fold(
+        (error) {
+          status = InstallationStatus.failed;
+          errorMessage = error.message;
+        },
+        (_) {
+          status = InstallationStatus.completed;
+          currentModule = null;
+        },
+      );
+    } catch (e) {
+      status = InstallationStatus.failed;
+      errorMessage = e.toString();
+    }
   }
 
-  Future<void> _onInstall(
-    _Install event,
-    Emitter<InstallationState> emit,
-  ) async {
-    emit(const InstallationState.installing(
-      currentModule: ModuleId(''),
-      progress: 0.0,
-    ));
+  @action
+  Future<void> cancel({String? reason}) async {
+    if (!canCancel) return;
 
-    final command = InstallRuntimeCommand(
-      moduleIds: event.moduleIds,
-      onProgress: (moduleId, progress) {
-        emit(InstallationState.installing(
-          currentModule: moduleId,
-          progress: progress,
-        ));
-      },
-    );
+    try {
+      final command = CancelInstallationCommand(
+        installationId: currentInstallationId!,
+        reason: reason,
+      );
 
-    final result = await _installHandler.handle(command);
+      final result = await _cancelHandler.handle(command);
 
-    result.fold(
-      (error) => emit(InstallationState.failed(error: error.message)),
-      (_) => emit(const InstallationState.completed()),
-    );
+      result.fold(
+        (error) {
+          errorMessage = 'Failed to cancel: ${error.message}';
+        },
+        (_) {
+          status = InstallationStatus.cancelled;
+        },
+      );
+    } catch (e) {
+      errorMessage = 'Cancel failed: $e';
+    }
   }
 
-  Future<void> _onCancel(
-    _Cancel event,
-    Emitter<InstallationState> emit,
-  ) async {
-    emit(const InstallationState.initial());
+  @action
+  void reset() {
+    currentInstallationId = null;
+    status = InstallationStatus.pending;
+    overallProgress = 0.0;
+    currentModule = null;
+    currentModuleProgress = 0.0;
+    errorMessage = null;
+    installedModuleCount = 0;
+    totalModuleCount = 0;
+  }
+
+  @action
+  void _handleProgress(ModuleId moduleId, double progress) {
+    currentModule = moduleId;
+    currentModuleProgress = progress;
+
+    if (progress >= 1.0) {
+      installedModuleCount++;
+    }
+
+    if (totalModuleCount > 0) {
+      overallProgress = installedModuleCount / totalModuleCount;
+    }
+  }
+
+  @action
+  Future<void> loadProgress({required InstallationId installationId}) async {
+    try {
+      final query = GetInstallationProgressQuery(
+        installationId: installationId,
+      );
+
+      final result = await _progressHandler.handle(query);
+
+      result.fold(
+        (error) {
+          errorMessage = error.message;
+        },
+        (progress) {
+          currentInstallationId = installationId;
+          status = progress.status;
+          overallProgress = progress.overallProgress;
+          currentModule = progress.currentModule;
+          currentModuleProgress = progress.currentModuleProgress;
+          installedModuleCount = progress.installedModuleCount;
+          totalModuleCount = progress.totalModuleCount;
+        },
+      );
+    } catch (e) {
+      errorMessage = 'Failed to load progress: $e';
+    }
   }
 }
 ```
@@ -1852,12 +1947,12 @@ Deliverable: Complete use case layer
 
 ```
 Tasks:
-  ✓ Create BLoCs
-  ✓ Build UI components
+  ✓ Create MobX Stores
+  ✓ Build UI components (widgets)
   ✓ Implement installation dialog
   ✓ Add telemetry
 
-Deliverable: Working UI
+Deliverable: Working UI with reactive state management
 ```
 
 ### 12.5 Phase 5: Integration (Weeks 9-10)
@@ -1894,7 +1989,7 @@ Infrastructure:
   - File System: dart:io
 
 Presentation:
-  - State: flutter_bloc
+  - State: mobx + flutter_mobx
   - UI: Flutter Material 3
 
 Testing:
@@ -1918,7 +2013,7 @@ Testing:
 | **Adapter** | Repository implementations | Infrastructure |
 | **Strategy** | IDownloadService implementations | Infrastructure |
 | **Observer** | Event Bus | Infrastructure |
-| **BLoC** | State management | Presentation |
+| **MobX Observer** | Reactive state management | Presentation |
 | **Dependency Injection** | get_it + injectable | All layers |
 
 ---
