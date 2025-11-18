@@ -1,7 +1,8 @@
 // Application Use Cases - Business logic orchestration
 
 use std::time::Instant;
-use crate::domain::{TodoScanner, TodoCollection, TodoTypeCounts, PriorityCounts};
+use crate::domain::{TodoCollection, TodoTypeCounts, PriorityCounts};
+use crate::domain::services::TodoScanner;
 use super::dto::{ScanRequest, ScanResponse};
 
 /// Use case for scanning TODOs in source code

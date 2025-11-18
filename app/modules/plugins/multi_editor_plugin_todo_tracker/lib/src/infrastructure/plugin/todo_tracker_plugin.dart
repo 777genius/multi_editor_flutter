@@ -101,23 +101,24 @@ class TodoTrackerPlugin extends BaseEditorPlugin with StatefulPlugin {
     final stopwatch = Stopwatch()..start();
     final items = <TodoItem>[];
 
+    // FIXED BUG #5: Changed .+ to [^\n]+ to prevent catastrophic backtracking
     final patterns = {
-      TodoType.todo: RegExp(r'(?://|#|/\*+)\s*TODO(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.todo: RegExp(r'(?://|#|/\*+)\s*TODO(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
-      TodoType.fixme: RegExp(r'(?://|#|/\*+)\s*FIXME(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.fixme: RegExp(r'(?://|#|/\*+)\s*FIXME(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
-      TodoType.hack: RegExp(r'(?://|#|/\*+)\s*HACK(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.hack: RegExp(r'(?://|#|/\*+)\s*HACK(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
-      TodoType.note: RegExp(r'(?://|#|/\*+)\s*NOTE(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.note: RegExp(r'(?://|#|/\*+)\s*NOTE(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
-      TodoType.xxx: RegExp(r'(?://|#|/\*+)\s*XXX(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.xxx: RegExp(r'(?://|#|/\*+)\s*XXX(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true),
-      TodoType.bug: RegExp(r'(?://|#|/\*+)\s*BUG(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.bug: RegExp(r'(?://|#|/\*+)\s*BUG(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
       TodoType.optimize:
-          RegExp(r'(?://|#|/\*+)\s*OPTIMIZE(?:\([^)]+\))?:?\s*(.+)$',
+          RegExp(r'(?://|#|/\*+)\s*OPTIMIZE(?:\([^)]+\))?:?\s*([^\n]+)',
               multiLine: true, caseSensitive: false),
-      TodoType.review: RegExp(r'(?://|#|/\*+)\s*REVIEW(?:\([^)]+\))?:?\s*(.+)$',
+      TodoType.review: RegExp(r'(?://|#|/\*+)\s*REVIEW(?:\([^)]+\))?:?\s*([^\n]+)',
           multiLine: true, caseSensitive: false),
     };
 
@@ -135,13 +136,17 @@ class TodoTrackerPlugin extends BaseEditorPlugin with StatefulPlugin {
           final author = _extractAuthor(line);
           final tags = _extractTags(text);
 
+          // FIXED BUG #6: Find actual TODO marker position, not match start
+          final todoMarkerPos = line.indexOf(entry.key.name.toUpperCase(), match.start);
+          final column = todoMarkerPos != -1 ? todoMarkerPos : match.start;
+
           items.add(TodoItem(
             todoType: entry.key,
             priority: priority,
             text: text,
             line: lineIdx,
-            column: match.start,
-            position: Position(line: lineIdx, column: match.start),
+            column: column,
+            position: Position(line: lineIdx, column: column),
             author: author,
             tags: tags,
           ));

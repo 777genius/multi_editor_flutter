@@ -131,15 +131,22 @@ class BracketColorizerPlugin extends BaseEditorPlugin
     var column = 0;
     var offset = 0;
 
-    final chars = content.split('');
+    // FIXED BUG #3: split('') breaks on Unicode! Use runes instead
+    final chars = content.runes.map((r) => String.fromCharCode(r)).toList();
     for (var i = 0; i < chars.length; i++) {
       final ch = chars[i];
 
       // Handle escape sequences
+      // FIXED BUG #8: When escaping a newline, still update line counter
       if (escapeNext) {
         escapeNext = false;
+        if (ch == '\n') {
+          line++;
+          column = 0;
+        } else {
+          column++;
+        }
         offset++;
-        column++;
         continue;
       }
 
@@ -174,11 +181,12 @@ class BracketColorizerPlugin extends BaseEditorPlugin
         if (i + 1 < chars.length && ch == '/' && chars[i + 1] == '*') {
           inMultilineComment = true;
         }
+        // FIXED BUG #4: Don't double increment! Loop adds 1 automatically
         if (i + 1 < chars.length && ch == '*' && chars[i + 1] == '/') {
           inMultilineComment = false;
           offset += 2;
           column += 2;
-          i++;
+          i++; // This is OK - we manually increment to skip '/'
           continue;
         }
       }

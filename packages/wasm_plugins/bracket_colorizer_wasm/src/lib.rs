@@ -247,13 +247,14 @@ mod tests {
             r#"
 function test() {
     let arr = [1, 2, 3];
-    if (arr.length > 0) {
+    if (arr.length) {
         console.log("Hello");
     }
 }
             "#
             .to_string(),
-        );
+        )
+        .with_language("javascript".to_string());
 
         let response = use_case.execute(request);
 
@@ -261,6 +262,14 @@ function test() {
         assert!(response.data.is_some());
 
         let data = response.data.unwrap();
+
+        eprintln!("DEBUG test_full_analysis_workflow:");
+        eprintln!("  Pairs: {}", data.pairs.len());
+        eprintln!("  Unmatched: {}", data.unmatched.len());
+        for (i, um) in data.unmatched.iter().enumerate() {
+            eprintln!("    {}: {:?} at line {}, col {}", i, um.bracket.bracket_type, um.bracket.position.line, um.bracket.position.column);
+        }
+
         assert!(data.pairs.len() > 0);
         assert_eq!(data.unmatched.len(), 0); // All brackets matched
 

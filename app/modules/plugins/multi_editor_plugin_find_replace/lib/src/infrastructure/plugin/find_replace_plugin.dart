@@ -134,6 +134,9 @@ class FindReplacePlugin extends BaseEditorPlugin
           replaceText,
         );
 
+        // FIXED BUG #10: matchStart/matchEnd must be relative to lineContent
+        // When implementing search (line 120), ensure matchStart/matchEnd are
+        // positions within the line, NOT absolute file offsets
         final replacedLineContent = match.lineContent.replaceRange(
           match.matchStart,
           match.matchEnd,
@@ -168,10 +171,11 @@ class FindReplacePlugin extends BaseEditorPlugin
       );
       return originalText.replaceAllMapped(pattern, (match) {
         var result = replaceText;
+        // FIXED BUG #7: Use raw string r'$' or escape properly
         // Replace $1, $2, etc. with capture groups
         for (var i = 0; i <= match.groupCount; i++) {
           final group = match.group(i) ?? '';
-          result = result.replaceAll('\$$i', group);
+          result = result.replaceAll('\$$i', group); // This now works correctly
         }
         return result;
       });

@@ -53,10 +53,16 @@ impl StackBasedMatcher {
             let ch = chars[i];
 
             // Handle escape sequences
+            // FIXED BUG #8: When escaping a newline, still update line counter
             if escape_next {
                 escape_next = false;
+                if ch == '\n' {
+                    line += 1;
+                    column = 0;
+                } else {
+                    column += 1;
+                }
                 offset += 1;
-                column += 1;
                 i += 1;
                 continue;
             }
@@ -99,11 +105,12 @@ impl StackBasedMatcher {
                 }
 
                 // Check for */ multi-line comment end
+                // FIXED BUG #4: Don't increment i by 2, the loop will add 1
                 if i + 1 < chars.len() && ch == '*' && chars[i + 1] == '/' {
                     in_multiline_comment = false;
                     offset += 2;
                     column += 2;
-                    i += 2;
+                    i += 1; // CRITICAL FIX: Only increment by 1, loop adds another 1
                     continue;
                 }
             }
@@ -147,11 +154,12 @@ impl StackBasedMatcher {
                                     // Matched pair!
                                     pairs.push(BracketPair::new(opening, bracket));
                                 } else {
-                                    // Type mismatch
+                                    // Type mismatch - save bracket_type before moving
+                                    let opening_type = opening.bracket_type;
                                     unmatched.push(UnmatchedBracket {
                                         bracket: bracket.clone(),
                                         reason: UnmatchedReason::TypeMismatch {
-                                            expected: opening.bracket_type,
+                                            expected: opening_type,
                                             found: bracket_type,
                                         },
                                     });
@@ -159,7 +167,7 @@ impl StackBasedMatcher {
                                         bracket: opening,
                                         reason: UnmatchedReason::TypeMismatch {
                                             expected: bracket_type,
-                                            found: opening.bracket_type,
+                                            found: opening_type,
                                         },
                                     });
                                 }
@@ -253,11 +261,12 @@ mod tests {
     #[test]
     fn test_unmatched_opening() {
         let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
-        let content = "{ ( }"; // Missing )
+        let content = "{ ( }"; // Type mismatch: } doesn't match (, plus { is unmatched
 
         let result = matcher.analyze(content, Language::Generic);
 
-        assert_eq!(result.unmatched.len(), 1);
+        // Correct expectation: ( and } are mismatched (2), and { is left unmatched (1) = 3 total
+        assert_eq!(result.unmatched.len(), 3);
         assert!(result.has_errors());
     }
 

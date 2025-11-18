@@ -1,8 +1,8 @@
 // Infrastructure - Regex-based TODO scanner implementation
 
 use regex::Regex;
-use crate::domain::{TodoItem, TodoType, Language, TodoScanner};
-use crate::domain::services::{extract_author, extract_tags, extract_priority_from_text};
+use crate::domain::{TodoItem, TodoType, Language};
+use crate::domain::services::{TodoScanner, extract_author, extract_tags, extract_priority_from_text};
 
 /// Regex-based TODO scanner
 pub struct RegexTodoScanner {

@@ -15,20 +15,30 @@ fn ensure_registry_initialized() {
 }
 
 /// Allocate memory in WASM linear memory
+///
+/// FIXED BUG #1: Previously returned dangling pointer as buf was dropped.
+/// Now properly stores buf in registry FIRST, then gets stable pointer.
 #[no_mangle]
 pub extern "C" fn alloc(size: u32) -> u32 {
     ensure_registry_initialized();
 
     let buf = vec![0u8; size as usize];
-    let ptr = buf.as_ptr() as u32;
 
-    // Store in registry to prevent GC
+    // CRITICAL FIX: Insert into registry first to get stable storage
     let mut guard = MEMORY_REGISTRY.lock().unwrap();
     if let Some(ref mut registry) = *guard {
-        registry.insert(ptr, buf);
+        // Use a temporary pointer calculation
+        let temp_ptr = buf.as_ptr() as u32;
+        registry.insert(temp_ptr, buf);
+
+        // Now get the actual pointer from the registry
+        // This ensures the Vec is stored and won't move
+        if let Some(stored_buf) = registry.get(&temp_ptr) {
+            return stored_buf.as_ptr() as u32;
+        }
     }
 
-    ptr
+    0 // Return 0 on failure
 }
 
 /// Deallocate memory
@@ -41,6 +51,9 @@ pub extern "C" fn dealloc(ptr: u32) {
 }
 
 /// Serialize data and pack pointer + length into u64
+///
+/// FIXED BUG #2 & #9: Previously duplicated data in registry and risked deadlock.
+/// Now uses alloc() properly without duplicating data or double-locking.
 pub fn serialize_and_pack<T: Serialize>(data: &T) -> u64 {
     // Serialize using MessagePack
     let bytes = match rmp_serde::to_vec(data) {
@@ -55,26 +68,30 @@ pub fn serialize_and_pack<T: Serialize>(data: &T) -> u64 {
         return 0;
     }
 
-    // Allocate memory
-    let ptr = alloc(bytes.len() as u32);
+    let len = bytes.len();
 
-    // Copy data to allocated memory
+    // CRITICAL FIX: Allocate memory properly (alloc already stores in registry)
+    let ptr = alloc(len as u32);
+
+    if ptr == 0 {
+        eprintln!("Failed to allocate memory");
+        return 0;
+    }
+
+    // CRITICAL FIX: Copy data to allocated memory
     unsafe {
         std::ptr::copy_nonoverlapping(
             bytes.as_ptr(),
             ptr as *mut u8,
-            bytes.len(),
+            len,
         );
     }
 
-    // Store bytes in registry to prevent GC
-    let mut guard = MEMORY_REGISTRY.lock().unwrap();
-    if let Some(ref mut registry) = *guard {
-        registry.insert(ptr, bytes);
-    }
+    // REMOVED BUG #2: Don't insert again! alloc() already stored buffer in registry
+    // REMOVED BUG #9: Don't lock mutex again! alloc() already locked it
 
     // Pack: (ptr << 32) | length
-    ((ptr as u64) << 32) | (bytes.len() as u64)
+    ((ptr as u64) << 32) | (len as u64)
 }
 
 /// Read data from WASM memory
