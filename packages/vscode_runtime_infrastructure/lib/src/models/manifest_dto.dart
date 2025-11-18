@@ -8,13 +8,15 @@ part 'manifest_dto.g.dart';
 @JsonSerializable(explicitToJson: true)
 class ManifestDto {
   final String version;
-  final DateTime updatedAt;
+  final String publishedAt;
   final List<RuntimeModuleDto> modules;
+  final Map<String, dynamic>? metadata;
 
   const ManifestDto({
     required this.version,
-    required this.updatedAt,
+    required this.publishedAt,
     required this.modules,
+    this.metadata,
   });
 
   factory ManifestDto.fromJson(Map<String, dynamic> json) =>
@@ -22,17 +24,28 @@ class ManifestDto {
 
   Map<String, dynamic> toJson() => _$ManifestDtoToJson(this);
 
-  /// Convert to domain entities
+  /// Convert to domain entities - returns list of modules
   List<RuntimeModule> toDomain() {
     return modules.map((dto) => dto.toDomain()).toList();
   }
 
+  /// Convert to RuntimeManifest domain entity
+  RuntimeManifest toManifest() {
+    return RuntimeManifest(
+      version: RuntimeVersion.fromString(version),
+      modules: toDomain(),
+      publishedAt: DateTime.parse(publishedAt),
+      metadata: metadata,
+    );
+  }
+
   /// Create from domain entities
-  factory ManifestDto.fromDomain(List<RuntimeModule> modules) {
+  factory ManifestDto.fromDomain(RuntimeManifest manifest) {
     return ManifestDto(
-      version: '1.0.0',
-      updatedAt: DateTime.now(),
-      modules: modules.map((m) => RuntimeModuleDto.fromDomain(m)).toList(),
+      version: manifest.version.toString(),
+      publishedAt: manifest.publishedAt.toIso8601String(),
+      modules: manifest.modules.map((m) => RuntimeModuleDto.fromDomain(m)).toList(),
+      metadata: manifest.metadata,
     );
   }
 }
@@ -141,9 +154,9 @@ class PlatformArtifactDto {
   /// Convert to domain entity
   PlatformArtifact toDomain() {
     return PlatformArtifact(
-      url: DownloadUrl(value: url),
-      hash: SHA256Hash(value: hash),
-      size: ByteSize(bytes: sizeBytes),
+      url: DownloadUrl(url),
+      hash: SHA256Hash.fromString(hash),
+      size: ByteSize(sizeBytes),
       compressionFormat: compressionFormat,
     );
   }

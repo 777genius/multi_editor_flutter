@@ -15,15 +15,7 @@ class ManifestRepository implements IManifestRepository {
     try {
       final manifestDto = await _dataSource.fetchManifest();
 
-      final modules = manifestDto.toDomain();
-      final version = RuntimeVersion.fromString(manifestDto.version);
-
-      final manifest = RuntimeManifest(
-        version: version,
-        modules: modules,
-        publishedAt: DateTime.parse(manifestDto.publishedAt),
-        metadata: manifestDto.metadata,
-      );
+      final manifest = manifestDto.toManifest();
 
       _cachedManifest = manifest;
 
