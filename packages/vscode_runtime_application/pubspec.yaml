@@ -7,11 +7,9 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  # Domain & Infrastructure layers
+  # Domain layer only - Application must not depend on Infrastructure!
   vscode_runtime_core:
     path: ../vscode_runtime_core
-  vscode_runtime_infrastructure:
-    path: ../vscode_runtime_infrastructure
 
   # Functional programming
   dartz: ^0.10.1
@@ -22,9 +20,6 @@ dependencies:
   # Dependency injection
   injectable: ^2.3.2
   get_it: ^7.6.4
-
-  # Cancellation
-  dio: ^5.4.0
 
 dev_dependencies:
   build_runner: ^2.4.6
