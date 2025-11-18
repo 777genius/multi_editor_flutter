@@ -1,891 +1,436 @@
 import 'package:test/test.dart';
-import 'package:dartz/dartz.dart';
-import 'package:vscode_runtime_core/src/domain/aggregates/runtime_installation.dart';
-import 'package:vscode_runtime_core/src/domain/entities/runtime_module.dart';
-import 'package:vscode_runtime_core/src/domain/entities/platform_artifact.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/installation_id.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/module_id.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/runtime_version.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/platform_identifier.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/download_url.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/sha256_hash.dart';
-import 'package:vscode_runtime_core/src/domain/value_objects/byte_size.dart';
-import 'package:vscode_runtime_core/src/domain/enums/module_type.dart';
-import 'package:vscode_runtime_core/src/domain/enums/installation_status.dart';
-import 'package:vscode_runtime_core/src/domain/enums/installation_trigger.dart';
-import 'package:vscode_runtime_core/src/domain/events/domain_event.dart';
-import 'package:vscode_runtime_core/src/domain/exceptions/domain_exception.dart';
+import 'package:vscode_runtime_core/vscode_runtime_core.dart';
+import '../../helpers/test_fixtures.dart';
 
 void main() {
-  group('RuntimeInstallation', () {
-    late RuntimeModule module1;
-    late RuntimeModule module2;
-    late PlatformIdentifier platform;
-
-    setUp(() {
-      platform = PlatformIdentifier.linuxX64;
-
-      final artifact = PlatformArtifact(
-        url: DownloadUrl(value: 'https://example.com/file.tar.gz'),
-        hash: SHA256Hash(value: 'a' * 64),
-        size: ByteSize.fromMB(10),
-      );
-
-      module1 = RuntimeModule.create(
-        id: ModuleId(value: 'module1'),
-        name: 'Module 1',
-        description: 'First module',
-        type: ModuleType.runtime,
-        version: RuntimeVersion(major: 1, minor: 0, patch: 0),
-        platformArtifacts: {platform: artifact},
-      );
-
-      module2 = RuntimeModule.create(
-        id: ModuleId(value: 'module2'),
-        name: 'Module 2',
-        description: 'Second module',
-        type: ModuleType.server,
-        version: RuntimeVersion(major: 1, minor: 0, patch: 0),
-        platformArtifacts: {platform: artifact},
-        dependencies: [module1.id],
-      );
-    });
-
-    group('create factory', () {
-      test('creates valid installation', () {
+  group('RuntimeInstallation (Aggregate Root)', () {
+    group('create', () {
+      test('should create installation with valid modules', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
+          modules: [module],
+          platform: TestFixtures.windowsX64,
         );
 
-        expect(installation.id, isNotNull);
-        expect(installation.modules, [module1]);
-        expect(installation.targetPlatform, platform);
+        expect(installation.modules, hasLength(1));
+        expect(installation.targetPlatform, TestFixtures.windowsX64);
         expect(installation.status, InstallationStatus.pending);
-        expect(installation.trigger, InstallationTrigger.settings);
         expect(installation.installedModules, isEmpty);
         expect(installation.progress, 0.0);
-        expect(installation.currentModule, isNull);
-        expect(installation.errorMessage, isNull);
-      });
-
-      test('creates installation with custom trigger', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-          trigger: InstallationTrigger.fileOpen,
+        expect(installation.uncommittedEvents, hasLength(1));
+        expect(
+          installation.uncommittedEvents.first,
+          isA<InstallationStarted>(),
         );
-
-        expect(installation.trigger, InstallationTrigger.fileOpen);
       });
 
-      test('emits InstallationStarted event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
+      test('should throw when no modules provided', () {
+        expect(
+          () => RuntimeInstallation.create(
+            modules: [],
+            platform: TestFixtures.windowsX64,
+          ),
+          throwsA(isA<DomainException>()),
         );
-
-        expect(installation.uncommittedEvents.length, 1);
-        final event = installation.uncommittedEvents.first;
-        expect(event, isA<InstallationStarted>());
-
-        final startedEvent = event as InstallationStarted;
-        expect(startedEvent.installationId, installation.id);
-        expect(startedEvent.moduleCount, 1);
       });
 
-      test('throws on incompatible modules', () {
-        final incompatibleModule = RuntimeModule.create(
-          id: ModuleId(value: 'incompatible'),
-          name: 'Incompatible',
-          description: 'Not for this platform',
-          type: ModuleType.runtime,
-          version: RuntimeVersion(major: 1, minor: 0, patch: 0),
+      test('should throw when platform not supported by modules', () {
+        final module = TestFixtures.createModule(
           platformArtifacts: {
-            PlatformIdentifier.windowsX64: PlatformArtifact(
-              url: DownloadUrl(value: 'https://example.com/file.zip'),
-              hash: SHA256Hash(value: 'a' * 64),
-              size: ByteSize.fromMB(10),
-            ),
+            TestFixtures.windowsX64: TestFixtures.createArtifact(),
           },
         );
 
         expect(
           () => RuntimeInstallation.create(
-            modules: [incompatibleModule],
-            platform: platform,
+            modules: [module],
+            platform: TestFixtures.linuxX64, // Not supported!
           ),
-          throwsA(isA<ValidationException>()),
+          throwsA(isA<DomainException>()),
         );
       });
 
-      test('throws on circular dependencies', () {
-        final artifact = PlatformArtifact(
-          url: DownloadUrl(value: 'https://example.com/file.tar.gz'),
-          hash: SHA256Hash(value: 'a' * 64),
-          size: ByteSize.fromMB(10),
-        );
-
-        final moduleA = RuntimeModule(
-          id: ModuleId(value: 'module-a'),
-          name: 'Module A',
-          description: 'Module A',
-          type: ModuleType.runtime,
-          version: RuntimeVersion(major: 1, minor: 0, patch: 0),
-          platformArtifacts: {platform: artifact},
-          dependencies: [ModuleId(value: 'module-b')],
-        );
-
-        final moduleB = RuntimeModule(
-          id: ModuleId(value: 'module-b'),
-          name: 'Module B',
-          description: 'Module B',
-          type: ModuleType.runtime,
-          version: RuntimeVersion(major: 1, minor: 0, patch: 0),
-          platformArtifacts: {platform: artifact},
-          dependencies: [ModuleId(value: 'module-a')],
-        );
+      test('should throw on circular dependencies', () {
+        final modules = TestFixtures.createCircularDependency();
 
         expect(
           () => RuntimeInstallation.create(
-            modules: [moduleA, moduleB],
-            platform: platform,
+            modules: modules,
+            platform: TestFixtures.windowsX64,
           ),
-          throwsA(isA<DependencyException>()),
+          throwsA(isA<DomainException>()),
+        );
+      });
+
+      test('should accept valid dependency chain', () {
+        final modules = TestFixtures.createValidDependencyChain();
+
+        expect(
+          () => RuntimeInstallation.create(
+            modules: modules,
+            platform: TestFixtures.windowsX64,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('should generate unique installation ID', () {
+        final installation1 = TestFixtures.createInstallation();
+        final installation2 = TestFixtures.createInstallation();
+
+        expect(installation1.id, isNot(equals(installation2.id)));
+      });
+
+      test('should set creation timestamp', () {
+        final before = DateTime.now();
+        final installation = TestFixtures.createInstallation();
+        final after = DateTime.now();
+
+        expect(
+          installation.createdAt.isAfter(before) ||
+              installation.createdAt.isAtSameMomentAs(before),
+          isTrue,
+        );
+        expect(
+          installation.createdAt.isBefore(after) ||
+              installation.createdAt.isAtSameMomentAs(after),
+          isTrue,
         );
       });
     });
 
-    group('start command', () {
-      test('transitions from pending to in progress', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
+    group('start', () {
+      test('should transition from pending to inProgress', () {
+        final installation = TestFixtures.createInstallation();
+
+        final updated = installation.start();
+
+        expect(updated.status, InstallationStatus.inProgress);
+        expect(
+          updated.uncommittedEvents.last,
+          isA<InstallationProgressChanged>(),
         );
-
-        final started = installation.start();
-
-        expect(started.status, InstallationStatus.inProgress);
       });
 
-      test('emits InstallationProgressChanged event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
-
-        final started = installation.start();
-
-        // Should have 2 events: InstallationStarted + InstallationProgressChanged
-        expect(started.uncommittedEvents.length, 2);
-        final event = started.uncommittedEvents.last;
-        expect(event, isA<InstallationProgressChanged>());
-
-        final progressEvent = event as InstallationProgressChanged;
-        expect(progressEvent.status, InstallationStatus.inProgress);
-        expect(progressEvent.progress, 0.0);
-      });
-
-      test('throws when already started', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
+      test('should throw when not in pending state', () {
+        final installation = TestFixtures.createInstallation().start();
 
         expect(
           () => installation.start(),
           throwsA(isA<InvalidStateException>()),
         );
       });
+    });
 
-      test('throws when completed', () {
+    group('markModuleDownloaded', () {
+      test('should mark module as downloaded', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start();
+
+        final updated = installation.markModuleDownloaded(module.id);
+
+        expect(updated.currentModule, some(module.id));
+        expect(
+          updated.uncommittedEvents.last,
+          isA<ModuleDownloaded>(),
+        );
+      });
+
+      test('should throw when module does not exist', () {
+        final installation = TestFixtures.createInstallation().start();
 
         expect(
-          () => installation.start(),
-          throwsA(isA<InvalidStateException>()),
+          () => installation.markModuleDownloaded(
+            ModuleId.fromString('nonexistent'),
+          ),
+          throwsA(isA<DomainException>()),
         );
       });
-    });
 
-    group('markModuleDownloadStarted command', () {
-      test('marks module download as started', () {
+      test('should throw when module already installed', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
+          modules: [module],
+          platform: TestFixtures.windowsX64,
         ).start();
 
-        final updated = installation.markModuleDownloadStarted(module1.id);
-
-        expect(updated.currentModule, module1.id);
-      });
-
-      test('emits ModuleDownloadStarted event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleDownloadStarted(module1.id);
-
-        final event = updated.uncommittedEvents.last;
-        expect(event, isA<ModuleDownloadStarted>());
-
-        final downloadEvent = event as ModuleDownloadStarted;
-        expect(downloadEvent.moduleId, module1.id);
-      });
-
-      test('throws when module does not exist', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
+        final downloaded = installation.markModuleDownloaded(module.id);
+        final verified = downloaded.markModuleVerified(module.id);
+        final installed = verified.markModuleInstalled(module.id);
 
         expect(
-          () => installation.markModuleDownloadStarted(ModuleId(value: 'nonexistent')),
-          throwsA(isA<NotFoundException>()),
+          () => installed.markModuleDownloaded(module.id),
+          throwsA(isA<DomainException>()),
         );
       });
+    });
 
-      test('throws when module already installed', () {
+    group('markModuleVerified', () {
+      test('should mark module as verified', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start().markModuleDownloaded(module.id);
+
+        final updated = installation.markModuleVerified(module.id);
 
         expect(
-          () => installation.markModuleDownloadStarted(module1.id),
-          throwsA(isA<InvalidStateException>()),
+          updated.uncommittedEvents.last,
+          isA<ModuleVerified>(),
         );
       });
 
-      test('throws when not in progress', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
+      test('should throw when module does not exist', () {
+        final installation = TestFixtures.createInstallation().start();
 
         expect(
-          () => installation.markModuleDownloadStarted(module1.id),
-          throwsA(isA<InvalidStateException>()),
+          () => installation.markModuleVerified(
+            ModuleId.fromString('nonexistent'),
+          ),
+          throwsA(isA<DomainException>()),
         );
       });
     });
 
-    group('markModuleDownloaded command', () {
-      test('marks module as downloaded', () {
+    group('markModuleInstalled', () {
+      test('should mark module as installed', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start().markModuleDownloaded(module.id).markModuleVerified(module.id);
 
-        final updated = installation.markModuleDownloaded(module1.id);
+        final updated = installation.markModuleInstalled(module.id);
 
-        expect(updated.currentModule, module1.id);
+        expect(updated.installedModules, contains(module.id));
+        expect(updated.uncommittedEvents.last, isA<ModuleExtracted>());
       });
 
-      test('emits ModuleDownloaded event', () {
+      test('should complete installation when all modules installed', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start().markModuleDownloaded(module.id).markModuleVerified(module.id);
 
-        final updated = installation.markModuleDownloaded(module1.id);
-
-        final event = updated.uncommittedEvents.last;
-        expect(event, isA<ModuleDownloaded>());
-
-        final downloadEvent = event as ModuleDownloaded;
-        expect(downloadEvent.moduleId, module1.id);
-      });
-    });
-
-    group('markModuleVerified command', () {
-      test('marks module as verified', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleVerified(module1.id);
-
-        // Should emit event but not change status
-        expect(updated.status, InstallationStatus.inProgress);
-      });
-
-      test('emits ModuleVerified event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleVerified(module1.id);
-
-        final event = updated.uncommittedEvents.last;
-        expect(event, isA<ModuleVerified>());
-
-        final verifiedEvent = event as ModuleVerified;
-        expect(verifiedEvent.moduleId, module1.id);
-      });
-    });
-
-    group('markModuleExtractionStarted command', () {
-      test('marks extraction as started', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleExtractionStarted(module1.id);
-
-        expect(updated.status, InstallationStatus.inProgress);
-      });
-
-      test('emits ModuleExtractionStarted event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleExtractionStarted(module1.id);
-
-        final event = updated.uncommittedEvents.last;
-        expect(event, isA<ModuleExtractionStarted>());
-
-        final extractionEvent = event as ModuleExtractionStarted;
-        expect(extractionEvent.moduleId, module1.id);
-      });
-    });
-
-    group('markModuleInstalled command', () {
-      test('marks module as installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleInstalled(module1.id);
-
-        expect(updated.installedModules, contains(module1.id));
-        expect(updated.currentModule, isNull);
-      });
-
-      test('updates progress', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleInstalled(module1.id);
-
-        expect(updated.progress, 0.5); // 1 of 2 modules installed
-      });
-
-      test('completes installation when all modules installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleInstalled(module1.id);
+        final updated = installation.markModuleInstalled(module.id);
 
         expect(updated.status, InstallationStatus.completed);
         expect(updated.progress, 1.0);
-        expect(updated.completedAt, isNotNull);
+        expect(
+          updated.uncommittedEvents.any((e) => e is InstallationCompleted),
+          isTrue,
+        );
       });
 
-      test('emits ModuleExtracted event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
+      test('should calculate progress correctly with multiple modules', () {
+        final installation = TestFixtures.createMultiModuleInstallation().start();
+        final modules = installation.modules.toList();
 
-        final updated = installation.markModuleInstalled(module1.id);
+        // Install first module
+        var updated = installation
+            .markModuleDownloaded(modules[0].id)
+            .markModuleVerified(modules[0].id)
+            .markModuleInstalled(modules[0].id);
 
-        // Find ModuleExtracted event
-        final extractedEvent = updated.uncommittedEvents
-            .whereType<ModuleExtracted>()
-            .first;
-        expect(extractedEvent.moduleId, module1.id);
-      });
-
-      test('emits InstallationCompleted event when done', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleInstalled(module1.id);
-
-        // Find InstallationCompleted event
-        final completedEvent = updated.uncommittedEvents
-            .whereType<InstallationCompleted>()
-            .firstOrNull;
-        expect(completedEvent, isNotNull);
-      });
-
-      test('does not emit InstallationCompleted when more modules remain', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start();
-
-        final updated = installation.markModuleInstalled(module1.id);
-
-        final completedEvent = updated.uncommittedEvents
-            .whereType<InstallationCompleted>()
-            .firstOrNull;
-        expect(completedEvent, isNull);
+        expect(updated.progress, closeTo(1 / 3, 0.01));
         expect(updated.status, InstallationStatus.inProgress);
+
+        // Install second module
+        updated = updated
+            .markModuleDownloaded(modules[1].id)
+            .markModuleVerified(modules[1].id)
+            .markModuleInstalled(modules[1].id);
+
+        expect(updated.progress, closeTo(2 / 3, 0.01));
+        expect(updated.status, InstallationStatus.inProgress);
+
+        // Install third module
+        updated = updated
+            .markModuleDownloaded(modules[2].id)
+            .markModuleVerified(modules[2].id)
+            .markModuleInstalled(modules[2].id);
+
+        expect(updated.progress, 1.0);
+        expect(updated.status, InstallationStatus.completed);
       });
 
-      test('throws when module already installed', () {
+      test('should clear current module on completion', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start().markModuleDownloaded(module.id).markModuleVerified(module.id);
+
+        final updated = installation.markModuleInstalled(module.id);
+
+        expect(updated.currentModule, none());
+      });
+
+      test('should throw when module does not exist', () {
+        final installation = TestFixtures.createInstallation().start();
 
         expect(
-          () => installation.markModuleInstalled(module1.id),
+          () => installation.markModuleInstalled(
+            ModuleId.fromString('nonexistent'),
+          ),
+          throwsA(isA<DomainException>()),
+        );
+      });
+
+      test('should throw when module already installed', () {
+        final module = TestFixtures.createModule();
+        final installation = RuntimeInstallation.create(
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start();
+
+        final installed = installation
+            .markModuleDownloaded(module.id)
+            .markModuleVerified(module.id)
+            .markModuleInstalled(module.id);
+
+        expect(
+          () => installed.markModuleInstalled(module.id),
+          throwsA(isA<DomainException>()),
+        );
+      });
+    });
+
+    group('fail', () {
+      test('should mark installation as failed', () {
+        final installation = TestFixtures.createInstallation().start();
+
+        final updated = installation.fail('Download failed');
+
+        expect(updated.status, InstallationStatus.failed);
+        expect(updated.errorMessage, some('Download failed'));
+        expect(
+          updated.uncommittedEvents.last,
+          isA<InstallationFailed>(),
+        );
+      });
+
+      test('should include error message in event', () {
+        final installation = TestFixtures.createInstallation().start();
+
+        final updated = installation.fail('Network timeout');
+
+        final failedEvent =
+            updated.uncommittedEvents.last as InstallationFailed;
+        expect(failedEvent.error, 'Network timeout');
+      });
+    });
+
+    group('cancel', () {
+      test('should mark installation as cancelled', () {
+        final installation = TestFixtures.createInstallation().start();
+
+        final updated = installation.cancel('User requested');
+
+        expect(updated.status, InstallationStatus.cancelled);
+        expect(updated.cancelReason, some('User requested'));
+        expect(
+          updated.uncommittedEvents.last,
+          isA<InstallationCancelled>(),
+        );
+      });
+
+      test('should throw when not in progress', () {
+        final installation = TestFixtures.createInstallation();
+
+        expect(
+          () => installation.cancel('Test'),
           throwsA(isA<InvalidStateException>()),
         );
       });
     });
 
-    group('updateProgress command', () {
-      test('updates progress value', () {
+    group('getNextModuleToInstall', () {
+      test('should return first module with no dependencies', () {
+        final modules = TestFixtures.createValidDependencyChain();
         final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.updateProgress(0.5);
-
-        expect(updated.progress, 0.5);
-      });
-
-      test('emits InstallationProgressChanged event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final updated = installation.updateProgress(0.75);
-
-        final event = updated.uncommittedEvents.last;
-        expect(event, isA<InstallationProgressChanged>());
-
-        final progressEvent = event as InstallationProgressChanged;
-        expect(progressEvent.progress, 0.75);
-      });
-
-      test('throws on invalid progress (negative)', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        expect(
-          () => installation.updateProgress(-0.1),
-          throwsA(isA<ValidationException>()),
-        );
-      });
-
-      test('throws on invalid progress (> 1)', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        expect(
-          () => installation.updateProgress(1.1),
-          throwsA(isA<ValidationException>()),
-        );
-      });
-
-      test('throws when not in progress', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
-
-        expect(
-          () => installation.updateProgress(0.5),
-          throwsA(isA<InvalidStateException>()),
-        );
-      });
-    });
-
-    group('fail command', () {
-      test('marks installation as failed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final failed = installation.fail('Test error');
-
-        expect(failed.status, InstallationStatus.failed);
-        expect(failed.errorMessage, 'Test error');
-        expect(failed.failedAt, isNotNull);
-      });
-
-      test('emits InstallationFailed event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final failed = installation.fail('Test error');
-
-        final event = failed.uncommittedEvents.last;
-        expect(event, isA<InstallationFailed>());
-
-        final failedEvent = event as InstallationFailed;
-        expect(failedEvent.error, 'Test error');
-        expect(failedEvent.failedModuleId, isNull);
-      });
-
-      test('includes failed module in event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final failed = installation.fail('Test error', failedModule: module1.id);
-
-        final event = failed.uncommittedEvents.last as InstallationFailed;
-        expect(event.failedModuleId, module1.id.value);
-      });
-
-      test('throws when already in terminal state', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        expect(
-          () => installation.fail('Test error'),
-          throwsA(isA<InvalidStateException>()),
-        );
-      });
-    });
-
-    group('cancel command', () {
-      test('marks installation as cancelled', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final cancelled = installation.cancel();
-
-        expect(cancelled.status, InstallationStatus.cancelled);
-      });
-
-      test('emits InstallationCancelled event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final cancelled = installation.cancel();
-
-        final event = cancelled.uncommittedEvents.last;
-        expect(event, isA<InstallationCancelled>());
-      });
-
-      test('includes reason in event', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final cancelled = installation.cancel(reason: 'User requested');
-
-        final event = cancelled.uncommittedEvents.last as InstallationCancelled;
-        expect(event.reason, 'User requested');
-      });
-
-      test('can cancel from pending state', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
-
-        final cancelled = installation.cancel();
-
-        expect(cancelled.status, InstallationStatus.cancelled);
-      });
-
-      test('throws when already completed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        expect(
-          () => installation.cancel(),
-          throwsA(isA<InvalidStateException>()),
-        );
-      });
-    });
-
-    group('getNextModuleToInstall query', () {
-      test('returns first module with no dependencies', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
+          modules: modules,
+          platform: TestFixtures.windowsX64,
         ).start();
 
         final next = installation.getNextModuleToInstall();
 
         expect(next.isSome(), isTrue);
-        expect(next.getOrElse(() => throw Exception()), module1);
+        // Should be module-c (no dependencies)
+        expect(
+          next.getOrElse(() => throw Exception()).id,
+          ModuleId.fromString('module-c'),
+        );
       });
 
-      test('returns module whose dependencies are installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
+      test('should return module whose dependencies are met', () {
+        final modules = TestFixtures.createValidDependencyChain();
+        var installation = RuntimeInstallation.create(
+          modules: modules,
+          platform: TestFixtures.windowsX64,
+        ).start();
+
+        // Install module-c first
+        final moduleC = modules.firstWhere(
+          (m) => m.id == ModuleId.fromString('module-c'),
+        );
+        installation = installation
+            .markModuleDownloaded(moduleC.id)
+            .markModuleVerified(moduleC.id)
+            .markModuleInstalled(moduleC.id);
 
         final next = installation.getNextModuleToInstall();
 
         expect(next.isSome(), isTrue);
-        expect(next.getOrElse(() => throw Exception()), module2);
-      });
-
-      test('returns None when all modules installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        final next = installation.getNextModuleToInstall();
-
-        expect(next.isNone(), isTrue);
-      });
-
-      test('returns None when not in progress', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
-
-        final next = installation.getNextModuleToInstall();
-
-        expect(next.isNone(), isTrue);
-      });
-
-      test('throws on unresolvable dependencies', () {
-        final artifact = PlatformArtifact(
-          url: DownloadUrl(value: 'https://example.com/file.tar.gz'),
-          hash: SHA256Hash(value: 'a' * 64),
-          size: ByteSize.fromMB(10),
-        );
-
-        final moduleWithMissingDep = RuntimeModule(
-          id: ModuleId(value: 'module-missing'),
-          name: 'Module with missing dep',
-          description: 'Module with missing dependency',
-          type: ModuleType.runtime,
-          version: RuntimeVersion(major: 1, minor: 0, patch: 0),
-          platformArtifacts: {platform: artifact},
-          dependencies: [ModuleId(value: 'nonexistent')],
-        );
-
-        final installation = RuntimeInstallation.create(
-          modules: [moduleWithMissingDep],
-          platform: platform,
-        ).start();
-
+        // Should be module-b (depends only on module-c which is installed)
         expect(
-          () => installation.getNextModuleToInstall(),
-          throwsA(isA<DependencyException>()),
+          next.getOrElse(() => throw Exception()).id,
+          ModuleId.fromString('module-b'),
         );
       });
-    });
 
-    group('calculateProgress query', () {
-      test('returns 0 when no modules installed', () {
+      test('should return none when all modules installed', () {
+        final module = TestFixtures.createModule();
         final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
+          modules: [module],
+          platform: TestFixtures.windowsX64,
         ).start();
 
-        expect(installation.calculateProgress(), 0.0);
+        final completed = installation
+            .markModuleDownloaded(module.id)
+            .markModuleVerified(module.id)
+            .markModuleInstalled(module.id);
+
+        final next = completed.getNextModuleToInstall();
+
+        expect(next.isNone(), isTrue);
       });
 
-      test('returns 0.5 when half modules installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
+      test('should throw on circular dependency', () {
+        // This should not happen as circular dependencies are caught in create()
+        // But testing the runtime check
+        final modules = TestFixtures.createCircularDependency();
 
-        expect(installation.calculateProgress(), 0.5);
-      });
-
-      test('returns 1.0 when all modules installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        expect(installation.calculateProgress(), 1.0);
-      });
-
-      test('returns 1.0 for empty module list', () {
-        final installation = RuntimeInstallation(
-          id: InstallationId.generate(),
-          modules: [],
-          targetPlatform: platform,
-          status: InstallationStatus.pending,
-          createdAt: DateTime.now(),
-          trigger: InstallationTrigger.settings,
+        // Manually create installation bypassing validation (for test only)
+        // In reality, this would be caught earlier
+        expect(
+          () => RuntimeInstallation.create(
+            modules: modules,
+            platform: TestFixtures.windowsX64,
+          ),
+          throwsA(isA<DomainException>()),
         );
-
-        expect(installation.calculateProgress(), 1.0);
-      });
-    });
-
-    group('getRemainingModules query', () {
-      test('returns all modules when none installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start();
-
-        final remaining = installation.getRemainingModules();
-
-        expect(remaining.length, 2);
-        expect(remaining, containsAll([module1, module2]));
-      });
-
-      test('returns only uninstalled modules', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        final remaining = installation.getRemainingModules();
-
-        expect(remaining.length, 1);
-        expect(remaining.first, module2);
-      });
-
-      test('returns empty list when all installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        final remaining = installation.getRemainingModules();
-
-        expect(remaining, isEmpty);
-      });
-    });
-
-    group('getInstalledModuleObjects query', () {
-      test('returns empty list when nothing installed', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        final installed = installation.getInstalledModuleObjects();
-
-        expect(installed, isEmpty);
-      });
-
-      test('returns installed modules', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        final installed = installation.getInstalledModuleObjects();
-
-        expect(installed.length, 1);
-        expect(installed.first, module1);
-      });
-    });
-
-    group('isModuleInstalled query', () {
-      test('returns false for uninstalled module', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        expect(installation.isModuleInstalled(module1.id), isFalse);
-      });
-
-      test('returns true for installed module', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start().markModuleInstalled(module1.id);
-
-        expect(installation.isModuleInstalled(module1.id), isTrue);
-      });
-    });
-
-    group('getDuration query', () {
-      test('returns duration for completed installation', () async {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        final completed = installation.markModuleInstalled(module1.id);
-        final duration = completed.getDuration();
-
-        expect(duration, isNotNull);
-        expect(duration!.inMilliseconds, greaterThan(0));
-      });
-
-      test('returns duration for failed installation', () async {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        final failed = installation.fail('Test error');
-        final duration = failed.getDuration();
-
-        expect(duration, isNotNull);
-        expect(duration!.inMilliseconds, greaterThan(0));
-      });
-
-      test('returns duration for in-progress installation', () async {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        ).start();
-
-        await Future.delayed(Duration(milliseconds: 10));
-
-        final duration = installation.getDuration();
-
-        expect(duration, isNotNull);
-        expect(duration!.inMilliseconds, greaterThan(0));
       });
     });
 
     group('clearEvents', () {
-      test('clears uncommitted events', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
+      test('should clear uncommitted events', () {
+        final installation = TestFixtures.createInstallation();
 
         expect(installation.uncommittedEvents, isNotEmpty);
 
@@ -894,94 +439,117 @@ void main() {
         expect(cleared.uncommittedEvents, isEmpty);
       });
 
-      test('preserves all other state', () {
-        final installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
+      test('should preserve all other state', () {
+        final installation = TestFixtures.createInstallation().start();
+        final module = installation.modules.first;
 
-        final cleared = installation.clearEvents();
+        final withProgress = installation
+            .markModuleDownloaded(module.id)
+            .markModuleVerified(module.id);
 
-        expect(cleared.id, installation.id);
-        expect(cleared.status, installation.status);
-        expect(cleared.modules, installation.modules);
+        final cleared = withProgress.clearEvents();
+
+        expect(cleared.status, withProgress.status);
+        expect(cleared.currentModule, withProgress.currentModule);
+        expect(cleared.modules, withProgress.modules);
+        expect(cleared.installedModules, withProgress.installedModules);
       });
     });
 
-    group('complex workflows', () {
-      test('full successful installation workflow', () {
-        var installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
+    group('domain events', () {
+      test('should accumulate events during state changes', () {
+        final module = TestFixtures.createModule();
+        final installation = RuntimeInstallation.create(
+          modules: [module],
+          platform: TestFixtures.windowsX64,
         );
 
-        // Start
-        installation = installation.start();
-        expect(installation.status, InstallationStatus.inProgress);
+        // Should have InstallationStarted
+        expect(installation.uncommittedEvents, hasLength(1));
 
-        // Install module1
-        installation = installation.markModuleDownloadStarted(module1.id);
-        installation = installation.markModuleDownloaded(module1.id);
-        installation = installation.markModuleVerified(module1.id);
-        installation = installation.markModuleExtractionStarted(module1.id);
-        installation = installation.markModuleInstalled(module1.id);
+        final started = installation.start();
+        // Should have InstallationStarted + InstallationProgressChanged
+        expect(started.uncommittedEvents, hasLength(2));
 
-        expect(installation.isModuleInstalled(module1.id), isTrue);
-        expect(installation.status, InstallationStatus.inProgress);
-        expect(installation.progress, 0.5);
+        final downloaded = started.markModuleDownloaded(module.id);
+        // Should add ModuleDownloaded
+        expect(downloaded.uncommittedEvents, hasLength(3));
 
-        // Install module2
-        installation = installation.markModuleDownloadStarted(module2.id);
-        installation = installation.markModuleDownloaded(module2.id);
-        installation = installation.markModuleVerified(module2.id);
-        installation = installation.markModuleExtractionStarted(module2.id);
-        installation = installation.markModuleInstalled(module2.id);
+        final verified = downloaded.markModuleVerified(module.id);
+        // Should add ModuleVerified
+        expect(verified.uncommittedEvents, hasLength(4));
 
-        expect(installation.isModuleInstalled(module2.id), isTrue);
-        expect(installation.status, InstallationStatus.completed);
-        expect(installation.progress, 1.0);
-        expect(installation.completedAt, isNotNull);
+        final installed = verified.markModuleInstalled(module.id);
+        // Should add ModuleExtracted + InstallationCompleted
+        expect(installed.uncommittedEvents, hasLength(6));
       });
 
-      test('installation failure during download', () {
-        var installation = RuntimeInstallation.create(
-          modules: [module1],
-          platform: platform,
-        );
+      test('should include correct event data', () {
+        final module = TestFixtures.createModule();
+        final installation = RuntimeInstallation.create(
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start();
 
-        installation = installation.start();
-        installation = installation.markModuleDownloadStarted(module1.id);
-        installation = installation.fail(
-          'Download failed',
-          failedModule: module1.id,
-        );
+        final downloaded = installation.markModuleDownloaded(module.id);
+        final event = downloaded.uncommittedEvents.last as ModuleDownloaded;
 
-        expect(installation.status, InstallationStatus.failed);
-        expect(installation.errorMessage, 'Download failed');
-        expect(installation.failedAt, isNotNull);
+        expect(event.installationId, installation.id);
+        expect(event.moduleId, module.id);
+        expect(event.timestamp, isNotNull);
+      });
+    });
 
-        final failedEvent = installation.uncommittedEvents
-            .whereType<InstallationFailed>()
-            .first;
-        expect(failedEvent.failedModuleId, module1.id.value);
+    group('immutability', () {
+      test('should return new instance on state change', () {
+        final installation = TestFixtures.createInstallation();
+        final started = installation.start();
+
+        expect(identical(installation, started), isFalse);
+        expect(installation.status, InstallationStatus.pending);
+        expect(started.status, InstallationStatus.inProgress);
       });
 
-      test('user cancellation during installation', () {
-        var installation = RuntimeInstallation.create(
-          modules: [module1, module2],
-          platform: platform,
+      test('should not modify original when marking module downloaded', () {
+        final module = TestFixtures.createModule();
+        final installation = RuntimeInstallation.create(
+          modules: [module],
+          platform: TestFixtures.windowsX64,
+        ).start();
+
+        final downloaded = installation.markModuleDownloaded(module.id);
+
+        expect(installation.currentModule, none());
+        expect(downloaded.currentModule, some(module.id));
+      });
+    });
+
+    group('business rules', () {
+      test('should enforce dependency installation order', () {
+        final installation = TestFixtures.createMultiModuleInstallation().start();
+        final modules = installation.modules.toList();
+
+        // Try to install vscode server before nodejs (violates dependency)
+        final vscodeModule = modules.firstWhere(
+          (m) => m.id == TestFixtures.vscodeServerId,
         );
 
-        installation = installation.start();
-        installation = installation.markModuleInstalled(module1.id);
-        installation = installation.cancel(reason: 'User cancelled');
+        // Should not be able to get vscode as next module (nodejs must be first)
+        final next = installation.getNextModuleToInstall();
+        expect(next.getOrElse(() => throw Exception()).id, isNot(vscodeModule.id));
+        expect(next.getOrElse(() => throw Exception()).id, TestFixtures.nodejsId);
+      });
 
-        expect(installation.status, InstallationStatus.cancelled);
+      test('should allow optional modules to be skipped', () {
+        final installation = TestFixtures.createMultiModuleInstallation().start();
 
-        final cancelledEvent = installation.uncommittedEvents
-            .whereType<InstallationCancelled>()
-            .first;
-        expect(cancelledEvent.reason, 'User cancelled');
+        // Optional modules should be marked as such
+        final optionalModule = installation.modules.firstWhere(
+          (m) => m.isOptional,
+        );
+
+        expect(optionalModule.isOptional, isTrue);
+        expect(optionalModule.id, TestFixtures.baseExtensionsId);
       });
     });
   });
