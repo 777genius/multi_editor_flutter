@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:multi_editor_core/src/domain/value_objects/file_path.dart';
+import 'package:multi_editor_core/src/domain/value_objects/file_name.dart';
 import 'package:multi_editor_core/src/domain/failures/domain_failure.dart';
 
 void main() {
