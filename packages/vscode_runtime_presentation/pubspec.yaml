@@ -1,0 +1,47 @@
+name: vscode_runtime_presentation
+description: VS Code Runtime Management - Presentation Layer (UI & State Management)
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  # Flutter
+  flutter:
+    sdk: flutter
+
+  # Application & Domain layers
+  vscode_runtime_application:
+    path: ../vscode_runtime_application
+  vscode_runtime_core:
+    path: ../vscode_runtime_core
+
+  # State Management - MobX
+  mobx: ^2.3.0
+  flutter_mobx: ^2.2.0
+
+  # Functional programming
+  dartz: ^0.10.1
+
+  # Dependency injection
+  injectable: ^2.3.2
+  get_it: ^7.6.4
+
+  # UI
+  flutter_svg: ^2.0.9
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Code generation
+  build_runner: ^2.4.6
+  mobx_codegen: ^2.6.0
+  injectable_generator: ^2.4.1
+
+  # Linting
+  flutter_lints: ^3.0.1
+
+  # Testing
+  mocktail: ^1.0.1
