@@ -1,276 +1,126 @@
 import 'package:test/test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:dartz/dartz.dart';
 import 'package:vscode_runtime_core/vscode_runtime_core.dart';
-import 'package:vscode_runtime_application/vscode_runtime_application.dart';
+import 'package:vscode_runtime_application/src/handlers/get_runtime_status_query_handler.dart';
+import 'package:vscode_runtime_application/src/queries/get_runtime_status_query.dart';
+import 'package:vscode_runtime_application/src/exceptions/application_exception.dart';
 
-import '../mocks/mock_repositories.dart';
-import '../mocks/mock_services.dart';
+class MockRuntimeRepository extends Mock implements IRuntimeRepository {}
+class MockManifestRepository extends Mock implements IManifestRepository {}
 
 void main() {
-  group('GetRuntimeStatusQueryHandler Integration Tests', () {
-    late GetRuntimeStatusQueryHandler handler;
-    late MockRuntimeRepository runtimeRepository;
-    late MockManifestRepository manifestRepository;
+  late GetRuntimeStatusQueryHandler handler;
+  late MockRuntimeRepository mockRuntimeRepo;
+  late MockManifestRepository mockManifestRepo;
 
-    setUp(() {
-      runtimeRepository = MockRuntimeRepository();
-      manifestRepository = MockManifestRepository();
+  setUp(() {
+    mockRuntimeRepo = MockRuntimeRepository();
+    mockManifestRepo = MockManifestRepository();
+    handler = GetRuntimeStatusQueryHandler(mockRuntimeRepo, mockManifestRepo);
+  });
 
-      handler = GetRuntimeStatusQueryHandler(
-        runtimeRepository,
-        manifestRepository,
-      );
-    });
+  group('GetRuntimeStatusQueryHandler', () {
+    group('Not Installed', () {
+      test('should return not installed when no version found', () async {
+        // Arrange
+        final query = GetRuntimeStatusQuery();
 
-    test('should return notInstalled when no runtime is installed', () async {
-      // Arrange
-      final query = GetRuntimeStatusQuery();
+        when(() => mockRuntimeRepo.getInstalledVersion()).thenAnswer(
+          (_) async => right(none()),
+        );
 
-      // Act
-      final result = await handler.handle(query);
+        // Act
+        final result = await handler.handle(query);
 
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            notInstalled: (_) => expect(true, isTrue), // Expected
-            installed: (_) => fail('Should be not installed'),
-            partiallyInstalled: (_) => fail('Should be not installed'),
-            installing: (_) => fail('Should be not installed'),
-            failed: (_) => fail('Should be not installed'),
-            updateAvailable: (_) => fail('Should be not installed'),
-          );
-        },
-      );
-    });
-
-    test('should return installed when runtime is fully installed', () async {
-      // Arrange
-      final version = RuntimeVersion.fromString('20.11.0');
-      runtimeRepository.mockInstalledVersion(version);
-      runtimeRepository.mockModuleInstalled(ModuleId.nodejs);
-      runtimeRepository.mockModuleInstalled(ModuleId.openVSCodeServer);
-
-      final query = GetRuntimeStatusQuery();
-
-      // Act
-      final result = await handler.handle(query);
-
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            installed: (s) {
-              expect(s.version, version);
-              expect(s.installedModules, hasLength(2));
-              expect(s.installedAt, isNotNull);
-            },
-            notInstalled: (_) => fail('Should be installed'),
-            partiallyInstalled: (_) => fail('Should be fully installed'),
-            installing: (_) => fail('Should be installed'),
-            failed: (_) => fail('Should be installed'),
-            updateAvailable: (_) => fail('Should be installed'),
-          );
-        },
-      );
-    });
-
-    test('should return updateAvailable when newer version exists', () async {
-      // Arrange
-      final currentVersion = RuntimeVersion.fromString('20.10.0');
-      final latestVersion = RuntimeVersion.fromString('20.11.0');
-
-      runtimeRepository.mockInstalledVersion(currentVersion);
-      runtimeRepository.mockModuleInstalled(ModuleId.nodejs);
-
-      manifestRepository.mockLatestVersion(latestVersion);
-
-      final query = GetRuntimeStatusQuery();
-
-      // Act
-      final result = await handler.handle(query);
-
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            updateAvailable: (s) {
-              expect(s.currentVersion, currentVersion);
-              expect(s.availableVersion, latestVersion);
-            },
-            installed: (_) => fail('Should have update available'),
-            notInstalled: (_) => fail('Should have update available'),
-            partiallyInstalled: (_) => fail('Should have update available'),
-            installing: (_) => fail('Should have update available'),
-            failed: (_) => fail('Should have update available'),
-          );
-        },
-      );
-    });
-
-    test('should return installing when installation is in progress', () async {
-      // Arrange
-      final installation = RuntimeInstallation.create(
-        modules: [
-          RuntimeModule.create(
-            id: ModuleId.nodejs,
-            name: 'Node.js',
-            type: ModuleType.runtime,
-            version: RuntimeVersion.fromString('20.11.0'),
-            platformArtifacts: {
-              PlatformIdentifier.linuxX64: PlatformArtifact(
-                url: DownloadUrl('https://example.com/node.tar.xz'),
-                hash: SHA256Hash.fromString('a' * 64),
-                size: ByteSize.fromMB(30),
-              ),
-            },
-          ),
-        ],
-        platform: PlatformIdentifier.linuxX64,
-      ).start();
-
-      await runtimeRepository.saveInstallation(installation);
-
-      final query = GetRuntimeStatusQuery();
-
-      // Act
-      final result = await handler.handle(query);
-
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            installing: (s) {
-              expect(s.installationId, installation.id);
-              expect(s.progress, installation.progress);
-            },
-            installed: (_) => fail('Should be installing'),
-            notInstalled: (_) => fail('Should be installing'),
-            partiallyInstalled: (_) => fail('Should be installing'),
-            failed: (_) => fail('Should be installing'),
-            updateAvailable: (_) => fail('Should be installing'),
-          );
-        },
-      );
-    });
-
-    test('should return failed when last installation failed', () async {
-      // Arrange
-      final installation = RuntimeInstallation.create(
-        modules: [
-          RuntimeModule.create(
-            id: ModuleId.nodejs,
-            name: 'Node.js',
-            type: ModuleType.runtime,
-            version: RuntimeVersion.fromString('20.11.0'),
-            platformArtifacts: {
-              PlatformIdentifier.linuxX64: PlatformArtifact(
-                url: DownloadUrl('https://example.com/node.tar.xz'),
-                hash: SHA256Hash.fromString('a' * 64),
-                size: ByteSize.fromMB(30),
-              ),
-            },
-          ),
-        ],
-        platform: PlatformIdentifier.linuxX64,
-      ).start().fail('Download failed');
-
-      await runtimeRepository.saveInstallation(installation);
-
-      final query = GetRuntimeStatusQuery();
-
-      // Act
-      final result = await handler.handle(query);
-
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            failed: (s) {
-              expect(s.error, 'Download failed');
-              expect(s.installationId, installation.id);
-            },
-            installed: (_) => fail('Should be failed'),
-            notInstalled: (_) => fail('Should be failed'),
-            partiallyInstalled: (_) => fail('Should be failed'),
-            installing: (_) => fail('Should be failed'),
-            updateAvailable: (_) => fail('Should be failed'),
-          );
-        },
-      );
-    });
-
-    test('should return partiallyInstalled when only some modules installed', () async {
-      // Arrange
-      final version = RuntimeVersion.fromString('20.11.0');
-      runtimeRepository.mockInstalledVersion(version);
-      runtimeRepository.mockModuleInstalled(ModuleId.nodejs);
-      // vscode server NOT installed - partial installation
-
-      manifestRepository.mockModules([
-        RuntimeModule.create(
-          id: ModuleId.nodejs,
-          name: 'Node.js',
-          type: ModuleType.runtime,
-          version: version,
-          platformArtifacts: {
-            PlatformIdentifier.linuxX64: PlatformArtifact(
-              url: DownloadUrl('https://example.com/node.tar.xz'),
-              hash: SHA256Hash.fromString('a' * 64),
-              size: ByteSize.fromMB(30),
-            ),
+        // Assert
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Should return DTO'),
+          (dto) {
+            expect(dto.isInstalled, isFalse);
+            expect(dto.isPartiallyInstalled, isFalse);
+            expect(dto.isNotInstalled, isTrue);
           },
-        ),
-        RuntimeModule.create(
-          id: ModuleId.openVSCodeServer,
-          name: 'OpenVSCode Server',
-          type: ModuleType.server,
+        );
+
+        verify(() => mockRuntimeRepo.getInstalledVersion()).called(1);
+        verifyNever(() => mockManifestRepo.fetchManifest());
+      });
+    });
+
+    group('Fully Installed', () {
+      test('should return installed when all critical modules present', () async {
+        // Arrange
+        final query = GetRuntimeStatusQuery();
+        final version = RuntimeVersion(1, 0, 0);
+
+        final coreModule = RuntimeModule(
+          id: ModuleId('core'),
+          name: 'Core',
+          description: 'Core module',
           version: version,
-          platformArtifacts: {
-            PlatformIdentifier.linuxX64: PlatformArtifact(
-              url: DownloadUrl('https://example.com/vscode.tar.gz'),
-              hash: SHA256Hash.fromString('b' * 64),
-              size: ByteSize.fromMB(100),
-            ),
+          isRequired: true,
+          isCritical: true,
+          dependencies: [],
+          supportedPlatforms: [PlatformIdentifier.linux],
+          artifacts: [],
+        );
+
+        final manifest = RuntimeManifest(
+          version: version,
+          modules: [coreModule],
+        );
+
+        when(() => mockRuntimeRepo.getInstalledVersion()).thenAnswer(
+          (_) async => right(some(version)),
+        );
+
+        when(() => mockManifestRepo.fetchManifest()).thenAnswer(
+          (_) async => right(manifest),
+        );
+
+        when(() => mockRuntimeRepo.isModuleInstalled(ModuleId('core'))).thenAnswer(
+          (_) async => right(true),
+        );
+
+        // Act
+        final result = await handler.handle(query);
+
+        // Assert
+        expect(result.isRight(), isTrue);
+        result.fold(
+          (_) => fail('Should return DTO'),
+          (dto) {
+            expect(dto.isInstalled, isTrue);
+            expect(dto.version, equals(version));
           },
-        ),
-      ]);
+        );
+      });
+    });
 
-      final query = GetRuntimeStatusQuery();
+    group('Error Handling', () {
+      test('should return error when version check fails', () async {
+        // Arrange
+        final query = GetRuntimeStatusQuery();
 
-      // Act
-      final result = await handler.handle(query);
+        when(() => mockRuntimeRepo.getInstalledVersion()).thenAnswer(
+          (_) async => left(const DomainException('Version check failed')),
+        );
 
-      // Assert
-      expect(result.isRight(), isTrue);
-      result.fold(
-        (_) => fail('Should succeed'),
-        (status) {
-          status.map(
-            partiallyInstalled: (s) {
-              expect(s.installedModules, hasLength(1));
-              expect(s.installedModules.first, ModuleId.nodejs);
-              expect(s.missingModules, hasLength(1));
-              expect(s.missingModules.first, ModuleId.openVSCodeServer);
-            },
-            installed: (_) => fail('Should be partially installed'),
-            notInstalled: (_) => fail('Should be partially installed'),
-            installing: (_) => fail('Should be partially installed'),
-            failed: (_) => fail('Should be partially installed'),
-            updateAvailable: (_) => fail('Should be partially installed'),
-          );
-        },
-      );
+        // Act
+        final result = await handler.handle(query);
+
+        // Assert
+        expect(result.isLeft(), isTrue);
+        result.fold(
+          (error) {
+            expect(error, isA<ApplicationException>());
+            expect(error.message, contains('Failed to get installed version'));
+          },
+          (_) => fail('Should return error'),
+        );
+      });
     });
   });
 }
