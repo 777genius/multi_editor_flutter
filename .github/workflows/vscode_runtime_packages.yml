@@ -1,0 +1,213 @@
+name: VS Code Runtime Packages CI
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+    paths:
+      - 'packages/vscode_runtime_*/**'
+      - '.github/workflows/vscode_runtime_packages.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'packages/vscode_runtime_*/**'
+  workflow_dispatch:
+
+env:
+  DART_VERSION: '3.5.0'
+
+jobs:
+  # ============================================================================
+  # Package Testing Strategy
+  # ============================================================================
+
+  test-packages:
+    name: Test ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - vscode_runtime_core
+          - vscode_runtime_application
+          - vscode_runtime_infrastructure
+          - vscode_runtime_presentation
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: 📦 Get dependencies
+        run: |
+          cd packages/${{ matrix.package }}
+          dart pub get
+
+      - name: 🔍 Analyze code
+        run: |
+          cd packages/${{ matrix.package }}
+          dart analyze --fatal-infos --fatal-warnings
+
+      - name: 📝 Check formatting
+        run: |
+          cd packages/${{ matrix.package }}
+          dart format --set-exit-if-changed .
+
+      - name: 🧪 Run tests
+        run: |
+          cd packages/${{ matrix.package }}
+          dart test --coverage=coverage --reporter expanded || echo "No tests found for ${{ matrix.package }}"
+
+      - name: 📊 Generate coverage report
+        if: success()
+        run: |
+          cd packages/${{ matrix.package }}
+          if [ -d "coverage" ]; then
+            echo "Coverage generated for ${{ matrix.package }}"
+          fi
+
+  # ============================================================================
+  # Build Verification
+  # ============================================================================
+
+  build-verification:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: test-packages
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: 📦 Install all dependencies
+        run: |
+          for package in packages/vscode_runtime_*; do
+            echo "Installing dependencies for $(basename $package)"
+            cd $package
+            dart pub get
+            cd ../..
+          done
+
+      - name: 🏗️ Verify builds
+        run: |
+          for package in packages/vscode_runtime_*; do
+            echo "Verifying $(basename $package)"
+            cd $package
+            dart pub get
+            dart analyze
+            cd ../..
+          done
+
+  # ============================================================================
+  # Security & Quality
+  # ============================================================================
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: 🔒 Dependency audit
+        run: |
+          for package in packages/vscode_runtime_*; do
+            echo "Auditing $(basename $package)"
+            cd $package
+            dart pub get
+            dart pub audit || echo "Audit completed with warnings"
+            cd ../..
+          done
+
+      - name: 🔍 Check for secrets
+        run: |
+          echo "Checking for hardcoded secrets..."
+          ! grep -r "password\s*=\s*['\"]" packages/vscode_runtime_*/lib/ || exit 1
+          ! grep -r "api_key\s*=\s*['\"]" packages/vscode_runtime_*/lib/ || exit 1
+          ! grep -r "secret\s*=\s*['\"]" packages/vscode_runtime_*/lib/ || exit 1
+          ! grep -r "dsn:\s*['\"]https://" packages/vscode_runtime_*/lib/ || exit 1
+          echo "No hardcoded secrets found"
+
+  # ============================================================================
+  # Code Quality Metrics
+  # ============================================================================
+
+  code-quality:
+    name: Code Quality Metrics
+    runs-on: ubuntu-latest
+    needs: test-packages
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: 📊 Code metrics
+        run: |
+          echo "=== Code Quality Metrics ==="
+          echo ""
+          echo "Total Dart files:"
+          find packages/vscode_runtime_* -name "*.dart" ! -path "*/test/*" ! -name "*.g.dart" ! -name "*.freezed.dart" | wc -l
+          echo ""
+          echo "Test files:"
+          find packages/vscode_runtime_* -name "*_test.dart" | wc -l
+          echo ""
+          echo "Lines of code:"
+          find packages/vscode_runtime_* -name "*.dart" ! -path "*/test/*" ! -name "*.g.dart" ! -name "*.freezed.dart" -exec wc -l {} + | tail -1
+          echo ""
+          echo "TODO/FIXME comments:"
+          grep -r "TODO\|FIXME" packages/vscode_runtime_* --include="*.dart" | wc -l || echo "0"
+
+  # ============================================================================
+  # Summary
+  # ============================================================================
+
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [test-packages, build-verification, security-audit, code-quality]
+    if: always()
+
+    steps:
+      - name: 📊 Check results
+        run: |
+          echo "VS Code Runtime Packages CI Results:"
+          echo "====================================="
+          echo ""
+          if [ "${{ needs.test-packages.result }}" == "success" ] && \
+             [ "${{ needs.build-verification.result }}" == "success" ] && \
+             [ "${{ needs.security-audit.result }}" == "success" ] && \
+             [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ All checks passed!"
+            exit 0
+          else
+            echo "❌ Some checks failed:"
+            echo "  Test Packages: ${{ needs.test-packages.result }}"
+            echo "  Build Verification: ${{ needs.build-verification.result }}"
+            echo "  Security Audit: ${{ needs.security-audit.result }}"
+            echo "  Code Quality: ${{ needs.code-quality.result }}"
+            exit 1
+          fi

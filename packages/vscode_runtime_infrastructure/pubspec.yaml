@@ -17,6 +17,12 @@ dependencies:
   # HTTP
   dio: ^5.4.0
 
+  # Logging
+  logger: ^2.0.2+1
+
+  # Error tracking
+  sentry: ^7.14.0
+
   # File system
   path: ^1.8.3
   path_provider: ^2.1.1
@@ -35,6 +41,9 @@ dependencies:
 
   # Streams
   rxdart: ^0.27.7
+
+  # Persistent storage
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   build_runner: ^2.4.6
