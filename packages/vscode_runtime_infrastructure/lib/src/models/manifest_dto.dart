@@ -10,12 +10,14 @@ class ManifestDto {
   final String version;
   final String publishedAt;
   final List<RuntimeModuleDto> modules;
+  final String? minClientVersion;
   final Map<String, dynamic>? metadata;
 
   const ManifestDto({
     required this.version,
     required this.publishedAt,
     required this.modules,
+    this.minClientVersion,
     this.metadata,
   });
 
@@ -35,6 +37,9 @@ class ManifestDto {
       version: RuntimeVersion.fromString(version),
       modules: toDomain(),
       publishedAt: DateTime.parse(publishedAt),
+      minClientVersion: minClientVersion != null
+          ? RuntimeVersion.fromString(minClientVersion!)
+          : null,
       metadata: metadata,
     );
   }
@@ -45,6 +50,7 @@ class ManifestDto {
       version: manifest.version.toString(),
       publishedAt: manifest.publishedAt.toIso8601String(),
       modules: manifest.modules.map((m) => RuntimeModuleDto.fromDomain(m)).toList(),
+      minClientVersion: manifest.minClientVersion?.toString(),
       metadata: manifest.metadata,
     );
   }

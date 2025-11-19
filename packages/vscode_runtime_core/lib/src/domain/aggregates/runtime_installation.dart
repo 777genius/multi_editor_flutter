@@ -214,8 +214,72 @@ class RuntimeInstallation with _$RuntimeInstallation {
     );
   }
 
-  /// Command: Update progress
-  RuntimeInstallation updateProgress(double newProgress) {
+  /// Command: Start module installation
+  RuntimeInstallation startModule(ModuleId moduleId) {
+    _validateModuleExists(moduleId);
+    _validateModuleNotInstalled(moduleId);
+    _validateIsInProgress();
+
+    return copyWith(
+      currentModule: moduleId,
+      uncommittedEvents: [
+        ...uncommittedEvents,
+        ModuleDownloadStarted(
+          installationId: id,
+          moduleId: moduleId,
+          timestamp: DateTime.now(),
+        ),
+      ],
+    );
+  }
+
+  /// Command: Complete module installation
+  RuntimeInstallation completeModule(ModuleId moduleId) {
+    _validateModuleExists(moduleId);
+    _validateModuleNotInstalled(moduleId);
+    _validateIsInProgress();
+
+    final newInstalledModules = [...installedModules, moduleId];
+    final isComplete = newInstalledModules.length == modules.length;
+    final newStatus = isComplete
+        ? InstallationStatus.completed
+        : InstallationStatus.inProgress;
+
+    final newProgress = modules.isEmpty
+        ? 1.0
+        : newInstalledModules.length / modules.length;
+
+    final events = [
+      ...uncommittedEvents,
+      ModuleExtracted(
+        installationId: id,
+        moduleId: moduleId,
+        timestamp: DateTime.now(),
+      ),
+    ];
+
+    if (isComplete) {
+      events.add(
+        InstallationCompleted(
+          installationId: id,
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
+
+    return copyWith(
+      installedModules: newInstalledModules,
+      status: newStatus,
+      progress: newProgress,
+      currentModule: null,
+      uncommittedEvents: events,
+      completedAt: isComplete ? DateTime.now() : null,
+    );
+  }
+
+  /// Command: Update progress for specific module
+  RuntimeInstallation updateProgress(ModuleId moduleId, double newProgress) {
+    _validateModuleExists(moduleId);
     _validateIsInProgress();
 
     if (newProgress < 0.0 || newProgress > 1.0) {
@@ -223,6 +287,7 @@ class RuntimeInstallation with _$RuntimeInstallation {
     }
 
     return copyWith(
+      currentModule: moduleId,
       progress: newProgress,
       uncommittedEvents: [
         ...uncommittedEvents,

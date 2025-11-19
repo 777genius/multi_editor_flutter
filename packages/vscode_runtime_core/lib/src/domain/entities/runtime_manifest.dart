@@ -15,6 +15,7 @@ class RuntimeManifest with _$RuntimeManifest {
     required RuntimeVersion version,
     required List<RuntimeModule> modules,
     required DateTime publishedAt,
+    RuntimeVersion? minClientVersion,
     Map<String, dynamic>? metadata,
   }) = _RuntimeManifest;
 

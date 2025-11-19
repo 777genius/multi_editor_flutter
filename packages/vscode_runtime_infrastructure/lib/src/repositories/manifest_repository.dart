@@ -65,28 +65,7 @@ class ManifestRepository implements IManifestRepository {
           manifest,
           serializer: (m) {
             // Convert back to DTO for JSON serialization
-            final dto = ManifestDto(
-              version: m.version.toString(),
-              modules: m.modules.map((module) {
-                return ModuleDto(
-                  id: module.id.value,
-                  name: module.name,
-                  description: module.description,
-                  version: module.version.toString(),
-                  required: module.isRequired,
-                  dependencies: module.dependencies.map((d) => d.value).toList(),
-                  platforms: module.supportedPlatforms.map((p) => p.toString()).toList(),
-                  artifacts: module.artifacts.map((a) {
-                    return PlatformArtifactDto(
-                      platform: a.platform.toString(),
-                      downloadUrl: a.downloadUrl.value,
-                      size: a.size.bytes,
-                      checksum: a.checksum.value,
-                    );
-                  }).toList(),
-                );
-              }).toList(),
-            );
+            final dto = ManifestDto.fromDomain(m);
             return jsonEncode(dto.toJson());
           },
           ttl: _cacheTtl,
