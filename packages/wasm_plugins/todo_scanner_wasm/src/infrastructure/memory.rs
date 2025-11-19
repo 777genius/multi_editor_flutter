@@ -12,7 +12,9 @@ fn get_registry() -> &'static Mutex<Option<HashMap<u32, Vec<u8>>>> {
 }
 
 fn ensure_registry_initialized() {
-    let mut guard = MEMORY_REGISTRY.lock().unwrap();
+    // BUG FIX #12: Handle poisoned mutex gracefully
+    let mut guard = MEMORY_REGISTRY.lock()
+        .expect("CRITICAL: Memory registry mutex is poisoned. This indicates a panic in another thread.");
     if guard.is_none() {
         *guard = Some(HashMap::new());
     }
@@ -29,7 +31,8 @@ pub extern "C" fn alloc(size: u32) -> u32 {
     let buf = vec![0u8; size as usize];
 
     // CRITICAL FIX: Insert into registry first to get stable storage
-    let mut guard = MEMORY_REGISTRY.lock().unwrap();
+    let mut guard = MEMORY_REGISTRY.lock()
+        .expect("CRITICAL: Memory registry mutex is poisoned");
     if let Some(ref mut registry) = *guard {
         // Use a temporary pointer calculation
         let temp_ptr = buf.as_ptr() as u32;
@@ -48,9 +51,13 @@ pub extern "C" fn alloc(size: u32) -> u32 {
 /// Deallocate memory
 #[no_mangle]
 pub extern "C" fn dealloc(ptr: u32) {
-    let mut guard = MEMORY_REGISTRY.lock().unwrap();
+    // BUG FIX #13: Log warning if deallocating non-existent pointer
+    let mut guard = MEMORY_REGISTRY.lock()
+        .expect("CRITICAL: Memory registry mutex is poisoned");
     if let Some(ref mut registry) = *guard {
-        registry.remove(&ptr);
+        if registry.remove(&ptr).is_none() {
+            eprintln!("WARNING: Attempted to deallocate non-existent pointer: {}", ptr);
+        }
     }
 }
 

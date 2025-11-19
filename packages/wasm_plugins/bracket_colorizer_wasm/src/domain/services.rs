@@ -340,4 +340,95 @@ mod tests {
         assert_eq!(result.statistics.curly_pairs, 1);
         assert_eq!(result.statistics.total_pairs(), 3);
     }
+
+    // NEW TESTS FOR EDGE CASES (Bug fixes #14-16)
+
+    #[test]
+    fn test_empty_content() {
+        // BUG FIX #14: Test empty content
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let content = "";
+
+        let result = matcher.analyze(content, Language::Generic);
+
+        assert_eq!(result.pairs.len(), 0);
+        assert_eq!(result.unmatched.len(), 0);
+        assert_eq!(result.max_depth, 0);
+    }
+
+    #[test]
+    fn test_very_deep_nesting() {
+        // BUG FIX #15: Test very deep nesting (100 levels)
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let depth = 100;
+        let mut content = String::new();
+
+        // Create 100 levels of nesting
+        for _ in 0..depth {
+            content.push('{');
+        }
+        for _ in 0..depth {
+            content.push('}');
+        }
+
+        let result = matcher.analyze(&content, Language::Generic);
+
+        assert_eq!(result.pairs.len(), depth);
+        assert_eq!(result.unmatched.len(), 0);
+        assert_eq!(result.max_depth, depth - 1); // Max depth is 99 (0-indexed)
+    }
+
+    #[test]
+    fn test_escaped_quotes_in_strings() {
+        // BUG FIX #16: Test escaped quotes don't break string detection
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let content = r#"let str = "He said \"hello {world}\" here"; let obj = {a: 1};"#;
+
+        let result = matcher.analyze(content, Language::Generic);
+
+        // Should only find the {a: 1} bracket, not the one in the string
+        assert_eq!(result.pairs.len(), 1);
+        assert_eq!(result.unmatched.len(), 0);
+
+        // Verify it's the curly bracket
+        assert_eq!(result.statistics.curly_pairs, 1);
+        assert_eq!(result.statistics.round_pairs, 0);
+    }
+
+    #[test]
+    fn test_multiline_strings_with_escaped_newlines() {
+        // Additional edge case: escaped newlines in strings
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let content = "let s = \"line1\\\nline2 {not_bracket}\"; {real}";
+
+        let result = matcher.analyze(content, Language::Generic);
+
+        // Should only find {real}, not the one in the string
+        assert_eq!(result.pairs.len(), 1);
+        assert_eq!(result.statistics.curly_pairs, 1);
+    }
+
+    #[test]
+    fn test_only_whitespace() {
+        // Edge case: only whitespace
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let content = "   \n\t\r\n   ";
+
+        let result = matcher.analyze(content, Language::Generic);
+
+        assert_eq!(result.pairs.len(), 0);
+        assert_eq!(result.unmatched.len(), 0);
+    }
+
+    #[test]
+    fn test_unicode_brackets() {
+        // Edge case: Unicode text around brackets
+        let matcher = StackBasedMatcher::new(ColorScheme::default_rainbow());
+        let content = "let 日本語 = {value: '値'};";
+
+        let result = matcher.analyze(content, Language::Generic);
+
+        assert_eq!(result.pairs.len(), 1);
+        assert_eq!(result.statistics.curly_pairs, 1);
+    }
 }

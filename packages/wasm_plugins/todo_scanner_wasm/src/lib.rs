@@ -83,6 +83,17 @@ pub extern "C" fn plugin_initialize(_context_ptr: u32, _context_len: u32) -> u64
 /// Handle plugin event
 #[no_mangle]
 pub extern "C" fn plugin_handle_event(event_ptr: u32, event_len: u32) -> u64 {
+    // BUG FIX #11: Validate event_len before unsafe memory read
+    const MAX_EVENT_SIZE: u32 = 10 * 1024 * 1024; // 10MB max
+
+    if event_len == 0 {
+        return error_response("unknown", "Empty event data");
+    }
+
+    if event_len > MAX_EVENT_SIZE {
+        return error_response("unknown", &format!("Event too large: {} bytes (max {})", event_len, MAX_EVENT_SIZE));
+    }
+
     // Read event data from WASM memory
     let event_bytes = unsafe {
         std::slice::from_raw_parts(event_ptr as *const u8, event_len as usize)
