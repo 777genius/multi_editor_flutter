@@ -1,0 +1,39 @@
+name: multi_editor_plugin_todo_tracker
+description: TODO/FIXME/HACK tracker plugin with Rust WASM backend for fast scanning
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core dependencies
+  multi_editor_core:
+    path: ../../../multi_editor_core
+  multi_editor_plugins:
+    path: ../../../multi_editor_plugins
+  multi_editor_plugin_base:
+    path: ../multi_editor_plugin_base
+
+  # WASM support
+  flutter_plugin_system_wasm:
+    path: ../../../../packages/flutter_plugin_system_wasm
+  flutter_plugin_system_wasm_run:
+    path: ../../../../packages/flutter_plugin_system_wasm_run
+
+  # Utilities
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1

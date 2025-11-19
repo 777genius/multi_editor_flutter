@@ -1,0 +1,31 @@
+[package]
+name = "bracket_colorizer_wasm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Multi Editor Team"]
+description = "Rainbow bracket colorizer using tree-sitter for accurate parsing"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+rmp-serde = "1.3"
+
+# Tree-sitter for AST parsing
+tree-sitter = "0.20"
+
+# Language grammars (add as needed)
+# Note: These would need to be added as dependencies or vendored
+# For now we'll use a simplified bracket matching approach
+
+[profile.release]
+opt-level = "z"     # Optimize for size
+lto = true          # Enable Link Time Optimization
+codegen-units = 1   # Better optimization
+panic = "abort"     # Reduce binary size
+strip = true        # Strip symbols from binary
+
+[profile.release.package."*"]
+opt-level = "z"

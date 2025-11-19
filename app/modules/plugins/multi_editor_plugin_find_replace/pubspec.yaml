@@ -1,0 +1,35 @@
+name: multi_editor_plugin_find_replace
+description: Advanced Find & Replace with preview and multi-file support
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core dependencies
+  multi_editor_core:
+    path: ../../../multi_editor_core
+  multi_editor_plugins:
+    path: ../../../multi_editor_plugins
+  multi_editor_plugin_base:
+    path: ../multi_editor_plugin_base
+
+  # Global search
+  global_search:
+    path: ../../../global_search
+
+  # Utilities
+  freezed_annotation: ^2.4.1
+  collection: ^1.18.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  freezed: ^2.4.7

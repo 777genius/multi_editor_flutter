@@ -1,0 +1,29 @@
+name: multi_editor_plugin_git_blame
+description: Git Blame inline viewer plugin - shows commit info for current line
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.13.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Core dependencies
+  multi_editor_core:
+    path: ../../../multi_editor_core
+  multi_editor_plugins:
+    path: ../../../multi_editor_plugins
+  multi_editor_plugin_base:
+    path: ../multi_editor_plugin_base
+
+  # Git integration
+  git_integration:
+    path: ../../../git_integration
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
