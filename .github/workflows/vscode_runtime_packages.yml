@@ -12,6 +12,11 @@ on:
       - 'packages/vscode_runtime_*/**'
   workflow_dispatch:
 
+# Supersede ordinary CI per event and PR/ref; manual runs stay independent.
+concurrency:
+  group: vscode-runtime-packages-${{ github.event_name }}-${{ github.event.pull_request.number || github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+
 env:
   DART_VERSION: '3.5.0'
 
