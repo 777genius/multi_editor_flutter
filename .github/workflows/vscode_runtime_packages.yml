@@ -194,7 +194,8 @@ jobs:
     name: CI Summary
     runs-on: ubuntu-latest
     needs: [test-packages, build-verification, security-audit, code-quality]
-    if: always()
+    # A cancelled obsolete run has no status left to aggregate.
+    if: always() && !cancelled()
 
     steps:
       - name: 📊 Check results
