@@ -7,6 +7,11 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+# Supersede ordinary CI per event and PR/ref; manual runs stay independent.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+
 env:
   FLUTTER_VERSION: '3.35.0'
   DART_VERSION: '3.8.0'
