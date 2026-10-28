@@ -12,8 +12,13 @@ on:
       - 'packages/vscode_runtime_*/**'
   workflow_dispatch:
 
+# Supersede ordinary CI per event and PR/ref; manual runs stay independent.
+concurrency:
+  group: vscode-runtime-packages-${{ github.event_name }}-${{ github.event.pull_request.number || github.event_name == 'push' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+
 env:
-  DART_VERSION: '3.5.0'
+  FLUTTER_VERSION: '3.35.7'
 
 jobs:
   # ============================================================================
@@ -38,15 +43,22 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          sdk: ${{ env.DART_VERSION }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
       - name: 📦 Get dependencies
         run: |
           cd packages/${{ matrix.package }}
-          dart pub get
+          flutter pub get
+
+      - name: Generate package code in dependency order
+        run: |
+          for package in core application infrastructure presentation; do
+            (cd "packages/vscode_runtime_${package}" && flutter pub get && dart run build_runner build --delete-conflicting-outputs)
+          done
 
       - name: 🔍 Analyze code
         run: |
@@ -61,7 +73,7 @@ jobs:
       - name: 🧪 Run tests
         run: |
           cd packages/${{ matrix.package }}
-          dart test --coverage=coverage --reporter expanded || echo "No tests found for ${{ matrix.package }}"
+          flutter test --coverage --reporter expanded
 
       - name: 📊 Generate coverage report
         if: success()
@@ -85,18 +97,25 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          sdk: ${{ env.DART_VERSION }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
       - name: 📦 Install all dependencies
         run: |
           for package in packages/vscode_runtime_*; do
             echo "Installing dependencies for $(basename $package)"
             cd $package
-            dart pub get
+            flutter pub get
             cd ../..
+          done
+
+      - name: Generate package code in dependency order
+        run: |
+          for package in core application infrastructure presentation; do
+            (cd "packages/vscode_runtime_${package}" && flutter pub get && dart run build_runner build --delete-conflicting-outputs)
           done
 
       - name: 🏗️ Verify builds
@@ -104,7 +123,7 @@ jobs:
           for package in packages/vscode_runtime_*; do
             echo "Verifying $(basename $package)"
             cd $package
-            dart pub get
+            flutter pub get
             dart analyze
             cd ../..
           done
@@ -122,17 +141,18 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          sdk: ${{ env.DART_VERSION }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
       - name: 🔒 Dependency audit
         run: |
           for package in packages/vscode_runtime_*; do
             echo "Auditing $(basename $package)"
             cd $package
-            dart pub get
+            flutter pub get
             dart pub audit || echo "Audit completed with warnings"
             cd ../..
           done
@@ -160,10 +180,11 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Dart
-        uses: dart-lang/setup-dart@v1
+      - name: 🔧 Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          sdk: ${{ env.DART_VERSION }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
 
       - name: 📊 Code metrics
         run: |
@@ -189,7 +210,8 @@ jobs:
     name: CI Summary
     runs-on: ubuntu-latest
     needs: [test-packages, build-verification, security-audit, code-quality]
-    if: always()
+    # A cancelled obsolete run has no status left to aggregate.
+    if: always() && !cancelled()
 
     steps:
       - name: 📊 Check results
